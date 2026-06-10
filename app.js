@@ -843,6 +843,46 @@ function setupValidacionDocumento() {
     }
 }
 
+}
+
+// Iniciar creación de un nuevo ganadero (limpiar formulario)
+function iniciarNuevoGanadero() {
+    cancelarEdicion(); // Esto limpia inputs y restablece editingGanaderoId a null
+    
+    // Asegurar que tipo de documento se restablece por defecto a RUC
+    const radioRuc = document.querySelector('input[name="tipo-documento"][value="RUC"]');
+    if (radioRuc) {
+        radioRuc.checked = true;
+        onChangeTipoDocumento();
+    }
+    
+    openModal('ganadero');
+}
+
+// Iniciar creación de un nuevo ingreso de ganado (limpiar formulario y custom selects)
+function iniciarNuevoIngreso() {
+    const form = document.getElementById('form-recepcion');
+    if (form) form.reset();
+    
+    // Restablecer Custom Selects
+    const inputGanadero = document.getElementById('recepcion-ganadero');
+    const textGanadero = document.getElementById('custom-select-ganadero-text');
+    if (inputGanadero) inputGanadero.value = '';
+    if (textGanadero) textGanadero.innerText = 'Elige un ganadero...';
+    document.querySelectorAll('#custom-select-ganadero-options .custom-select-option').forEach(el => el.classList.remove('selected'));
+    
+    const inputEspecie = document.getElementById('recepcion-especie');
+    const textEspecie = document.getElementById('custom-select-especie-text');
+    if (inputEspecie) inputEspecie.value = '';
+    if (textEspecie) textEspecie.innerText = 'Elige una especie...';
+    document.querySelectorAll('#custom-select-especie-options .custom-select-option').forEach(el => el.classList.remove('selected'));
+    
+    const previewLote = document.getElementById('lote-preview-code');
+    if (previewLote) previewLote.innerText = '--';
+    
+    openModal('recepcion');
+}
+
 // Cargar la aplicación al iniciar la ventana
 window.onload = () => {
     initDataPrueba();
