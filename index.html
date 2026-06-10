@@ -111,9 +111,15 @@
                                 </small>
                             </div>
                             
-                            <button type="submit" class="btn-primary">
-                                <i class="fa-solid fa-check"></i> Registrar Ganadero
-                            </button>
+                            <div style="display: flex; gap: 12px; margin-top: 12px;">
+                                <button type="button" id="btn-cancelar-edicion" class="btn-confirm-secondary" style="display: none;" onclick="cancelarEdicion()">
+                                    Cancelar
+                                </button>
+                                <button type="submit" id="btn-guardar-ganadero" class="btn-primary" style="margin-top: 0; flex: 1;">
+                                    <i class="fa-solid fa-check"></i> <span id="text-submit-ganadero">Registrar Ganadero</span>
+                                </button>
+                            </div>
+
                         </form>
                     </div>
 

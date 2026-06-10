@@ -3,6 +3,7 @@
 // Estructuras de datos iniciales en localStorage
 let ganaderos = JSON.parse(localStorage.getItem('ganaderos')) || [];
 let recepciones = JSON.parse(localStorage.getItem('recepciones')) || [];
+let editingGanaderoId = null; // Estado de edición global
 
 // ==========================================
 // SISTEMA DE ALERTAS Y TOASTS PERSONALIZADOS
@@ -166,6 +167,11 @@ function switchTab(tabName) {
     const titleText = tabName === 'ganaderos' ? 'Gestión de Ganaderos' : 'Ingreso de Ganado (Recepción)';
     document.getElementById('header-title-text').innerText = titleText;
 
+    // Si salimos de ganaderos, cancelamos la edición activa por seguridad
+    if (tabName !== 'ganaderos' && editingGanaderoId !== null) {
+        cancelarEdicion();
+    }
+
     renderAll();
 }
 
@@ -187,7 +193,7 @@ function previewLoteCode() {
     }
 }
 
-// Guardar Ganadero
+// Guardar o Actualizar Ganadero
 function saveGanadero(event) {
     event.preventDefault();
     
@@ -196,13 +202,14 @@ function saveGanadero(event) {
     const whatsapp = document.getElementById('ganadero-whatsapp').value.trim();
     const codigo = document.getElementById('ganadero-codigo').value.trim().toUpperCase();
 
-    // Validaciones
-    if (ganaderos.some(g => g.codigo === codigo)) {
-        showToast('El código de proveedor ya está asignado.', 'error');
+    // Validar duplicado de código (excluyendo el actual si estamos editando)
+    if (ganaderos.some(g => g.codigo === codigo && g.id !== editingGanaderoId)) {
+        showToast('El código de proveedor ya está asignado a otro ganadero.', 'error');
         return;
     }
-    if (ganaderos.some(g => g.ruc === ruc)) {
-        showToast('Ya existe un ganadero registrado con este RUC.', 'error');
+    // Validar duplicado de RUC (excluyendo el actual si estamos editando)
+    if (ganaderos.some(g => g.ruc === ruc && g.id !== editingGanaderoId)) {
+        showToast('Ya existe otro ganadero registrado con este RUC.', 'error');
         return;
     }
     if (codigo.length !== 2) {
@@ -210,21 +217,111 @@ function saveGanadero(event) {
         return;
     }
 
-    const nuevoGanadero = {
-        id: 'g-' + Date.now(),
-        nombre,
-        ruc,
-        whatsapp,
-        codigo,
-        activo: true
-    };
+    if (editingGanaderoId !== null) {
+        // MODO EDICIÓN
+        const ganaderoIdx = ganaderos.findIndex(g => g.id === editingGanaderoId);
+        if (ganaderoIdx !== -1) {
+            // Actualizar propiedades
+            ganaderos[ganaderoIdx].nombre = nombre;
+            ganaderos[ganaderoIdx].ruc = ruc;
+            ganaderos[ganaderoIdx].whatsapp = whatsapp;
+            
+            // Si el código cambió y no estaba deshabilitado, actualizarlo
+            const antiguoCodigo = ganaderos[ganaderoIdx].codigo;
+            ganaderos[ganaderoIdx].codigo = codigo;
 
-    ganaderos.push(nuevoGanadero);
-    localStorage.setItem('ganaderos', JSON.stringify(ganaderos));
+            // Actualizar también el nombre de los ganaderos en las recepciones existentes
+            recepciones.forEach(r => {
+                if (r.ganadero_id === editingGanaderoId) {
+                    r.ganadero_nombre = nombre;
+                    // Si el código cambió, actualizamos la firma de lote de la recepción histórica
+                    if (antiguoCodigo !== codigo) {
+                        r.lote_codigo = r.lote_codigo.replace(antiguoCodigo, codigo);
+                    }
+                }
+            });
+
+            localStorage.setItem('recepciones', JSON.stringify(recepciones));
+            localStorage.setItem('ganaderos', JSON.stringify(ganaderos));
+            
+            showToast('Ganadero actualizado exitosamente.', 'success');
+            cancelarEdicion();
+        }
+    } else {
+        // MODO NUEVO REGISTRO
+        const nuevoGanadero = {
+            id: 'g-' + Date.now(),
+            nombre,
+            ruc,
+            whatsapp,
+            codigo,
+            activo: true
+        };
+
+        ganaderos.push(nuevoGanadero);
+        localStorage.setItem('ganaderos', JSON.stringify(ganaderos));
+        showToast('Ganadero registrado exitosamente.', 'success');
+        document.getElementById('form-ganadero').reset();
+    }
     
-    document.getElementById('form-ganadero').reset();
     renderAll();
-    showToast('Ganadero registrado exitosamente.', 'success');
+}
+
+// Cargar Datos en Formulario para Edición
+function editGanadero(id) {
+    const ganadero = ganaderos.find(g => g.id === id);
+    if (!ganadero) return;
+
+    editingGanaderoId = id;
+
+    // Rellenar formulario
+    document.getElementById('ganadero-nombre').value = ganadero.nombre;
+    document.getElementById('ganadero-ruc').value = ganadero.ruc;
+    document.getElementById('ganadero-whatsapp').value = ganadero.whatsapp;
+    
+    const inputCodigo = document.getElementById('ganadero-codigo');
+    inputCodigo.value = ganadero.codigo;
+
+    // Modificar UI del Card del Formulario
+    document.querySelector('#tab-ganaderos .card-title').innerHTML = `
+        <i class="fa-solid fa-user-pen" style="color: var(--color-admin);"></i>
+        Editar Ganadero
+    `;
+    document.getElementById('text-submit-ganadero').innerText = 'Guardar Cambios';
+    document.getElementById('btn-cancelar-edicion').style.display = 'block';
+
+    // Proteger integridad de datos: Deshabilitar el código si ya tiene lotes ingresados
+    const tieneLotes = recepciones.some(r => r.ganadero_id === id);
+    if (tieneLotes) {
+        inputCodigo.disabled = true;
+        inputCodigo.title = "No se puede editar el código de lote porque tiene lotes ingresados.";
+    } else {
+        inputCodigo.disabled = false;
+        inputCodigo.title = "";
+    }
+
+    // Scroll suave al formulario
+    document.querySelector('#tab-ganaderos .card').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Cancelar Edición y restaurar formulario
+function cancelarEdicion() {
+    editingGanaderoId = null;
+
+    // Limpiar formulario
+    document.getElementById('form-ganadero').reset();
+
+    const inputCodigo = document.getElementById('ganadero-codigo');
+    inputCodigo.disabled = false;
+    inputCodigo.title = "";
+
+    // Restaurar UI del Card del Formulario
+    document.querySelector('#tab-ganaderos .card-title').innerHTML = `
+        <i class="fa-solid fa-user-plus" style="color: var(--color-client);"></i>
+        Registrar Ganadero
+    `;
+    document.getElementById('text-submit-ganadero').innerText = 'Registrar Ganadero';
+    document.getElementById('btn-cancelar-edicion').style.display = 'none';
 }
 
 // Guardar Ingreso de Ganado
@@ -285,6 +382,11 @@ async function deleteGanadero(id) {
             return;
         }
 
+        // Cancelar edición si estamos borrando el ganadero que se edita actualmente
+        if (editingGanaderoId === id) {
+            cancelarEdicion();
+        }
+
         ganaderos = ganaderos.filter(g => g.id !== id);
         localStorage.setItem('ganaderos', JSON.stringify(ganaderos));
         renderAll();
@@ -328,7 +430,10 @@ function renderAll() {
             <td>${g.ruc}</td>
             <td><i class="fa-brands fa-whatsapp" style="color: #25d366; margin-right: 6px;"></i>${g.whatsapp}</td>
             <td>
-                <button onclick="deleteGanadero('${g.id}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px;" title="Eliminar">
+                <button onclick="editGanadero('${g.id}')" style="background: none; border: none; color: var(--color-admin); cursor: pointer; font-size: 15px; margin-right: 12px;" title="Editar">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button onclick="deleteGanadero('${g.id}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 15px;" title="Eliminar">
                     <i class="fa-solid fa-trash-can"></i>
                 </button>
             </td>
