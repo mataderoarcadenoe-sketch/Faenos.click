@@ -843,8 +843,6 @@ function setupValidacionDocumento() {
     }
 }
 
-}
-
 // Iniciar creación de un nuevo ganadero (limpiar formulario)
 function iniciarNuevoGanadero() {
     cancelarEdicion(); // Esto limpia inputs y restablece editingGanaderoId a null
