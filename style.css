@@ -816,6 +816,12 @@ tr:hover td {
     transform: rotate(90deg);
 }
 
+.modal-form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
 /* ==========================================
    MEDIA QUERIES - DISEÑO RESPONSIVO
    ========================================== */
