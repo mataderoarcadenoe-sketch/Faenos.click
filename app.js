@@ -6,6 +6,29 @@ let recepciones = JSON.parse(localStorage.getItem('recepciones')) || [];
 let editingGanaderoId = null; // Estado de edición global
 
 // ==========================================
+// CONTROL DE MODALES DE FORMULARIO
+// ==========================================
+
+function openModal(tipo) {
+    const modal = document.getElementById(`modal-${tipo}`);
+    if (modal) {
+        modal.classList.add('active');
+    }
+}
+
+function closeModal(tipo) {
+    const modal = document.getElementById(`modal-${tipo}`);
+    if (modal) {
+        modal.classList.remove('active');
+        
+        // Si cancelamos la edición de ganadero al cerrar
+        if (tipo === 'ganadero' && editingGanaderoId !== null) {
+            cancelarEdicion();
+        }
+    }
+}
+
+// ==========================================
 // SISTEMA DE ALERTAS Y TOASTS PERSONALIZADOS
 // ==========================================
 
@@ -221,20 +244,17 @@ function saveGanadero(event) {
         // MODO EDICIÓN
         const ganaderoIdx = ganaderos.findIndex(g => g.id === editingGanaderoId);
         if (ganaderoIdx !== -1) {
-            // Actualizar propiedades
             ganaderos[ganaderoIdx].nombre = nombre;
             ganaderos[ganaderoIdx].ruc = ruc;
             ganaderos[ganaderoIdx].whatsapp = whatsapp;
             
-            // Si el código cambió y no estaba deshabilitado, actualizarlo
             const antiguoCodigo = ganaderos[ganaderoIdx].codigo;
             ganaderos[ganaderoIdx].codigo = codigo;
 
-            // Actualizar también el nombre de los ganaderos en las recepciones existentes
+            // Actualizar recepciones
             recepciones.forEach(r => {
                 if (r.ganadero_id === editingGanaderoId) {
                     r.ganadero_nombre = nombre;
-                    // Si el código cambió, actualizamos la firma de lote de la recepción histórica
                     if (antiguoCodigo !== codigo) {
                         r.lote_codigo = r.lote_codigo.replace(antiguoCodigo, codigo);
                     }
@@ -245,7 +265,7 @@ function saveGanadero(event) {
             localStorage.setItem('ganaderos', JSON.stringify(ganaderos));
             
             showToast('Ganadero actualizado exitosamente.', 'success');
-            cancelarEdicion();
+            closeModal('ganadero'); // Cerrará y cancelará la edición
         }
     } else {
         // MODO NUEVO REGISTRO
@@ -261,7 +281,7 @@ function saveGanadero(event) {
         ganaderos.push(nuevoGanadero);
         localStorage.setItem('ganaderos', JSON.stringify(ganaderos));
         showToast('Ganadero registrado exitosamente.', 'success');
-        document.getElementById('form-ganadero').reset();
+        closeModal('ganadero');
     }
     
     renderAll();
@@ -282,15 +302,15 @@ function editGanadero(id) {
     const inputCodigo = document.getElementById('ganadero-codigo');
     inputCodigo.value = ganadero.codigo;
 
-    // Modificar UI del Card del Formulario
-    document.querySelector('#tab-ganaderos .card-title').innerHTML = `
+    // Modificar UI del Modal de Formulario
+    document.getElementById('modal-ganadero-title').innerHTML = `
         <i class="fa-solid fa-user-pen" style="color: var(--color-admin);"></i>
         Editar Ganadero
     `;
     document.getElementById('text-submit-ganadero').innerText = 'Guardar Cambios';
     document.getElementById('btn-cancelar-edicion').style.display = 'block';
 
-    // Proteger integridad de datos: Deshabilitar el código si ya tiene lotes ingresados
+    // Proteger integridad
     const tieneLotes = recepciones.some(r => r.ganadero_id === id);
     if (tieneLotes) {
         inputCodigo.disabled = true;
@@ -300,8 +320,8 @@ function editGanadero(id) {
         inputCodigo.title = "";
     }
 
-    // Scroll suave al formulario
-    document.querySelector('#tab-ganaderos .card').scrollIntoView({ behavior: 'smooth' });
+    // Abrir Modal
+    openModal('ganadero');
 }
 
 // Cancelar Edición y restaurar formulario
@@ -315,13 +335,19 @@ function cancelarEdicion() {
     inputCodigo.disabled = false;
     inputCodigo.title = "";
 
-    // Restaurar UI del Card del Formulario
-    document.querySelector('#tab-ganaderos .card-title').innerHTML = `
+    // Restaurar UI del Modal
+    document.getElementById('modal-ganadero-title').innerHTML = `
         <i class="fa-solid fa-user-plus" style="color: var(--color-client);"></i>
         Registrar Ganadero
     `;
     document.getElementById('text-submit-ganadero').innerText = 'Registrar Ganadero';
     document.getElementById('btn-cancelar-edicion').style.display = 'none';
+    
+    // Cerrar si estaba activo
+    const modal = document.getElementById('modal-ganadero');
+    if (modal && modal.classList.contains('active')) {
+        modal.classList.remove('active');
+    }
 }
 
 // Guardar Ingreso de Ganado
@@ -344,7 +370,6 @@ function saveIngreso(event) {
 
     const codigoLote = ganadero.codigo.toUpperCase() + especie + getJulianDay(new Date());
 
-    // Validar si el lote ya existe para evitar duplicidades
     if (recepciones.some(r => r.lote_codigo === codigoLote)) {
         showToast(`El lote ${codigoLote} ya registra ingresos hoy.`, 'warning');
     }
@@ -368,6 +393,7 @@ function saveIngreso(event) {
     document.getElementById('form-recepcion').reset();
     document.getElementById('lote-preview-code').innerText = '--';
     
+    closeModal('recepcion');
     renderAll();
     showToast(`Ingreso registrado con Lote: ${codigoLote}`, 'success');
 }
@@ -376,13 +402,11 @@ function saveIngreso(event) {
 async function deleteGanadero(id) {
     const confirmado = await customConfirm('¿Está seguro de eliminar este ganadero? La acción es permanente.');
     if (confirmado) {
-        // Validar si tiene recepciones asociadas para mantener la integridad de los datos
         if (recepciones.some(r => r.ganadero_id === id)) {
             showToast('No se puede eliminar: tiene lotes e ingresos asociados.', 'error');
             return;
         }
 
-        // Cancelar edición si estamos borrando el ganadero que se edita actualmente
         if (editingGanaderoId === id) {
             cancelarEdicion();
         }

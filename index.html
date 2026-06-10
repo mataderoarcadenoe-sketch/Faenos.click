@@ -11,7 +11,6 @@
     <!-- Favicon Dinámico (Emoji) para evitar error 404 -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐄</text></svg>">
 </head>
-
 <body>
 
     <div class="dashboard-layout">
@@ -79,78 +78,40 @@
                     </div>
                 </div>
 
-                <div class="dashboard-grid">
-                    <!-- Formulario de Registro de Ganadero -->
-                    <div class="card">
-                        <h2 class="card-title">
-                            <i class="fa-solid fa-user-plus" style="color: var(--color-client);"></i>
-                            Registrar Ganadero
+                <!-- Tabla de Ganaderos (Ocupa el 100% de ancho) -->
+                <div class="table-container">
+                    <div class="table-header-row">
+                        <h2 class="card-title" style="margin-bottom: 0;">
+                            <i class="fa-solid fa-list-ul" style="color: var(--color-admin);"></i>
+                            Ganaderos Registrados
                         </h2>
                         
-                        <form id="form-ganadero" onsubmit="saveGanadero(event)">
-                            <div class="form-group">
-                                <label class="form-label">Razón Social o Nombres</label>
-                                <input type="text" id="ganadero-nombre" class="form-control" placeholder="Ej. Agroindustria Atlántica" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">RUC / Documento de Identidad</label>
-                                <input type="text" id="ganadero-ruc" class="form-control" placeholder="Ej. 20601234567" maxlength="11" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Celular / WhatsApp (Alertas)</label>
-                                <input type="tel" id="ganadero-whatsapp" class="form-control" placeholder="Ej. +51 987654321" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Código de Proveedor (2 letras)</label>
-                                <input type="text" id="ganadero-codigo" class="form-control" placeholder="Ej. AA" maxlength="2" style="text-transform: uppercase;" required>
-                                <small style="display: block; margin-top: 6px; font-size: 11px; color: var(--text-secondary);">
-                                    Se usará para construir el código de lote final.
-                                </small>
-                            </div>
-                            
-                            <div style="display: flex; gap: 12px; margin-top: 12px;">
-                                <button type="button" id="btn-cancelar-edicion" class="btn-confirm-secondary" style="display: none;" onclick="cancelarEdicion()">
-                                    Cancelar
-                                </button>
-                                <button type="submit" id="btn-guardar-ganadero" class="btn-primary" style="margin-top: 0; flex: 1;">
-                                    <i class="fa-solid fa-check"></i> <span id="text-submit-ganadero">Registrar Ganadero</span>
-                                </button>
-                            </div>
-
-                        </form>
-                    </div>
-
-                    <!-- Tabla de Ganaderos -->
-                    <div class="table-container">
-                        <div class="table-header-row">
-                            <h2 class="card-title" style="margin-bottom: 0;">
-                                <i class="fa-solid fa-list-ul" style="color: var(--color-admin);"></i>
-                                Ganaderos Registrados
-                            </h2>
+                        <div style="display: flex; gap: 16px; align-items: center; flex: 1; justify-content: flex-end;">
                             <div class="search-box">
                                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
                                 <input type="text" id="search-ganaderos" class="search-input" placeholder="Buscar ganadero..." oninput="filterGanaderos()">
                             </div>
+                            
+                            <button class="btn-primary" onclick="openModal('ganadero')" style="width: auto; padding: 10px 20px;">
+                                <i class="fa-solid fa-plus"></i> Nuevo Ganadero
+                            </button>
                         </div>
-                        
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Código</th>
-                                    <th>Razón Social</th>
-                                    <th>RUC / Identidad</th>
-                                    <th>WhatsApp</th>
-                                    <th>Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody id="table-ganaderos-body">
-                                <!-- Filas cargadas dinámicamente -->
-                            </tbody>
-                        </table>
                     </div>
+                    
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Razón Social</th>
+                                <th>RUC / Identidad</th>
+                                <th>WhatsApp</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-ganaderos-body">
+                            <!-- Filas cargadas dinámicamente -->
+                        </tbody>
+                    </table>
                 </div>
 
             </section>
@@ -174,97 +135,165 @@
                     </div>
                 </div>
 
-                <div class="dashboard-grid">
-                    <!-- Formulario de Registro de Ingreso -->
-                    <div class="card">
-                        <h2 class="card-title">
-                            <i class="fa-solid fa-circle-plus" style="color: var(--color-ops);"></i>
-                            Registrar Ingreso de Ganado
+                <!-- Tabla de Ingresos de Ganado (Ocupa el 100% de ancho) -->
+                <div class="table-container">
+                    <div class="table-header-row">
+                        <h2 class="card-title" style="margin-bottom: 0;">
+                            <i class="fa-solid fa-rectangle-list" style="color: var(--color-ops);"></i>
+                            Control de Ingresos y Lotes
                         </h2>
                         
-                        <form id="form-recepcion" onsubmit="saveIngreso(event)">
-                            <div class="form-group">
-                                <label class="form-label">Seleccionar Ganadero</label>
-                                <select id="recepcion-ganadero" class="form-control" required>
-                                    <option value="" disabled selected>Elige un ganadero...</option>
-                                    <!-- Cargado dinámicamente -->
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Tipo de Ganado (Especie)</label>
-                                <select id="recepcion-especie" class="form-control" onchange="previewLoteCode()" required>
-                                    <option value="" disabled selected>Elige una especie...</option>
-                                    <option value="VA">Vacuno (VA)</option>
-                                    <option value="PO">Porcino (PO)</option>
-                                    <option value="OV">Ovino (OV)</option>
-                                    <option value="CA">Caprino (CA)</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Cantidad de Cabezas</label>
-                                <input type="number" id="recepcion-cantidad" class="form-control" placeholder="Ej. 15" min="1" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">N° Guía de Tránsito (SENASA)</label>
-                                <input type="text" id="recepcion-guia" class="form-control" placeholder="Ej. GT-0023456" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Observaciones Ante-Mortem</label>
-                                <textarea id="recepcion-observaciones" class="form-control" placeholder="Ej. Animales sin síntomas de enfermedad clínica visible." rows="3"></textarea>
-                            </div>
-                            
-                            <!-- Preview del Lote Juliano generado en tiempo real -->
-                            <div class="form-group" style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; border: 1px dashed var(--border-color);">
-                                <span class="form-label" style="margin-bottom: 4px;">Código de Lote a Generar (Juliano):</span>
-                                <span id="lote-preview-code" style="font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 700; color: var(--color-client);">--</span>
-                            </div>
-                            
-                            <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, var(--color-ops), #059669); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);">
-                                <i class="fa-solid fa-truck-ramp-box"></i> Guardar Ingreso y Lote
-                            </button>
-                        </form>
-                    </div>
-
-                    <!-- Tabla de Ingresos de Ganado -->
-                    <div class="table-container">
-                        <div class="table-header-row">
-                            <h2 class="card-title" style="margin-bottom: 0;">
-                                <i class="fa-solid fa-rectangle-list" style="color: var(--color-ops);"></i>
-                                Control de Ingresos y Lotes
-                            </h2>
+                        <div style="display: flex; gap: 16px; align-items: center; flex: 1; justify-content: flex-end;">
                             <div class="search-box">
                                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
                                 <input type="text" id="search-recepciones" class="search-input" placeholder="Buscar por lote o ganadero..." oninput="filterRecepciones()">
                             </div>
+                            
+                            <button class="btn-primary" onclick="openModal('recepcion')" style="width: auto; padding: 10px 20px; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: 0 4px 15px rgba(5, 150, 105, 0.2);">
+                                <i class="fa-solid fa-plus"></i> Nuevo Ingreso
+                            </button>
                         </div>
-                        
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Lote (Juliano)</th>
-                                    <th>Ganadero</th>
-                                    <th>Especie</th>
-                                    <th>Cabezas</th>
-                                    <th>N° Guía SENASA</th>
-                                    <th>Fecha y Hora</th>
-                                    <th>Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody id="table-recepciones-body">
-                                <!-- Filas cargadas dinámicamente -->
-                            </tbody>
-                        </table>
                     </div>
+                    
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Lote (Juliano)</th>
+                                <th>Ganadero</th>
+                                <th>Especie</th>
+                                <th>Cabezas</th>
+                                <th>N° Guía SENASA</th>
+                                <th>Fecha y Hora</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-recepciones-body">
+                            <!-- Filas cargadas dinámicamente -->
+                        </tbody>
+                    </table>
                 </div>
 
             </section>
 
         </main>
 
+    </div>
+
+    <!-- ==========================================
+         MODALES DE FORMULARIO (FLOTANTES)
+         ========================================== -->
+
+    <!-- Modal 1: Registro/Edición de Ganadero -->
+    <div id="modal-ganadero" class="form-modal-overlay">
+        <div class="form-modal-card">
+            <button class="btn-modal-close" onclick="closeModal('ganadero')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <h2 class="card-title" id="modal-ganadero-title">
+                <i class="fa-solid fa-user-plus" style="color: var(--color-client);"></i>
+                Registrar Ganadero
+            </h2>
+            
+            <form id="form-ganadero" onsubmit="saveGanadero(event)">
+                <div class="form-group">
+                    <label class="form-label">Razón Social o Nombres</label>
+                    <input type="text" id="ganadero-nombre" class="form-control" placeholder="Ej. Agroindustria Atlántica" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">RUC / Documento de Identidad</label>
+                    <input type="text" id="ganadero-ruc" class="form-control" placeholder="Ej. 20601234567" maxlength="11" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Celular / WhatsApp (Alertas)</label>
+                    <input type="tel" id="ganadero-whatsapp" class="form-control" placeholder="Ej. +51 987654321" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Código de Proveedor (2 letras)</label>
+                    <input type="text" id="ganadero-codigo" class="form-control" placeholder="Ej. AA" maxlength="2" style="text-transform: uppercase;" required>
+                    <small style="display: block; margin-top: 6px; font-size: 11px; color: var(--text-secondary);">
+                        Se usará para construir el código de lote final.
+                    </small>
+                </div>
+                
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button type="button" class="btn-confirm-secondary" onclick="closeModal('ganadero')">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="btn-guardar-ganadero" class="btn-primary" style="margin-top: 0; flex: 1;">
+                        <i class="fa-solid fa-check"></i> <span id="text-submit-ganadero">Registrar Ganadero</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Registro de Ingreso (Recepción) -->
+    <div id="modal-recepcion" class="form-modal-overlay">
+        <div class="form-modal-card">
+            <button class="btn-modal-close" onclick="closeModal('recepcion')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <h2 class="card-title">
+                <i class="fa-solid fa-circle-plus" style="color: var(--color-ops);"></i>
+                Registrar Ingreso de Ganado
+            </h2>
+            
+            <form id="form-recepcion" onsubmit="saveIngreso(event)">
+                <div class="form-group">
+                    <label class="form-label">Seleccionar Ganadero</label>
+                    <select id="recepcion-ganadero" class="form-control" required>
+                        <option value="" disabled selected>Elige un ganadero...</option>
+                        <!-- Cargado dinámicamente -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Tipo de Ganado (Especie)</label>
+                    <select id="recepcion-especie" class="form-control" onchange="previewLoteCode()" required>
+                        <option value="" disabled selected>Elige una especie...</option>
+                        <option value="VA">Vacuno (VA)</option>
+                        <option value="PO">Porcino (PO)</option>
+                        <option value="OV">Ovino (OV)</option>
+                        <option value="CA">Caprino (CA)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Cantidad de Cabezas</label>
+                    <input type="number" id="recepcion-cantidad" class="form-control" placeholder="Ej. 15" min="1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">N° Guía de Tránsito (SENASA)</label>
+                    <input type="text" id="recepcion-guia" class="form-control" placeholder="Ej. GT-0023456" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Observaciones Ante-Mortem</label>
+                    <textarea id="recepcion-observaciones" class="form-control" placeholder="Ej. Animales sin síntomas de enfermedad clínica visible." rows="3"></textarea>
+                </div>
+                
+                <!-- Preview del Lote Juliano generado en tiempo real -->
+                <div class="form-group" style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px dashed var(--border-color);">
+                    <span class="form-label" style="margin-bottom: 4px;">Código de Lote a Generar (Juliano):</span>
+                    <span id="lote-preview-code" style="font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 700; color: var(--color-client);">--</span>
+                </div>
+                
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button type="button" class="btn-confirm-secondary" onclick="closeModal('recepcion')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn-primary" style="margin-top: 0; flex: 1; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: 0 4px 15px rgba(5, 150, 105, 0.2);">
+                        <i class="fa-solid fa-truck-ramp-box"></i> Guardar Lote
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Contenedor de Notificaciones Flotantes (Toasts) -->
@@ -289,4 +318,3 @@
     <script src="app.js"></script>
 </body>
 </html>
-
