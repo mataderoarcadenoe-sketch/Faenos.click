@@ -546,8 +546,86 @@ function renderAll() {
     }
 }
 
+// Generar un código único de 2 letras a partir de una razón social
+function generarCodigoGanadero(nombre) {
+    if (!nombre) return '';
+    
+    // Palabras, preposiciones y términos corporativos a ignorar
+    const ignorar = [
+        'sac', 'sa', 'eirl', 'srl', 'sas', 'de', 'la', 'el', 'las', 'los', 'y', 'en', 'del',
+        's.a.c.', 's.a.', 'e.i.r.l.', 's.r.l.', 's.a.s.', 'fundo', 'hacienda', 'agropecuaria', 'agroindustria',
+        'grupo', 'empresa', 'corporacion'
+    ];
+    
+    // Limpiar caracteres especiales, pasar a minúsculas y separar por palabras
+    const palabras = nombre
+        .toLowerCase()
+        .replace(/[^a-z0-9áéíóúñü\s]/g, '')
+        .split(/\s+/)
+        .filter(w => w.length > 0 && !ignorar.includes(w));
+        
+    let codigo = '';
+    
+    if (palabras.length >= 2) {
+        // Tomar primera letra de las dos primeras palabras significativas
+        codigo = (palabras[0][0] + palabras[1][0]).toUpperCase();
+    } else if (palabras.length === 1) {
+        // Si hay una sola palabra, tomar las dos primeras letras
+        const palabra = palabras[0];
+        codigo = palabra.substring(0, Math.min(2, palabra.length)).toUpperCase();
+    } else {
+        // Fallback si todo se ignoró: usar el nombre original
+        const palabrasOrig = nombre.toUpperCase().replace(/[^A-Z]/g, '').split(/\s+/).filter(w => w.length > 0);
+        if (palabrasOrig.length >= 2) {
+            codigo = palabrasOrig[0][0] + palabrasOrig[1][0];
+        } else if (nombre.length >= 2) {
+            codigo = nombre.substring(0, 2).toUpperCase();
+        } else {
+            codigo = 'XX';
+        }
+    }
+    
+    // Asegurar 2 caracteres rellenando con X si es muy corto
+    codigo = codigo.padEnd(2, 'X').substring(0, 2);
+    
+    // Resolver colisiones si el código ya existe
+    let codigoFinal = codigo;
+    let intento = 1;
+    const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    
+    while (ganaderos.some(g => g.codigo === codigoFinal && g.id !== editingGanaderoId)) {
+        // Si hay colisión, cambiar la segunda letra secuencialmente
+        const letraAlternativa = letras[intento % letras.length];
+        codigoFinal = codigo[0] + letraAlternativa;
+        intento++;
+        if (intento > 100) { // Evitar bucle infinito
+            codigoFinal = 'G' + String(Math.floor(Math.random() * 10));
+            break;
+        }
+    }
+    
+    return codigoFinal;
+}
+
+// Configurar evento input para autogeneración del código
+function setupCodigoAutogenerado() {
+    const inputNombre = document.getElementById('ganadero-nombre');
+    const inputCodigo = document.getElementById('ganadero-codigo');
+    
+    if (inputNombre && inputCodigo) {
+        inputNombre.addEventListener('input', () => {
+            // Solo autogenerar si estamos en modo creación
+            if (editingGanaderoId === null) {
+                const sugerido = generarCodigoGanadero(inputNombre.value);
+                inputCodigo.value = sugerido;
+            }
+        });
+    }
+}
+
 // Cargar la aplicación al iniciar la ventana
 window.onload = () => {
     initDataPrueba();
     renderAll();
+    setupCodigoAutogenerado();
 };
