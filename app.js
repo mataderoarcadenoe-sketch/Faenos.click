@@ -326,7 +326,6 @@ function editGanadero(id) {
         Editar Ganadero
     `;
     document.getElementById('text-submit-ganadero').innerText = 'Guardar Cambios';
-    document.getElementById('btn-cancelar-edicion').style.display = 'block';
 
     // Proteger integridad
     const tieneLotes = recepciones.some(r => r.ganadero_id === id);
@@ -359,7 +358,6 @@ function cancelarEdicion() {
         Registrar Ganadero
     `;
     document.getElementById('text-submit-ganadero').innerText = 'Registrar Ganadero';
-    document.getElementById('btn-cancelar-edicion').style.display = 'none';
     
     // Cerrar si estaba activo
     const modal = document.getElementById('modal-ganadero');
