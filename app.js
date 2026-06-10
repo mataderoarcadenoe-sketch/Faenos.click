@@ -314,8 +314,20 @@ function editGanadero(id) {
 
     // Rellenar formulario
     document.getElementById('ganadero-nombre').value = ganadero.nombre;
-    document.getElementById('ganadero-ruc').value = ganadero.ruc;
     document.getElementById('ganadero-whatsapp').value = ganadero.whatsapp;
+    
+    const rucVal = ganadero.ruc || '';
+    document.getElementById('ganadero-ruc').value = rucVal;
+    
+    // Configurar radio del documento segun longitud
+    const radioRuc = document.querySelector('input[name="tipo-documento"][value="RUC"]');
+    const radioDni = document.querySelector('input[name="tipo-documento"][value="DNI"]');
+    if (rucVal.length === 8) {
+        if (radioDni) radioDni.checked = true;
+    } else {
+        if (radioRuc) radioRuc.checked = true;
+    }
+    onChangeTipoDocumento();
     
     const inputCodigo = document.getElementById('ganadero-codigo');
     inputCodigo.value = ganadero.codigo;
@@ -347,6 +359,7 @@ function cancelarEdicion() {
 
     // Limpiar formulario
     document.getElementById('form-ganadero').reset();
+    onChangeTipoDocumento();
 
     const inputCodigo = document.getElementById('ganadero-codigo');
     inputCodigo.disabled = false;
@@ -722,9 +735,118 @@ document.addEventListener('click', () => {
     });
 });
 
+// ==========================================
+// VALIDACIÓN DE DOCUMENTOS (DNI/RUC) VÍA API PERÚ
+// ==========================================
+
+const API_TOKEN = '76ca7246c8a8c464fd551b6555e780791a69ff89acb8887558d65b23f05ab81b';
+
+// Cambiar visualización del campo del documento según el tipo de radio button
+function onChangeTipoDocumento() {
+    const radioSelected = document.querySelector('input[name="tipo-documento"]:checked');
+    if (!radioSelected) return;
+
+    const tipoDoc = radioSelected.value;
+    const inputRuc = document.getElementById('ganadero-ruc');
+    const labelRuc = document.getElementById('label-ganadero-ruc');
+    
+    if (inputRuc && labelRuc) {
+        if (tipoDoc === 'DNI') {
+            labelRuc.innerText = 'Número de DNI';
+            inputRuc.placeholder = 'Ej. 70654321';
+            inputRuc.maxLength = 8;
+        } else {
+            labelRuc.innerText = 'Número de RUC';
+            inputRuc.placeholder = 'Ej. 20601234567';
+            inputRuc.maxLength = 11;
+        }
+    }
+}
+
+// Consultar DNI o RUC a apiperu.dev
+async function consultarDocumentoAPI(tipo, numero) {
+    const endpoint = tipo === 'DNI' ? 'https://apiperu.dev/api/dni' : 'https://apiperu.dev/api/ruc';
+    const bodyData = tipo === 'DNI' ? { dni: numero } : { ruc: numero };
+    
+    showToast(`Buscando ${tipo} en base SUNAT/Reniec...`, 'warning');
+    
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${API_TOKEN}`
+            },
+            body: JSON.stringify(bodyData)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Servicio respondió con código: ${response.status}`);
+        }
+        
+        const resJson = await response.json();
+        
+        if (resJson.success && resJson.data) {
+            const data = resJson.data;
+            let nombreResultado = '';
+            
+            if (tipo === 'DNI') {
+                nombreResultado = data.nombre_completo || `${data.nombres} ${data.apellido_paterno} ${data.apellido_materno}`;
+            } else {
+                nombreResultado = data.nombre_o_razon_social;
+            }
+            
+            if (nombreResultado) {
+                document.getElementById('ganadero-nombre').value = nombreResultado;
+                showToast(`${tipo} validado y cargado con éxito.`, 'success');
+                
+                // Disparar autogeneración de código si estamos en creación
+                if (editingGanaderoId === null) {
+                    const inputCodigo = document.getElementById('ganadero-codigo');
+                    if (inputCodigo) {
+                        inputCodigo.value = generarCodigoGanadero(nombreResultado);
+                    }
+                }
+            } else {
+                showToast(`No se obtuvieron nombres para el ${tipo} ${numero}.`, 'warning');
+            }
+        } else {
+            showToast(resJson.message || `No se pudo obtener información del ${tipo}.`, 'warning');
+        }
+    } catch (error) {
+        console.error('Error al validar documento:', error);
+        showToast('Error de conexión con el servicio de validación. Ingrese los datos manualmente.', 'error');
+    }
+}
+
+// Configurar evento input para buscar automáticamente DNI (8 dígitos) o RUC (11 dígitos)
+function setupValidacionDocumento() {
+    const inputRuc = document.getElementById('ganadero-ruc');
+    
+    if (inputRuc) {
+        inputRuc.addEventListener('input', () => {
+            const radioSelected = document.querySelector('input[name="tipo-documento"]:checked');
+            if (!radioSelected) return;
+
+            const tipoDoc = radioSelected.value;
+            // Solo permitir números en el campo
+            let valor = inputRuc.value.replace(/\D/g, '');
+            inputRuc.value = valor;
+            
+            if (tipoDoc === 'DNI' && valor.length === 8) {
+                consultarDocumentoAPI('DNI', valor);
+            } else if (tipoDoc === 'RUC' && valor.length === 11) {
+                consultarDocumentoAPI('RUC', valor);
+            }
+        });
+    }
+}
+
 // Cargar la aplicación al iniciar la ventana
 window.onload = () => {
     initDataPrueba();
     renderAll();
     setupCodigoAutogenerado();
+    setupValidacionDocumento();
 };

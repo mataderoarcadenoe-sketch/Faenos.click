@@ -220,7 +220,19 @@
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">RUC / Documento de Identidad</label>
+                    <label class="form-label">Tipo de Documento</label>
+                    <div style="display: flex; gap: 24px; padding: 6px 0;">
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-primary); cursor: pointer; font-weight: 500;">
+                            <input type="radio" name="tipo-documento" value="RUC" checked onchange="onChangeTipoDocumento()" style="width: 16px; height: 16px; accent-color: var(--color-admin);"> RUC
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-primary); cursor: pointer; font-weight: 500;">
+                            <input type="radio" name="tipo-documento" value="DNI" onchange="onChangeTipoDocumento()" style="width: 16px; height: 16px; accent-color: var(--color-admin);"> DNI
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" id="label-ganadero-ruc">Número de RUC</label>
                     <input type="text" id="ganadero-ruc" class="form-control" placeholder="Ej. 20601234567" maxlength="11" required>
                 </div>
                 
