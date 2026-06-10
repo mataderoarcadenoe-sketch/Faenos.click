@@ -258,7 +258,26 @@
 
     </div>
 
+    <!-- Contenedor de Notificaciones Flotantes (Toasts) -->
+    <div id="toast-container"></div>
+
+    <!-- Modal de Confirmación Personalizado -->
+    <div id="confirm-modal" class="confirm-modal-overlay">
+        <div class="confirm-modal-card">
+            <div class="confirm-modal-icon">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="confirm-modal-title">¿Confirmar Acción?</h3>
+            <p id="confirm-modal-message" class="confirm-modal-message">Mensaje de confirmación</p>
+            <div class="confirm-modal-actions">
+                <button id="btn-confirm-cancel" class="btn-confirm-secondary">Cancelar</button>
+                <button id="btn-confirm-accept" class="btn-confirm-danger">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Archivo JS Vainilla -->
     <script src="app.js"></script>
 </body>
 </html>
+

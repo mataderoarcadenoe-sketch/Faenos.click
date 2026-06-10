@@ -4,6 +4,96 @@
 let ganaderos = JSON.parse(localStorage.getItem('ganaderos')) || [];
 let recepciones = JSON.parse(localStorage.getItem('recepciones')) || [];
 
+// ==========================================
+// SISTEMA DE ALERTAS Y TOASTS PERSONALIZADOS
+// ==========================================
+
+// Sistema de Toasts (Notificaciones Flotantes)
+function showToast(mensaje, tipo = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `custom-toast toast-${tipo}`;
+    
+    let icon = '';
+    let title = '';
+    switch(tipo) {
+        case 'success': 
+            icon = '<i class="fa-solid fa-circle-check"></i>'; 
+            title = 'Éxito';
+            break;
+        case 'error': 
+            icon = '<i class="fa-solid fa-circle-xmark"></i>'; 
+            title = 'Error';
+            break;
+        case 'warning': 
+            icon = '<i class="fa-solid fa-triangle-exclamation"></i>'; 
+            title = 'Advertencia';
+            break;
+    }
+
+    toast.innerHTML = `
+        <div class="toast-icon">${icon}</div>
+        <div class="toast-content">
+            <div class="toast-title">${title}</div>
+            <div class="toast-message">${mensaje}</div>
+        </div>
+    `;
+
+    container.appendChild(toast);
+
+    // Auto-eliminar en 4 segundos
+    setTimeout(() => {
+        toast.classList.add('hide');
+        toast.addEventListener('animationend', () => {
+            toast.remove();
+        });
+    }, 4000);
+}
+
+// Modal de Confirmación Personalizado (Retorna una Promesa)
+function customConfirm(mensaje) {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('confirm-modal');
+        const messageEl = document.getElementById('confirm-modal-message');
+        const btnAccept = document.getElementById('btn-confirm-accept');
+        const btnCancel = document.getElementById('btn-confirm-cancel');
+
+        if (!overlay || !messageEl || !btnAccept || !btnCancel) {
+            resolve(confirm(mensaje)); // Fallback seguro
+            return;
+        }
+
+        // Configurar mensaje
+        messageEl.innerText = mensaje;
+
+        // Mostrar modal
+        overlay.classList.add('active');
+
+        // Handlers
+        const onAccept = () => {
+            cleanup();
+            resolve(true);
+        };
+
+        const onCancel = () => {
+            cleanup();
+            resolve(false);
+        };
+
+        const cleanup = () => {
+            overlay.classList.remove('active');
+            btnAccept.removeEventListener('click', onAccept);
+            btnCancel.removeEventListener('click', onCancel);
+        };
+
+        // Escuchar eventos
+        btnAccept.addEventListener('click', onAccept);
+        btnCancel.addEventListener('click', onCancel);
+    });
+}
+
 // Inicialización de datos de prueba si el almacén local está vacío
 function initDataPrueba() {
     if (ganaderos.length === 0) {
@@ -16,7 +106,6 @@ function initDataPrueba() {
     }
 
     if (recepciones.length === 0) {
-        // Generar algunas fechas pasadas y presentes
         const hoy = new Date();
         const ayer = new Date();
         ayer.setDate(hoy.getDate() - 1);
@@ -62,14 +151,11 @@ function getJulianDay(date) {
 
 // Cambiar de Pestañas (Routing de la SPA)
 function switchTab(tabName) {
-    // Desactivar todas las pestañas y elementos del menú
     document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
 
-    // Activar la pestaña y el item de menú correspondiente
     document.getElementById(`tab-${tabName}`).classList.add('active');
     
-    // Buscar el item del nav usando onclick de manera simplificada
     const navItems = document.querySelectorAll('.nav-item');
     navItems.forEach(item => {
         if (item.getAttribute('onclick').includes(tabName)) {
@@ -77,11 +163,9 @@ function switchTab(tabName) {
         }
     });
 
-    // Cambiar el título del header
     const titleText = tabName === 'ganaderos' ? 'Gestión de Ganaderos' : 'Ingreso de Ganado (Recepción)';
     document.getElementById('header-title-text').innerText = titleText;
 
-    // Recargar datos e interfaces en cada cambio
     renderAll();
 }
 
@@ -114,15 +198,15 @@ function saveGanadero(event) {
 
     // Validaciones
     if (ganaderos.some(g => g.codigo === codigo)) {
-        alert('❌ Error: El código de proveedor ya está asignado.');
+        showToast('El código de proveedor ya está asignado.', 'error');
         return;
     }
     if (ganaderos.some(g => g.ruc === ruc)) {
-        alert('❌ Error: Ya existe un ganadero registrado con este RUC.');
+        showToast('Ya existe un ganadero registrado con este RUC.', 'error');
         return;
     }
     if (codigo.length !== 2) {
-        alert('❌ Error: El código de proveedor debe ser exactamente de 2 letras.');
+        showToast('El código de proveedor debe tener exactamente 2 letras.', 'error');
         return;
     }
 
@@ -140,7 +224,7 @@ function saveGanadero(event) {
     
     document.getElementById('form-ganadero').reset();
     renderAll();
-    alert('✅ Ganadero registrado exitosamente.');
+    showToast('Ganadero registrado exitosamente.', 'success');
 }
 
 // Guardar Ingreso de Ganado
@@ -154,7 +238,7 @@ function saveIngreso(event) {
     const observaciones = document.getElementById('recepcion-observaciones').value.trim();
 
     if (!ganaderoId || !especie || !cantidad || !guia) {
-        alert('❌ Error: Por favor complete los campos obligatorios.');
+        showToast('Por favor, complete todos los campos obligatorios.', 'error');
         return;
     }
 
@@ -165,7 +249,7 @@ function saveIngreso(event) {
 
     // Validar si el lote ya existe para evitar duplicidades
     if (recepciones.some(r => r.lote_codigo === codigoLote)) {
-        alert(`⚠️ Atención: Ya se registró un lote '${codigoLote}' el día de hoy para este ganadero. Se añadirá como un nuevo ingreso bajo el mismo identificador.`);
+        showToast(`El lote ${codigoLote} ya registra ingresos hoy.`, 'warning');
     }
 
     const nuevoIngreso = {
@@ -188,21 +272,23 @@ function saveIngreso(event) {
     document.getElementById('lote-preview-code').innerText = '--';
     
     renderAll();
-    alert(`✅ Ingreso registrado exitosamente. LOTE: ${codigoLote}`);
+    showToast(`Ingreso registrado con Lote: ${codigoLote}`, 'success');
 }
 
 // Eliminar Ganadero
-function deleteGanadero(id) {
-    if (confirm('¿Está seguro de eliminar este ganadero?')) {
+async function deleteGanadero(id) {
+    const confirmado = await customConfirm('¿Está seguro de eliminar este ganadero? La acción es permanente.');
+    if (confirmado) {
         // Validar si tiene recepciones asociadas para mantener la integridad de los datos
         if (recepciones.some(r => r.ganadero_id === id)) {
-            alert('❌ No se puede eliminar este ganadero porque tiene ingresos asociados. Se mantendrá activo para conservar la trazabilidad.');
+            showToast('No se puede eliminar: tiene lotes e ingresos asociados.', 'error');
             return;
         }
 
         ganaderos = ganaderos.filter(g => g.id !== id);
         localStorage.setItem('ganaderos', JSON.stringify(ganaderos));
         renderAll();
+        showToast('Ganadero eliminado correctamente.', 'success');
     }
 }
 
@@ -230,7 +316,7 @@ function filterRecepciones() {
 
 // Renderizar todo en pantalla
 function renderAll() {
-    // 1. Renderizar Ganaderos en la Tabla
+    // 1. Tabla de Ganaderos
     const tbodyGanaderos = document.getElementById('table-ganaderos-body');
     tbodyGanaderos.innerHTML = '';
     
@@ -250,7 +336,7 @@ function renderAll() {
         tbodyGanaderos.appendChild(tr);
     });
 
-    // 2. Renderizar Dropdown de Ganaderos en el formulario de Recepción
+    // 2. Dropdown de Ganaderos
     const selectGanadero = document.getElementById('recepcion-ganadero');
     if (selectGanadero) {
         selectGanadero.innerHTML = '<option value="" disabled selected>Elige un ganadero...</option>';
@@ -262,11 +348,10 @@ function renderAll() {
         });
     }
 
-    // 3. Renderizar Recepciones en la Tabla
+    // 3. Tabla de Recepciones
     const tbodyRecepciones = document.getElementById('table-recepciones-body');
     tbodyRecepciones.innerHTML = '';
 
-    // Ordenar recepciones: más recientes primero
     const recepcionesOrdenadas = [...recepciones].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
     recepcionesOrdenadas.forEach(r => {
@@ -286,7 +371,7 @@ function renderAll() {
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><span class="lote-tag" style="border-color: var(--color-client); color: #fdba74;">${r.lote_codigo}</span></td>
+            <td><span class="lote-tag" style="border-color: var(--color-client); color: #ea580c; background: rgba(234, 88, 12, 0.05);">${r.lote_codigo}</span></td>
             <td><strong>${r.ganadero_nombre}</strong></td>
             <td>${especieLabel}</td>
             <td style="font-weight: 600;">${r.cantidad}</td>
@@ -297,13 +382,11 @@ function renderAll() {
         tbodyRecepciones.appendChild(tr);
     });
 
-    // 4. Actualizar Métricas e Hitos Estadísticos
-    // Sección Ganaderos
+    // 4. Métricas
     document.getElementById('stat-total-ganaderos').innerText = ganaderos.length;
     document.getElementById('stat-ganaderos-activos').innerText = ganaderos.filter(g => g.activo).length;
     document.getElementById('stat-ultimo-codigo').innerText = ganaderos.length > 0 ? ganaderos[ganaderos.length - 1].codigo : '--';
 
-    // Sección Recepciones
     const hoyStr = new Date().toDateString();
     const ingresosHoy = recepciones.filter(r => new Date(r.fecha).toDateString() === hoyStr);
     
@@ -311,7 +394,6 @@ function renderAll() {
     document.getElementById('stat-total-cabezas').innerText = recepciones.reduce((acc, curr) => acc + curr.cantidad, 0);
     document.getElementById('stat-dia-juliano').innerText = getJulianDay(new Date());
 
-    // Añadir listener para actualizar preview de lote cuando se cambie el ganadero en el formulario de recepción
     const gSelect = document.getElementById('recepcion-ganadero');
     if (gSelect) {
         gSelect.removeEventListener('change', previewLoteCode);
