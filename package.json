@@ -1,0 +1,12 @@
+{
+  "name": "faenos-click-admin",
+  "version": "1.0.0",
+  "description": "Panel de Administrador para el Matadero Carnicería Doris S.A.C.",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve -l $PORT"
+  },
+  "dependencies": {
+    "serve": "^14.2.1"
+  }
+}
