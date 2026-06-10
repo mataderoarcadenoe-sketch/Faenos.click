@@ -407,6 +407,18 @@ function saveIngreso(event) {
     localStorage.setItem('recepciones', JSON.stringify(recepciones));
 
     document.getElementById('form-recepcion').reset();
+    
+    // Restablecer Selects Personalizados
+    document.getElementById('recepcion-ganadero').value = '';
+    const textGanadero = document.getElementById('custom-select-ganadero-text');
+    if (textGanadero) textGanadero.innerText = 'Elige un ganadero...';
+    document.querySelectorAll('#custom-select-ganadero-options .custom-select-option').forEach(el => el.classList.remove('selected'));
+    
+    document.getElementById('recepcion-especie').value = '';
+    const textEspecie = document.getElementById('custom-select-especie-text');
+    if (textEspecie) textEspecie.innerText = 'Elige una especie...';
+    document.querySelectorAll('#custom-select-especie-options .custom-select-option').forEach(el => el.classList.remove('selected'));
+    
     document.getElementById('lote-preview-code').innerText = '--';
     
     closeModal('recepcion');
@@ -481,15 +493,22 @@ function renderAll() {
         tbodyGanaderos.appendChild(tr);
     });
 
-    // 2. Dropdown de Ganaderos
-    const selectGanadero = document.getElementById('recepcion-ganadero');
-    if (selectGanadero) {
-        selectGanadero.innerHTML = '<option value="" disabled selected>Elige un ganadero...</option>';
+    // 2. Dropdown de Ganaderos Personalizado
+    const customOptionsGanadero = document.getElementById('custom-select-ganadero-options');
+    if (customOptionsGanadero) {
+        customOptionsGanadero.innerHTML = '';
         ganaderos.forEach(g => {
-            const opt = document.createElement('option');
-            opt.value = g.id;
-            opt.innerText = `${g.nombre} (${g.codigo})`;
-            selectGanadero.appendChild(opt);
+            const divOpt = document.createElement('div');
+            divOpt.className = 'custom-select-option';
+            divOpt.innerText = `${g.nombre} (${g.codigo})`;
+            divOpt.setAttribute('data-value', g.id);
+            // Comprobar si es el seleccionado actual
+            const selectedVal = document.getElementById('recepcion-ganadero').value;
+            if (selectedVal === g.id) {
+                divOpt.classList.add('selected');
+            }
+            divOpt.onclick = (event) => selectGanaderoOption(g.id, `${g.nombre} (${g.codigo})`, event);
+            customOptionsGanadero.appendChild(divOpt);
         });
     }
 
@@ -539,11 +558,6 @@ function renderAll() {
     document.getElementById('stat-total-cabezas').innerText = recepciones.reduce((acc, curr) => acc + curr.cantidad, 0);
     document.getElementById('stat-dia-juliano').innerText = getJulianDay(new Date());
 
-    const gSelect = document.getElementById('recepcion-ganadero');
-    if (gSelect) {
-        gSelect.removeEventListener('change', previewLoteCode);
-        gSelect.addEventListener('change', previewLoteCode);
-    }
 }
 
 // Generar un código único de 2 letras a partir de una razón social
@@ -622,6 +636,91 @@ function setupCodigoAutogenerado() {
         });
     }
 }
+
+// ==========================================
+// CONTROL DE DESPLEGABLES PERSONALIZADOS (CUSTOM SELECT)
+// ==========================================
+
+// Alternar apertura de los selects
+function toggleCustomSelect(tipo, event) {
+    if (event) {
+        event.stopPropagation();
+    }
+    const container = document.getElementById(`custom-select-${tipo}-container`);
+    if (!container) return;
+
+    // Cerrar otros desplegables abiertos por seguridad
+    document.querySelectorAll('.custom-select-container').forEach(el => {
+        if (el !== container) {
+            el.classList.remove('active');
+        }
+    });
+
+    container.classList.toggle('active');
+}
+
+// Seleccionar Ganadero
+function selectGanaderoOption(id, texto, event) {
+    if (event) {
+        event.stopPropagation();
+    }
+    const inputHidden = document.getElementById('recepcion-ganadero');
+    const triggerText = document.getElementById('custom-select-ganadero-text');
+    const container = document.getElementById('custom-select-ganadero-container');
+    const options = document.querySelectorAll('#custom-select-ganadero-options .custom-select-option');
+
+    if (inputHidden && triggerText && container) {
+        inputHidden.value = id;
+        triggerText.innerText = texto;
+        
+        // Marcar la opción como seleccionada
+        options.forEach(opt => {
+            if (opt.getAttribute('data-value') === id) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        
+        container.classList.remove('active');
+        previewLoteCode(); // Actualizar preview
+    }
+}
+
+// Seleccionar Especie
+function selectEspecieOption(especie, texto, event) {
+    if (event) {
+        event.stopPropagation();
+    }
+    const inputHidden = document.getElementById('recepcion-especie');
+    const triggerText = document.getElementById('custom-select-especie-text');
+    const container = document.getElementById('custom-select-especie-container');
+    const options = document.querySelectorAll('#custom-select-especie-options .custom-select-option');
+
+    if (inputHidden && triggerText && container) {
+        inputHidden.value = especie;
+        triggerText.innerText = texto;
+        
+        // Marcar la opción como seleccionada
+        options.forEach(opt => {
+            if (opt.getAttribute('data-value') === especie) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        
+        container.classList.remove('active');
+        previewLoteCode(); // Actualizar preview
+    }
+}
+
+// Cerrar desplegables al hacer clic fuera del select
+document.addEventListener('click', () => {
+    document.querySelectorAll('.custom-select-container').forEach(el => {
+        el.classList.remove('active');
+    });
+});
 
 // Cargar la aplicación al iniciar la ventana
 window.onload = () => {

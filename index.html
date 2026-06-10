@@ -261,21 +261,33 @@
             <form id="form-recepcion" onsubmit="saveIngreso(event)">
                 <div class="form-group">
                     <label class="form-label">Seleccionar Ganadero</label>
-                    <select id="recepcion-ganadero" class="form-control" required>
-                        <option value="" disabled selected>Elige un ganadero...</option>
-                        <!-- Cargado dinámicamente -->
-                    </select>
+                    <div class="custom-select-container" id="custom-select-ganadero-container">
+                        <div class="custom-select-trigger" onclick="toggleCustomSelect('ganadero', event)">
+                            <span id="custom-select-ganadero-text">Elige un ganadero...</span>
+                            <i class="fa-solid fa-chevron-down arrow"></i>
+                        </div>
+                        <div class="custom-select-options" id="custom-select-ganadero-options">
+                            <!-- Cargado dinámicamente -->
+                        </div>
+                        <input type="hidden" id="recepcion-ganadero" required>
+                    </div>
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label">Tipo de Ganado (Especie)</label>
-                    <select id="recepcion-especie" class="form-control" onchange="previewLoteCode()" required>
-                        <option value="" disabled selected>Elige una especie...</option>
-                        <option value="VA">Vacuno (VA)</option>
-                        <option value="PO">Porcino (PO)</option>
-                        <option value="OV">Ovino (OV)</option>
-                        <option value="CA">Caprino (CA)</option>
-                    </select>
+                    <div class="custom-select-container" id="custom-select-especie-container">
+                        <div class="custom-select-trigger" onclick="toggleCustomSelect('especie', event)">
+                            <span id="custom-select-especie-text">Elige una especie...</span>
+                            <i class="fa-solid fa-chevron-down arrow"></i>
+                        </div>
+                        <div class="custom-select-options" id="custom-select-especie-options">
+                            <div class="custom-select-option" data-value="VA" onclick="selectEspecieOption('VA', '🐄 Vacuno (VA)', event)">🐄 Vacuno (VA)</div>
+                            <div class="custom-select-option" data-value="PO" onclick="selectEspecieOption('PO', '🐖 Porcino (PO)', event)">🐖 Porcino (PO)</div>
+                            <div class="custom-select-option" data-value="OV" onclick="selectEspecieOption('OV', '🐑 Ovino (OV)', event)">🐑 Ovino (OV)</div>
+                            <div class="custom-select-option" data-value="CA" onclick="selectEspecieOption('CA', '🐐 Caprino (CA)', event)">🐐 Caprino (CA)</div>
+                        </div>
+                        <input type="hidden" id="recepcion-especie" required>
+                    </div>
                 </div>
                 
                 <div class="form-group">
