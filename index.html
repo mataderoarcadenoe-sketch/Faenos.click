@@ -15,11 +15,18 @@
 
     <div class="dashboard-layout">
         
+        <!-- Overlay del Sidebar en móvil -->
+        <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
         <!-- Barra Lateral (Sidebar) -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="dashboard-sidebar">
             <div class="brand-section">
                 <div class="brand-icon">F</div>
                 <div class="brand-name">Faenos.click</div>
+                <!-- Botón de cerrar sidebar en móvil -->
+                <button class="btn-sidebar-close" onclick="toggleSidebar()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
             
             <nav>
@@ -53,7 +60,14 @@
             
             <!-- Barra Superior (Header) -->
             <header class="header">
-                <h1 class="header-title" id="header-title-text">Gestión de Ganaderos</h1>
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <!-- Botón Hamburguesa Móvil -->
+                    <button id="btn-sidebar-toggle" class="btn-sidebar-toggle" onclick="toggleSidebar()">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <h1 class="header-title" id="header-title-text">Gestión de Ganaderos</h1>
+                </div>
+                
                 <div class="header-actions">
                     <span class="badge-role"><i class="fa-solid fa-shield-halved"></i> Administrador</span>
                 </div>
@@ -86,32 +100,34 @@
                             Ganaderos Registrados
                         </h2>
                         
-                        <div style="display: flex; gap: 16px; align-items: center; flex: 1; justify-content: flex-end;">
+                        <div class="table-actions-container">
                             <div class="search-box">
                                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
                                 <input type="text" id="search-ganaderos" class="search-input" placeholder="Buscar ganadero..." oninput="filterGanaderos()">
                             </div>
                             
-                            <button class="btn-primary" onclick="openModal('ganadero')" style="width: auto; padding: 10px 20px;">
+                            <button class="btn-primary" onclick="openModal('ganadero')" style="width: auto; padding: 10px 20px; white-space: nowrap;">
                                 <i class="fa-solid fa-plus"></i> Nuevo Ganadero
                             </button>
                         </div>
                     </div>
                     
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Código</th>
-                                <th>Razón Social</th>
-                                <th>RUC / Identidad</th>
-                                <th>WhatsApp</th>
-                                <th>Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-ganaderos-body">
-                            <!-- Filas cargadas dinámicamente -->
-                        </tbody>
-                    </table>
+                    <div class="table-responsive-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Razón Social</th>
+                                    <th>RUC / Identidad</th>
+                                    <th>WhatsApp</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-ganaderos-body">
+                                <!-- Filas cargadas dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
             </section>
@@ -143,34 +159,36 @@
                             Control de Ingresos y Lotes
                         </h2>
                         
-                        <div style="display: flex; gap: 16px; align-items: center; flex: 1; justify-content: flex-end;">
+                        <div class="table-actions-container">
                             <div class="search-box">
                                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
                                 <input type="text" id="search-recepciones" class="search-input" placeholder="Buscar por lote o ganadero..." oninput="filterRecepciones()">
                             </div>
                             
-                            <button class="btn-primary" onclick="openModal('recepcion')" style="width: auto; padding: 10px 20px; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: 0 4px 15px rgba(5, 150, 105, 0.2);">
+                            <button class="btn-primary" onclick="openModal('recepcion')" style="width: auto; padding: 10px 20px; white-space: nowrap; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: 0 4px 15px rgba(5, 150, 105, 0.2);">
                                 <i class="fa-solid fa-plus"></i> Nuevo Ingreso
                             </button>
                         </div>
                     </div>
                     
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Lote (Juliano)</th>
-                                <th>Ganadero</th>
-                                <th>Especie</th>
-                                <th>Cabezas</th>
-                                <th>N° Guía SENASA</th>
-                                <th>Fecha y Hora</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-recepciones-body">
-                            <!-- Filas cargadas dinámicamente -->
-                        </tbody>
-                    </table>
+                    <div class="table-responsive-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Lote (Juliano)</th>
+                                    <th>Ganadero</th>
+                                    <th>Especie</th>
+                                    <th>Cabezas</th>
+                                    <th>N° Guía SENASA</th>
+                                    <th>Fecha y Hora</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-recepciones-body">
+                                <!-- Filas cargadas dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
             </section>
@@ -219,11 +237,11 @@
                     </small>
                 </div>
                 
-                <div style="display: flex; gap: 12px; margin-top: 24px;">
-                    <button type="button" class="btn-confirm-secondary" onclick="closeModal('ganadero')">
+                <div class="modal-form-actions">
+                    <button type="button" class="btn-confirm-secondary btn-flex" onclick="closeModal('ganadero')">
                         Cancelar
                     </button>
-                    <button type="submit" id="btn-guardar-ganadero" class="btn-primary" style="margin-top: 0; flex: 1;">
+                    <button type="submit" id="btn-guardar-ganadero" class="btn-primary btn-flex" style="margin-top: 0;">
                         <i class="fa-solid fa-check"></i> <span id="text-submit-ganadero">Registrar Ganadero</span>
                     </button>
                 </div>
@@ -284,11 +302,11 @@
                     <span id="lote-preview-code" style="font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 700; color: var(--color-client);">--</span>
                 </div>
                 
-                <div style="display: flex; gap: 12px; margin-top: 24px;">
-                    <button type="button" class="btn-confirm-secondary" onclick="closeModal('recepcion')">
+                <div class="modal-form-actions">
+                    <button type="button" class="btn-confirm-secondary btn-flex" onclick="closeModal('recepcion')">
                         Cancelar
                     </button>
-                    <button type="submit" class="btn-primary" style="margin-top: 0; flex: 1; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: 0 4px 15px rgba(5, 150, 105, 0.2);">
+                    <button type="submit" class="btn-primary btn-flex" style="margin-top: 0; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: 0 4px 15px rgba(5, 150, 105, 0.2);">
                         <i class="fa-solid fa-truck-ramp-box"></i> Guardar Lote
                     </button>
                 </div>

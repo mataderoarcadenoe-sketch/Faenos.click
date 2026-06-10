@@ -28,6 +28,16 @@ function closeModal(tipo) {
     }
 }
 
+// Toggle Sidebar en Móviles y Tablets
+function toggleSidebar() {
+    const sidebar = document.getElementById('dashboard-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar && overlay) {
+        sidebar.classList.toggle('mobile-active');
+        overlay.classList.toggle('active');
+    }
+}
+
 // ==========================================
 // SISTEMA DE ALERTAS Y TOASTS PERSONALIZADOS
 // ==========================================
@@ -193,6 +203,14 @@ function switchTab(tabName) {
     // Si salimos de ganaderos, cancelamos la edición activa por seguridad
     if (tabName !== 'ganaderos' && editingGanaderoId !== null) {
         cancelarEdicion();
+    }
+
+    // Cerrar sidebar en móviles tras cambiar de pestaña
+    const sidebar = document.getElementById('dashboard-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar && sidebar.classList.contains('mobile-active')) {
+        sidebar.classList.remove('mobile-active');
+        overlay.classList.remove('active');
     }
 
     renderAll();
