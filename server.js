@@ -245,6 +245,37 @@ async function initDb() {
             `);
         }
 
+        // Recepciones
+        const rRecepciones = await client.query('SELECT COUNT(*) FROM recepciones');
+        if (parseInt(rRecepciones.rows[0].count) === 0) {
+            const hoy = new Date();
+            const ayer = new Date();
+            ayer.setDate(hoy.getDate() - 1);
+            const haceDosDias = new Date();
+            haceDosDias.setDate(haceDosDias.getDate() - 2);
+            
+            // Función auxiliar para día juliano
+            const getJulian = (d) => {
+                const start = new Date(d.getFullYear(), 0, 0);
+                const diff = d - start;
+                const oneDay = 1000 * 60 * 60 * 24;
+                const day = Math.floor(diff / oneDay);
+                return String(day).padStart(3, '0');
+            };
+
+            await client.query(`
+                INSERT INTO recepciones (id, lote_codigo, ganadero_id, ganadero_nombre, especie, cantidad, guia_transito, fecha, observaciones, estado, estado_cobro) VALUES
+                ('r-ex-1', 'LBVA159', 'g-2', 'Fundo Las Brisas', 'VA', 15, 'GT-0012100', $1, 'Vacunos de ingreso anterior para registro de deuda histórica.', 'Inspeccionado', 'Al Crédito'),
+                ('r-ex-2', 'LBPO160', 'g-2', 'Fundo Las Brisas', 'PO', 12, 'GT-0012101', $1, 'Porcinos de ingreso anterior para registro de deuda histórica.', 'Inspeccionado', 'Al Crédito'),
+                ('r-1', $2, 'g-1', 'Agroindustria Atlántica S.A.C.', 'PO', 45, 'GT-0012485', $3, 'Porcinos ingresados en óptimas condiciones corporales.', 'Pendiente Inspección', 'Pendiente'),
+                ('r-2', $4, 'g-2', 'Fundo Las Brisas', 'VA', 12, 'GT-0012590', $5, 'Vacunos sin signos clínicos de enfermedades infectocontagiosas.', 'Pendiente Inspección', 'Pendiente')
+            `, [
+                haceDosDias,
+                'AAPO' + getJulian(ayer), ayer,
+                'LBVA' + getJulian(hoy), hoy
+            ]);
+        }
+
         // Deudas
         const rDeudas = await client.query('SELECT COUNT(*) FROM deudas');
         if (parseInt(rDeudas.rows[0].count) === 0) {
@@ -271,32 +302,6 @@ async function initDb() {
                 INSERT INTO abono_detalles (abono_id, deuda_id, monto) VALUES
                 ('abono-ex-1', 'deuda-1', 100.00)
             `);
-        }
-
-        // Recepciones
-        const rRecepciones = await client.query('SELECT COUNT(*) FROM recepciones');
-        if (parseInt(rRecepciones.rows[0].count) === 0) {
-            const hoy = new Date();
-            const ayer = new Date();
-            ayer.setDate(hoy.getDate() - 1);
-            
-            // Función auxiliar para día juliano
-            const getJulian = (d) => {
-                const start = new Date(d.getFullYear(), 0, 0);
-                const diff = d - start;
-                const oneDay = 1000 * 60 * 60 * 24;
-                const day = Math.floor(diff / oneDay);
-                return String(day).padStart(3, '0');
-            };
-
-            await client.query(`
-                INSERT INTO recepciones (id, lote_codigo, ganadero_id, ganadero_nombre, especie, cantidad, guia_transito, fecha, observaciones, estado, estado_cobro) VALUES
-                ('r-1', $1, 'g-1', 'Agroindustria Atlántica S.A.C.', 'PO', 45, 'GT-0012485', $2, 'Porcinos ingresados en óptimas condiciones corporales.', 'Pendiente Inspección', 'Pendiente'),
-                ('r-2', $3, 'g-2', 'Fundo Las Brisas', 'VA', 12, 'GT-0012590', $4, 'Vacunos sin signos clínicos de enfermedades infectocontagiosas.', 'Pendiente Inspección', 'Pendiente')
-            `, [
-                'AAPO' + getJulian(ayer), ayer,
-                'LBVA' + getJulian(hoy), hoy
-            ]);
         }
 
         await client.query('COMMIT');
