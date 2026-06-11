@@ -274,21 +274,59 @@ function switchTab(tabName) {
         sidebar.classList.remove('expanded');
     }
 
-    let titleText = 'Ingreso de Ganado (Recepción)';
+    // Gestionar icono, título y botones de acción rápida dinámicos en el header superior (Nivel 2)
+    let titleText = 'Ingreso de Ganado';
+    let iconClass = 'fa-truck-ramp-box';
+    
+    // Ocultar todos los botones de acción del header por defecto
+    document.querySelectorAll('.btn-header-action').forEach(btn => btn.style.display = 'none');
+
     if (tabName === 'ganaderos') {
         titleText = 'Gestión de Ganaderos';
+        iconClass = 'fa-users';
+        document.getElementById('header-action-ganaderos').style.display = 'flex';
     } else if (tabName === 'trabajadores') {
         titleText = 'Gestión de Personal (Trabajadores)';
+        iconClass = 'fa-users-gear';
+        document.getElementById('header-action-trabajadores').style.display = 'flex';
+    } else if (tabName === 'recepcion') {
+        titleText = 'Ingreso de Ganado (Recepción)';
+        iconClass = 'fa-truck-ramp-box';
+        document.getElementById('header-action-recepcion').style.display = 'flex';
     } else if (tabName === 'configuraciones') {
         titleText = 'Configuración del Sistema';
+        iconClass = 'fa-sliders';
+        
+        // Mostrar el botón correspondiente a la subpestaña de configuración activa
+        const activeSubtabItem = document.querySelector('.config-nav-item.active');
+        if (activeSubtabItem) {
+            const onclickText = activeSubtabItem.getAttribute('onclick');
+            if (onclickText.includes('animales')) {
+                document.getElementById('header-action-config-animales').style.display = 'flex';
+            } else if (onclickText.includes('pagos')) {
+                document.getElementById('header-action-config-pagos').style.display = 'flex';
+            } else if (onclickText.includes('roles')) {
+                document.getElementById('header-action-config-roles').style.display = 'flex';
+            } else if (onclickText.includes('tipos-pago')) {
+                document.getElementById('header-action-config-tipos').style.display = 'flex';
+            }
+        }
     } else if (tabName === 'caja') {
         titleText = 'Caja General y Control de Cobros';
+        iconClass = 'fa-cash-register';
     } else if (tabName === 'cuentas-cobrar') {
         titleText = 'Cuentas por Cobrar (Créditos)';
+        iconClass = 'fa-receipt';
         // Resetear vista al entrar
         cerrarDetalleDeudas();
     }
-    document.getElementById('header-title-text').innerText = titleText;
+    
+    // Actualizar título e icono en el header superior
+    document.getElementById('section-title-text').innerText = titleText;
+    const iconEl = document.getElementById('section-icon');
+    if (iconEl) {
+        iconEl.className = `fa-solid ${iconClass} section-header-icon`;
+    }
 
     // Inicializar subpestaña de caja por defecto al entrar
     if (tabName === 'caja') {
@@ -342,6 +380,26 @@ function switchConfigSubTab(subTabName) {
             item.classList.add('active');
         }
     });
+
+    // Ocultar botones de configuración del header y mostrar el específico
+    document.getElementById('header-action-config-animales').style.display = 'none';
+    document.getElementById('header-action-config-pagos').style.display = 'none';
+    document.getElementById('header-action-config-roles').style.display = 'none';
+    document.getElementById('header-action-config-tipos').style.display = 'none';
+
+    // Solo mostrar si el contenedor principal de configuraciones está activo
+    const configuracionesTab = document.getElementById('tab-configuraciones');
+    if (configuracionesTab && configuracionesTab.classList.contains('active')) {
+        if (subTabName === 'animales') {
+            document.getElementById('header-action-config-animales').style.display = 'flex';
+        } else if (subTabName === 'pagos') {
+            document.getElementById('header-action-config-pagos').style.display = 'flex';
+        } else if (subTabName === 'roles') {
+            document.getElementById('header-action-config-roles').style.display = 'flex';
+        } else if (subTabName === 'tipos-pago') {
+            document.getElementById('header-action-config-tipos').style.display = 'flex';
+        }
+    }
 }
 
 // Navegación de Sub-Pestañas en el Módulo de Caja General

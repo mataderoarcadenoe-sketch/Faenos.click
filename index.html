@@ -7,7 +7,7 @@
     <!-- Font Awesome para Iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Archivo CSS Vainilla -->
-    <link rel="stylesheet" href="style.css?v=2.0.5">
+    <link rel="stylesheet" href="style.css?v=2.0.6">
     <!-- Favicon Dinámico (Emoji) para evitar error 404 -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐄</text></svg>">
 </head>
@@ -82,18 +82,57 @@
         <!-- Contenido Principal -->
         <main class="main-content">
             
-            <!-- Barra Superior (Header) -->
-            <header class="header">
-                <div style="display: flex; align-items: center; gap: 16px;">
+            <!-- Nivel 1: Topbar Superior General -->
+            <div class="topbar">
+                <div class="topbar-left">
+                    <button class="topbar-btn" title="Nota de Crédito">NC</button>
+                    <button class="topbar-btn" title="Punto de Venta (POS)">POS</button>
+                    <button class="topbar-btn" title="Movimiento Extraordinario">ME</button>
+                    <button class="topbar-btn-more"><i class="fa-solid fa-ellipsis"></i></button>
+                </div>
+                
+                <div class="topbar-center">
+                    <span class="badge-env"><span class="pulse-dot"></span> PRODUCCIÓN - Conectado a BD</span>
+                </div>
+                
+                <div class="topbar-right">
+                    <button class="topbar-icon-btn" title="Refrescar" onclick="window.location.reload()"><i class="fa-solid fa-rotate-right"></i></button>
+                    <button class="topbar-icon-btn" title="Notificaciones" style="position: relative;"><i class="fa-solid fa-bell"></i><span class="notification-dot"></span></button>
+                    <div class="topbar-user">
+                        <div class="topbar-user-avatar">AD</div>
+                        <div class="topbar-user-info">
+                            <span class="topbar-username">Admin Doris</span>
+                            <span class="topbar-userrole">Control de Calidad</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Nivel 2: Header del Apartado (Título + Acciones de Sección) -->
+            <header class="section-header">
+                <div class="section-header-left">
                     <!-- Botón Hamburguesa Móvil -->
                     <button id="btn-sidebar-toggle" class="btn-sidebar-toggle" onclick="toggleSidebar()">
                         <i class="fa-solid fa-bars"></i>
                     </button>
-                    <h1 class="header-title" id="header-title-text">Gestión de Ganaderos</h1>
+                    <div class="section-title-wrapper">
+                        <i id="section-icon" class="fa-solid fa-users section-header-icon"></i>
+                        <h2 class="section-title" id="section-title-text">Gestión de Ganaderos</h2>
+                    </div>
                 </div>
                 
-                <div class="header-actions">
-                    <span class="badge-role"><i class="fa-solid fa-shield-halved"></i> Administrador</span>
+                <div class="section-header-right">
+                    <div class="header-actions-wrapper">
+                        <button id="header-action-ganaderos" class="btn-header-action btn-primary" onclick="iniciarNuevoGanadero()"><i class="fa-solid fa-plus"></i> Nuevo Ganadero</button>
+                        <button id="header-action-trabajadores" class="btn-header-action btn-primary" onclick="iniciarNuevoTrabajador()" style="display: none;"><i class="fa-solid fa-plus"></i> Nuevo Trabajador</button>
+                        <button id="header-action-recepcion" class="btn-header-action btn-primary" onclick="iniciarNuevoIngreso()" style="display: none; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);"><i class="fa-solid fa-plus"></i> Nuevo Lote</button>
+                        
+                        <!-- Acciones de Configuración -->
+                        <button id="header-action-config-animales" class="btn-header-action btn-primary" onclick="iniciarNuevaEspecie()" style="display: none; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);"><i class="fa-solid fa-plus"></i> Nueva Especie</button>
+                        <button id="header-action-config-pagos" class="btn-header-action btn-primary" onclick="iniciarNuevoPago()" style="display: none; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);"><i class="fa-solid fa-plus"></i> Nuevo Método</button>
+                        <button id="header-action-config-roles" class="btn-header-action btn-primary" onclick="iniciarNuevoRol()" style="display: none; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);"><i class="fa-solid fa-plus"></i> Nuevo Cargo</button>
+                        <button id="header-action-config-tipos" class="btn-header-action btn-primary" onclick="iniciarNuevoTipoPago()" style="display: none; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);"><i class="fa-solid fa-plus"></i> Nuevo Tipo</button>
+                    </div>
                 </div>
             </header>
 
@@ -118,21 +157,10 @@
 
                 <!-- Tabla de Ganaderos (Ocupa el 100% de ancho) -->
                 <div class="table-container">
-                    <div class="table-header-row">
-                        <h2 class="card-title" style="margin-bottom: 0;">
-                            <i class="fa-solid fa-list-ul" style="color: var(--color-admin);"></i>
-                            Ganaderos Registrados
-                        </h2>
-                        
-                        <div class="table-actions-container">
-                            <div class="search-box">
-                                <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                                <input type="text" id="search-ganaderos" class="search-input" placeholder="Buscar ganadero..." oninput="filterGanaderos()">
-                            </div>
-                            
-                            <button class="btn-primary" onclick="iniciarNuevoGanadero()" style="width: auto; padding: 10px 20px; white-space: nowrap;">
-                                <i class="fa-solid fa-plus"></i> Nuevo Ganadero
-                            </button>
+                    <div class="table-header-row" style="padding-bottom: 12px; border-bottom: 1px solid var(--border-color); margin-bottom: 16px;">
+                        <div class="search-box" style="max-width: 320px; width: 100%; margin: 0;">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input type="text" id="search-ganaderos" class="search-input" placeholder="Buscar ganadero..." oninput="filterGanaderos()">
                         </div>
                     </div>
                     
@@ -175,20 +203,10 @@
                 </div>
 
                 <div class="table-container">
-                    <div class="table-header-row">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <i class="fa-solid fa-users-gear" style="font-size: 22px; color: var(--color-client);"></i>
-                            <h3 class="card-title" style="margin-bottom: 0;">Catálogo de Personal</h3>
-                        </div>
-                        <div style="display: flex; gap: 16px; align-items: center;">
-                            <div class="search-box">
-                                <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                                <input type="text" id="search-trabajadores" class="search-input" placeholder="Buscar trabajador..." oninput="filterTrabajadores()">
-                            </div>
-                            
-                            <button class="btn-primary" onclick="iniciarNuevoTrabajador()" style="width: auto; padding: 10px 20px; white-space: nowrap;">
-                                <i class="fa-solid fa-plus"></i> Nuevo Trabajador
-                            </button>
+                    <div class="table-header-row" style="padding-bottom: 12px; border-bottom: 1px solid var(--border-color); margin-bottom: 16px;">
+                        <div class="search-box" style="max-width: 320px; width: 100%; margin: 0;">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input type="text" id="search-trabajadores" class="search-input" placeholder="Buscar trabajador..." oninput="filterTrabajadores()">
                         </div>
                     </div>
                     
@@ -232,21 +250,10 @@
 
                 <!-- Tabla de Ingresos de Ganado (Ocupa el 100% de ancho) -->
                 <div class="table-container">
-                    <div class="table-header-row">
-                        <h2 class="card-title" style="margin-bottom: 0;">
-                            <i class="fa-solid fa-rectangle-list" style="color: var(--color-ops);"></i>
-                            Control de Ingresos y Lotes
-                        </h2>
-                        
-                        <div class="table-actions-container">
-                            <div class="search-box">
-                                <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                                <input type="text" id="search-recepciones" class="search-input" placeholder="Buscar por lote o ganadero..." oninput="filterRecepciones()">
-                            </div>
-                            
-                            <button class="btn-primary" onclick="iniciarNuevoIngreso()" style="width: auto; padding: 10px 20px; white-space: nowrap; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: 0 4px 15px rgba(5, 150, 105, 0.2);">
-                                <i class="fa-solid fa-plus"></i> Nuevo Ingreso
-                            </button>
+                    <div class="table-header-row" style="padding-bottom: 12px; border-bottom: 1px solid var(--border-color); margin-bottom: 16px;">
+                        <div class="search-box" style="max-width: 320px; width: 100%; margin: 0;">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input type="text" id="search-recepciones" class="search-input" placeholder="Buscar por lote o ganadero..." oninput="filterRecepciones()">
                         </div>
                     </div>
                     
@@ -312,17 +319,7 @@
                         
                         <!-- SUB-SECCIÓN: ANIMALES (ESPECIES) -->
                         <div id="config-subtab-animales" class="config-subtab-section active">
-                            <div class="table-container" style="border-radius: 12px; padding: 20px;">
-                                <div class="table-header-row" style="margin-bottom: 16px;">
-                                    <h3 class="card-title" style="margin-bottom: 0; font-size: 16px;">
-                                        <i class="fa-solid fa-cow" style="color: var(--color-client);"></i>
-                                        Catálogo de Especies de Ganado
-                                    </h3>
-                                    
-                                    <button class="btn-primary" onclick="iniciarNuevaEspecie()" style="width: auto; padding: 8px 16px; font-size: 13px; white-space: nowrap; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);">
-                                        <i class="fa-solid fa-plus"></i> Nueva Especie
-                                    </button>
-                                </div>
+                            <div class="table-container" style="border-radius: 12px; padding: 20px; border-top: 4px solid var(--color-client);">
                                 
                                 <div class="table-responsive-wrapper">
                                     <table>
@@ -345,17 +342,7 @@
 
                         <!-- SUB-SECCIÓN: MÉTODOS DE PAGO -->
                         <div id="config-subtab-pagos" class="config-subtab-section">
-                            <div class="table-container" style="border-radius: 12px; padding: 20px;">
-                                <div class="table-header-row" style="margin-bottom: 16px;">
-                                    <h3 class="card-title" style="margin-bottom: 0; font-size: 16px;">
-                                        <i class="fa-solid fa-credit-card" style="color: var(--color-client);"></i>
-                                        Catálogo de Métodos de Pago
-                                    </h3>
-                                    
-                                    <button class="btn-primary" onclick="iniciarNuevoPago()" style="width: auto; padding: 8px 16px; font-size: 13px; white-space: nowrap; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);">
-                                        <i class="fa-solid fa-plus"></i> Nuevo Método
-                                    </button>
-                                </div>
+                            <div class="table-container" style="border-radius: 12px; padding: 20px; border-top: 4px solid var(--color-client);">
                                 
                                 <div class="table-responsive-wrapper">
                                     <table>
@@ -378,17 +365,7 @@
 
                         <!-- SUB-SECCIÓN: CARGOS / ROLES -->
                         <div id="config-subtab-roles" class="config-subtab-section">
-                            <div class="table-container" style="border-radius: 12px; padding: 20px;">
-                                <div class="table-header-row" style="margin-bottom: 16px;">
-                                    <h3 class="card-title" style="margin-bottom: 0; font-size: 16px;">
-                                        <i class="fa-solid fa-user-tag" style="color: var(--color-client);"></i>
-                                        Catálogo de Cargos y Roles de Personal
-                                    </h3>
-                                    
-                                    <button class="btn-primary" onclick="iniciarNuevoRol()" style="width: auto; padding: 8px 16px; font-size: 13px; white-space: nowrap; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);">
-                                        <i class="fa-solid fa-plus"></i> Nuevo Cargo
-                                    </button>
-                                </div>
+                            <div class="table-container" style="border-radius: 12px; padding: 20px; border-top: 4px solid var(--color-client);">
                                 
                                 <div class="table-responsive-wrapper">
                                     <table>
@@ -409,17 +386,7 @@
 
                         <!-- SUB-SECCIÓN: TIPOS DE PAGO -->
                         <div id="config-subtab-tipos-pago" class="config-subtab-section">
-                            <div class="table-container" style="border-radius: 12px; padding: 20px;">
-                                <div class="table-header-row" style="margin-bottom: 16px;">
-                                    <h3 class="card-title" style="margin-bottom: 0; font-size: 16px;">
-                                        <i class="fa-solid fa-money-check-dollar" style="color: var(--color-client);"></i>
-                                        Catálogo de Tipos de Pago
-                                    </h3>
-                                    
-                                    <button class="btn-primary" onclick="iniciarNuevoTipoPago()" style="width: auto; padding: 8px 16px; font-size: 13px; white-space: nowrap; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);">
-                                        <i class="fa-solid fa-plus"></i> Nuevo Tipo
-                                    </button>
-                                </div>
+                            <div class="table-container" style="border-radius: 12px; padding: 20px; border-top: 4px solid var(--color-client);">
                                 
                                 <div class="table-responsive-wrapper">
                                     <table>
@@ -1313,6 +1280,6 @@
     </div>
 
     <!-- Archivo JS Vainilla -->
-    <script src="app.js?v=2.0.5"></script>
+    <script src="app.js?v=2.0.6"></script>
 </body>
 </html>
