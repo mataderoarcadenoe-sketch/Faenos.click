@@ -212,6 +212,12 @@
                                     <span>Especies (Animales)</span>
                                 </a>
                             </li>
+                            <li>
+                                <a class="config-nav-item" onclick="switchConfigSubTab('pagos')">
+                                    <i class="fa-solid fa-credit-card"></i>
+                                    <span>Métodos de Pago</span>
+                                </a>
+                            </li>
                         </ul>
                     </aside>
                     
@@ -250,7 +256,40 @@
                                 </div>
                             </div>
                         </div>
-                        
+
+                        <!-- SUB-SECCIÓN: MÉTODOS DE PAGO -->
+                        <div id="config-subtab-pagos" class="config-subtab-section">
+                            <div class="table-container" style="border-radius: 12px; padding: 20px;">
+                                <div class="table-header-row" style="margin-bottom: 16px;">
+                                    <h3 class="card-title" style="margin-bottom: 0; font-size: 16px;">
+                                        <i class="fa-solid fa-credit-card" style="color: var(--color-client);"></i>
+                                        Catálogo de Métodos de Pago
+                                    </h3>
+                                    
+                                    <button class="btn-primary" onclick="iniciarNuevoPago()" style="width: auto; padding: 8px 16px; font-size: 13px; white-space: nowrap; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);">
+                                        <i class="fa-solid fa-plus"></i> Nuevo Método
+                                    </button>
+                                </div>
+                                
+                                <div class="table-responsive-wrapper">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Nombre</th>
+                                                <th>Tipo</th>
+                                                <th>Detalle / Cuenta</th>
+                                                <th>Estado</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="table-pagos-body">
+                                            <!-- Cargado dinámicamente -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
@@ -432,6 +471,49 @@
                 <div class="modal-form-actions">
                     <button type="submit" id="btn-guardar-especie" class="btn-primary btn-flex" style="margin-top: 0; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 15px rgba(234, 88, 12, 0.25);">
                         <i class="fa-solid fa-check"></i> <span id="text-submit-especie">Registrar Especie</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 4: Registro/Edición de Método de Pago -->
+    <div id="modal-pago" class="form-modal-overlay">
+        <div class="form-modal-card">
+            <button class="btn-modal-close" onclick="closeModal('pago')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <h2 class="card-title" id="modal-pago-title">
+                <i class="fa-solid fa-circle-plus" style="color: var(--color-client);"></i>
+                Registrar Método de Pago
+            </h2>
+            
+            <form id="form-pago" onsubmit="savePago(event)">
+                <div class="form-group">
+                    <label class="form-label">Nombre del Método</label>
+                    <input type="text" id="pago-nombre" class="form-control" placeholder="Ej. BCP Transferencia" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Tipo de Pago</label>
+                    <select id="pago-tipo" class="form-control" required>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Transferencia">Transferencia Bancaria</option>
+                        <option value="Tarjeta">Tarjeta de Crédito/Débito</option>
+                        <option value="Yape/Plin">Yape / Plin / Billetera Digital</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Detalle / Cuenta Bancaria</label>
+                    <input type="text" id="pago-detalle" class="form-control" placeholder="Ej. N° Cuenta: 191-12345678-0-90 (Opcional)">
+                </div>
+                
+                <div class="modal-form-actions">
+                    <button type="submit" id="btn-guardar-pago" class="btn-primary btn-flex" style="margin-top: 0; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 15px rgba(234, 88, 12, 0.25);">
+                        <i class="fa-solid fa-check"></i> <span id="text-submit-pago">Registrar Método</span>
                     </button>
                 </div>
             </form>

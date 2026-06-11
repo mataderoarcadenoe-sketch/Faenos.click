@@ -4,8 +4,10 @@
 let ganaderos = JSON.parse(localStorage.getItem('ganaderos')) || [];
 let recepciones = JSON.parse(localStorage.getItem('recepciones')) || [];
 let especies = JSON.parse(localStorage.getItem('especies')) || [];
+let metodosPago = JSON.parse(localStorage.getItem('metodosPago')) || [];
 let editingGanaderoId = null; // Estado de edición global
 let editingEspecieId = null; // Estado de edición de especie global
+let editingPagoId = null; // Estado de edición de pago global
 
 // ==========================================
 // CONTROL DE MODALES DE FORMULARIO
@@ -31,6 +33,11 @@ function closeModal(tipo) {
         // Si cerramos el modal de especie, restablecer estado
         if (tipo === 'especie') {
             cancelarEdicionEspecie();
+        }
+        
+        // Si cerramos el modal de pago, restablecer estado
+        if (tipo === 'pago') {
+            cancelarEdicionPago();
         }
     }
 }
@@ -137,6 +144,15 @@ function customConfirm(mensaje) {
 
 // Inicialización de datos de prueba si el almacén local está vacío
 function initDataPrueba() {
+    if (metodosPago.length === 0) {
+        metodosPago = [
+            { id: 'mp-1', nombre: 'Efectivo Caja Chica', tipo: 'Efectivo', detalle: 'Pago en oficina principal', activo: true },
+            { id: 'mp-2', nombre: 'Transferencia BCP', tipo: 'Transferencia', detalle: 'Cta Corriente BCP N° 191-12345678-0-90', activo: true },
+            { id: 'mp-3', nombre: 'Yape Camal', tipo: 'Yape/Plin', detalle: 'Cel: +51 987654321', activo: true }
+        ];
+        localStorage.setItem('metodosPago', JSON.stringify(metodosPago));
+    }
+
     if (especies.length === 0) {
         especies = [
             { id: 'e-1', nombre: 'Vacuno', codigo: 'VA', icono: '🐄', activo: true },
@@ -658,6 +674,30 @@ function renderAll() {
         });
     }
 
+    // 6. Tabla de Métodos de Pago en Módulo de Configuración
+    const tbodyPagos = document.getElementById('table-pagos-body');
+    if (tbodyPagos) {
+        tbodyPagos.innerHTML = '';
+        metodosPago.forEach(m => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${m.nombre}</strong></td>
+                <td><span class="badge" style="background: rgba(79, 70, 229, 0.08); color: var(--color-admin); border: 1px solid rgba(79, 70, 229, 0.15);">${m.tipo}</span></td>
+                <td style="font-size: 13px; color: var(--text-secondary);">${m.detalle}</td>
+                <td><span class="badge badge-success">Activo</span></td>
+                <td>
+                    <button onclick="editPago('${m.id}')" style="background: none; border: none; color: var(--color-admin); cursor: pointer; font-size: 15px; margin-right: 12px;" title="Editar">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button onclick="deletePago('${m.id}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 15px;" title="Eliminar">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </td>
+            `;
+            tbodyPagos.appendChild(tr);
+        });
+    }
+
 }
 
 // Generar un código único de 2 letras a partir de una razón social
@@ -980,6 +1020,119 @@ async function deleteEspecie(id) {
         localStorage.setItem('especies', JSON.stringify(especies));
         renderAll();
         showToast('Especie eliminada correctamente.', 'success');
+    }
+}
+
+// ==========================================
+// GESTIÓN DEL CATÁLOGO DE MÉTODOS DE PAGO (CRUD)
+// ==========================================
+
+function iniciarNuevoPago() {
+    cancelarEdicionPago();
+    openModal('pago');
+}
+
+function cancelarEdicionPago() {
+    editingPagoId = null;
+    
+    const form = document.getElementById('form-pago');
+    if (form) form.reset();
+    
+    const modalTitle = document.getElementById('modal-pago-title');
+    if (modalTitle) {
+        modalTitle.innerHTML = `
+            <i class="fa-solid fa-circle-plus" style="color: var(--color-client);"></i>
+            Registrar Método de Pago
+        `;
+    }
+    
+    const submitText = document.getElementById('text-submit-pago');
+    if (submitText) {
+        submitText.innerText = 'Registrar Método';
+    }
+}
+
+function savePago(event) {
+    event.preventDefault();
+    const nombre = document.getElementById('pago-nombre').value.trim();
+    const tipo = document.getElementById('pago-tipo').value;
+    const detalle = document.getElementById('pago-detalle').value.trim();
+    
+    // Validaciones de unicidad (excepto para sí mismo si edita)
+    if (metodosPago.some(m => m.nombre.toLowerCase() === nombre.toLowerCase() && m.id !== editingPagoId)) {
+        showToast('El nombre de método de pago ya existe en el catálogo.', 'error');
+        return;
+    }
+    
+    if (editingPagoId !== null) {
+        // Modo Edición
+        const idx = metodosPago.findIndex(m => m.id === editingPagoId);
+        if (idx !== -1) {
+            metodosPago[idx].nombre = nombre;
+            metodosPago[idx].tipo = tipo;
+            metodosPago[idx].detalle = detalle;
+            
+            localStorage.setItem('metodosPago', JSON.stringify(metodosPago));
+            showToast('Método de pago actualizado correctamente.', 'success');
+            closeModal('pago');
+        }
+    } else {
+        // Modo Nuevo
+        const nuevoPago = {
+            id: 'mp-' + Date.now(),
+            nombre,
+            tipo,
+            detalle: detalle || 'Sin detalles adicionales',
+            activo: true
+        };
+        metodosPago.push(nuevoPago);
+        localStorage.setItem('metodosPago', JSON.stringify(metodosPago));
+        showToast('Método de pago registrado correctamente.', 'success');
+        closeModal('pago');
+    }
+    
+    renderAll();
+}
+
+function editPago(id) {
+    const pago = metodosPago.find(m => m.id === id);
+    if (!pago) return;
+    
+    editingPagoId = id;
+    
+    document.getElementById('pago-nombre').value = pago.nombre;
+    document.getElementById('pago-tipo').value = pago.tipo;
+    document.getElementById('pago-detalle').value = pago.detalle === 'Sin detalles adicionales' ? '' : pago.detalle;
+    
+    const modalTitle = document.getElementById('modal-pago-title');
+    if (modalTitle) {
+        modalTitle.innerHTML = `
+            <i class="fa-solid fa-pen-to-square" style="color: var(--color-client);"></i>
+            Editar Método de Pago
+        `;
+    }
+    
+    const submitText = document.getElementById('text-submit-pago');
+    if (submitText) {
+        submitText.innerText = 'Guardar Cambios';
+    }
+    
+    openModal('pago');
+}
+
+async function deletePago(id) {
+    const pago = metodosPago.find(m => m.id === id);
+    if (!pago) return;
+    
+    const confirmado = await customConfirm(`¿Está seguro de eliminar el método de pago "${pago.nombre}"? Esta acción no se puede deshacer.`);
+    if (confirmado) {
+        if (editingPagoId === id) {
+            cancelarEdicionPago();
+        }
+        metodosPago = metodosPago.filter(m => m.id !== id);
+        localStorage.setItem('metodosPago', JSON.stringify(metodosPago));
+        renderAll();
+        showToast('Método de pago eliminado correctamente.', 'success');
     }
 }
 
