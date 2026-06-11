@@ -317,7 +317,6 @@ function switchTab(tabName) {
     }
 
     // Cerrar sidebar en móviles tras cambiar de pestaña
-    const sidebar = document.getElementById('dashboard-sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     if (sidebar && sidebar.classList.contains('mobile-active')) {
         sidebar.classList.remove('mobile-active');
