@@ -2671,18 +2671,6 @@ function renderCuentasCobrar() {
         const totalCreditos = misDeudas.reduce((acc, curr) => acc + curr.monto_total, 0);
         const totalAbonado = misDeudas.reduce((acc, curr) => acc + curr.monto_abonado, 0);
         const saldoPendiente = misDeudas.reduce((acc, curr) => acc + curr.saldo, 0);
-        
-        let abonoBtn = '';
-        if (saldoPendiente > 0) {
-            abonoBtn = `
-                <button onclick="iniciarAbono('${g.id}')" class="btn-primary" style="width: auto; padding: 4px 8px; font-size: 11px; margin-top: 0; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: none;">
-                    <i class="fa-solid fa-circle-dollar-to-slot"></i> Registrar Abono
-                </button>
-            `;
-        } else {
-            abonoBtn = `<span style="font-size: 11px; color: var(--color-ops); font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Al Día</span>`;
-        }
-        
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><strong>${g.nombre}</strong></td>
@@ -2691,12 +2679,9 @@ function renderCuentasCobrar() {
             <td style="color: var(--color-ops); font-weight: 500;">S/. ${totalAbonado.toFixed(2)}</td>
             <td style="font-weight: 700; color: ${saldoPendiente > 0 ? '#ef4444' : 'var(--color-ops)'};">S/. ${saldoPendiente.toFixed(2)}</td>
             <td>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <button onclick="verDetalleDeudasGanadero('${g.id}')" class="btn-primary" style="width: auto; padding: 4px 8px; font-size: 11px; margin-top: 0; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); box-shadow: none;">
-                        <i class="fa-solid fa-eye"></i> Ver Detalle
-                    </button>
-                    ${abonoBtn}
-                </div>
+                <button onclick="verDetalleDeudasGanadero('${g.id}')" class="btn-primary" style="width: auto; padding: 4px 8px; font-size: 11px; margin-top: 0; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); box-shadow: none;">
+                    <i class="fa-solid fa-eye"></i> Ver Detalle
+                </button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -2876,42 +2861,7 @@ function renderDetalleDeudas() {
     });
 }
 
-function iniciarAbono(ganaderoId) {
-    const ganadero = ganaderos.find(g => g.id === ganaderoId);
-    if (!ganadero) return;
-    
-    const cajaActiva = cajas.find(c => c.estado === 'Abierta');
-    if (!cajaActiva) {
-        showToast('Debe aperturar la caja general para registrar abonos.', 'error');
-        return;
-    }
-    
-    const misDeudas = deudas.filter(d => d.ganadero_id === ganaderoId && d.saldo > 0);
-    const deudaTotal = misDeudas.reduce((acc, curr) => acc + curr.saldo, 0);
-    
-    document.getElementById('abono-ganadero-id').value = ganaderoId;
-    
-    let inputEspecifica = document.getElementById('abono-deuda-especifica-id');
-    if (!inputEspecifica) {
-        inputEspecifica = document.createElement('input');
-        inputEspecifica.type = 'hidden';
-        inputEspecifica.id = 'abono-deuda-especifica-id';
-        document.getElementById('form-abono').appendChild(inputEspecifica);
-    }
-    inputEspecifica.value = '';
-    
-    document.getElementById('abono-txt-ganadero').innerText = ganadero.nombre;
-    document.getElementById('abono-txt-deuda-total').innerText = `S/. ${deudaTotal.toFixed(2)}`;
-    document.getElementById('abono-monto').value = '';
-    document.getElementById('abono-monto').max = deudaTotal.toFixed(2);
-    document.getElementById('abono-observaciones').value = '';
-    
-    document.getElementById('abono-metodo-id').value = '';
-    document.getElementById('custom-select-abono-metodo-text').innerText = 'Elige un método...';
-    
-    poblarSelectorAbonoMetodo();
-    openModal('abono');
-}
+
 
 function iniciarAbonoEspecifico(ganaderoId, deudaId) {
     const ganadero = ganaderos.find(g => g.id === ganaderoId);
