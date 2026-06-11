@@ -253,6 +253,7 @@ function getJulianDay(date) {
 function switchTab(tabName) {
     document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-menu li').forEach(el => el.classList.remove('active-li'));
 
     document.getElementById(`tab-${tabName}`).classList.add('active');
     
@@ -260,8 +261,18 @@ function switchTab(tabName) {
     navItems.forEach(item => {
         if (item.getAttribute('onclick').includes(tabName)) {
             item.classList.add('active');
+            const parentLi = item.closest('li');
+            if (parentLi) {
+                parentLi.classList.add('active-li');
+            }
         }
     });
+
+    // Contraer el sidebar al seleccionar un apartado
+    const sidebar = document.getElementById('dashboard-sidebar');
+    if (sidebar) {
+        sidebar.classList.remove('expanded');
+    }
 
     let titleText = 'Ingreso de Ganado (Recepción)';
     if (tabName === 'ganaderos') {
@@ -1148,11 +1159,18 @@ function selectEspecieOption(especie, texto, event) {
     }
 }
 
-// Cerrar desplegables al hacer clic fuera del select
-document.addEventListener('click', () => {
+// Cerrar desplegables y contraer el sidebar al hacer clic fuera
+document.addEventListener('click', (e) => {
     document.querySelectorAll('.custom-select-container').forEach(el => {
         el.classList.remove('active');
     });
+
+    const sidebar = document.getElementById('dashboard-sidebar');
+    if (sidebar && sidebar.classList.contains('expanded')) {
+        if (!sidebar.contains(e.target)) {
+            sidebar.classList.remove('expanded');
+        }
+    }
 });
 
 // ==========================================
@@ -3093,5 +3111,41 @@ window.onload = async () => {
     await loadServerData();
     setupCodigoAutogenerado();
     setupValidacionDocumento();
+    setupSidebarInteractivo();
 };
+
+// Configurar interactividad del Sidebar Colapsable
+function setupSidebarInteractivo() {
+    const sidebar = document.getElementById('dashboard-sidebar');
+    if (!sidebar) return;
+
+    // Asignar active-li al item activo inicial
+    const activeItem = sidebar.querySelector('.nav-item.active');
+    if (activeItem) {
+        const parentLi = activeItem.closest('li');
+        if (parentLi) {
+            parentLi.classList.add('active-li');
+        }
+    }
+
+    // Listener para abrir/cerrar con clic
+    sidebar.addEventListener('click', (e) => {
+        const isExpanded = sidebar.classList.contains('expanded');
+        
+        // Si está colapsado, expandimos al hacer clic
+        if (!isExpanded) {
+            sidebar.classList.add('expanded');
+            e.stopPropagation();
+        } else {
+            // Si está expandido y se hace clic en el item activo o en cerrar móvil, se contrae
+            const clickedActiveItem = e.target.closest('.nav-item.active');
+            const clickedCloseBtn = e.target.closest('.btn-sidebar-close');
+            
+            if (clickedActiveItem || clickedCloseBtn) {
+                sidebar.classList.remove('expanded');
+                e.stopPropagation();
+            }
+        }
+    });
+}
 
