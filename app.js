@@ -287,6 +287,14 @@ function switchTab(tabName) {
     }
     document.getElementById('header-title-text').innerText = titleText;
 
+    // Inicializar subpestaña de caja por defecto al entrar
+    if (tabName === 'caja') {
+        const subTabActiva = document.querySelector('.caja-nav-item.active');
+        if (!subTabActiva) {
+            switchCajaSubTab('turno');
+        }
+    }
+
     // Si salimos de ganaderos, cancelamos la edición activa por seguridad
     if (tabName !== 'ganaderos' && editingGanaderoId !== null) {
         cancelarEdicion();
@@ -324,6 +332,24 @@ function switchConfigSubTab(subTabName) {
     }
     
     const navItems = document.querySelectorAll('.config-nav-item');
+    navItems.forEach(item => {
+        if (item.getAttribute('onclick').includes(subTabName)) {
+            item.classList.add('active');
+        }
+    });
+}
+
+// Navegación de Sub-Pestañas en el Módulo de Caja General
+function switchCajaSubTab(subTabName) {
+    document.querySelectorAll('.caja-subtab-section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.caja-nav-item').forEach(el => el.classList.remove('active'));
+    
+    const targetSubTab = document.getElementById(`caja-subtab-${subTabName}`);
+    if (targetSubTab) {
+        targetSubTab.classList.add('active');
+    }
+    
+    const navItems = document.querySelectorAll('.caja-nav-item');
     navItems.forEach(item => {
         if (item.getAttribute('onclick').includes(subTabName)) {
             item.classList.add('active');

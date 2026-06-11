@@ -366,194 +366,224 @@
             <!-- SECCIÓN 4: CAJA GENERAL -->
             <section id="tab-caja" class="content-section">
                 
-                <!-- ESTADO: CAJA CERRADA (Apertura de Caja) -->
-                <div id="caja-estado-cerrada" class="caja-view-panel active">
-                    <div class="dashboard-grid" style="grid-template-columns: 420px 1fr; gap: 32px;">
-                        <!-- Formulario de Apertura -->
-                        <div class="card" style="padding: 32px;">
-                            <h3 class="card-title" style="color: var(--color-ops); font-size: 20px;">
-                                <i class="fa-solid fa-lock" style="color: var(--color-ops);"></i>
-                                Apertura de Caja General
-                            </h3>
-                            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.5;">
-                                Para iniciar el registro de transacciones, cobros y pesajes de hoy, debe aperturar el turno de caja estableciendo un saldo inicial en efectivo.
-                            </p>
-                            
-                            <form id="form-apertura-caja" onsubmit="aperturarCaja(event)">
-                                <div class="form-group">
-                                    <label class="form-label">Seleccionar Encargado (Cajero)</label>
-                                    <div class="custom-select-container" id="custom-select-trabajador-container">
-                                        <input type="hidden" id="caja-trabajador-id" required>
-                                        <div class="custom-select-trigger" onclick="toggleCustomSelect('trabajador', event)">
-                                            <span id="custom-select-trabajador-text">Elige un trabajador...</span>
-                                            <i class="fa-solid fa-chevron-down arrow"></i>
-                                        </div>
-                                        <div class="custom-select-options" id="custom-select-trabajador-options">
-                                            <!-- Cargado dinámicamente -->
+                <div class="config-layout">
+                    <!-- Menú Interno de Caja General -->
+                    <aside class="config-sidebar">
+                        <ul class="config-nav-menu">
+                            <li>
+                                <a class="caja-nav-item active" onclick="switchCajaSubTab('turno')">
+                                    <i class="fa-solid fa-wallet"></i>
+                                    <span>Turno Activo</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="caja-nav-item" onclick="switchCajaSubTab('historial')">
+                                    <i class="fa-solid fa-clock-rotate-left"></i>
+                                    <span>Historial de Cajas</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </aside>
+                    
+                    <!-- Panel de Caja Activo -->
+                    <div class="config-panel-content">
+                        
+                        <!-- SUB-SECCIÓN: TURNO ACTIVO -->
+                        <div id="caja-subtab-turno" class="caja-subtab-section active">
+                            <!-- ESTADO: CAJA CERRADA (Apertura de Caja) -->
+                            <div id="caja-estado-cerrada" class="caja-view-panel active">
+                                <div class="dashboard-grid" style="grid-template-columns: 420px 1fr; gap: 32px;">
+                                    <!-- Formulario de Apertura -->
+                                    <div class="card" style="padding: 32px;">
+                                        <h3 class="card-title" style="color: var(--color-ops); font-size: 20px;">
+                                            <i class="fa-solid fa-lock" style="color: var(--color-ops);"></i>
+                                            Apertura de Caja General
+                                        </h3>
+                                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.5;">
+                                            Para iniciar el registro de transacciones, cobros y pesajes de hoy, debe aperturar el turno de caja estableciendo un saldo inicial en efectivo.
+                                        </p>
+                                        
+                                        <form id="form-apertura-caja" onsubmit="aperturarCaja(event)">
+                                            <div class="form-group">
+                                                <label class="form-label">Seleccionar Encargado (Cajero)</label>
+                                                <div class="custom-select-container" id="custom-select-trabajador-container">
+                                                    <input type="hidden" id="caja-trabajador-id" required>
+                                                    <div class="custom-select-trigger" onclick="toggleCustomSelect('trabajador', event)">
+                                                        <span id="custom-select-trabajador-text">Elige un trabajador...</span>
+                                                        <i class="fa-solid fa-chevron-down arrow"></i>
+                                                    </div>
+                                                    <div class="custom-select-options" id="custom-select-trabajador-options">
+                                                        <!-- Cargado dinámicamente -->
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Monto de Apertura (S/.)</label>
+                                                <input type="number" id="caja-monto-apertura" class="form-control" placeholder="Ej. 150.00" min="0" step="0.10" value="0.00" required>
+                                            </div>
+                                            <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: 0 4px 15px rgba(5, 150, 105, 0.25);">
+                                                <i class="fa-solid fa-lock-open"></i> Aperturar Caja
+                                            </button>
+                                        </form>
+                                    </div>
+                                    
+                                    <!-- Panel Informativo -->
+                                    <div class="card" style="display: flex; flex-direction: column; justify-content: center; padding: 32px;">
+                                        <h4 style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px;">
+                                            Control de Caja y Liquidación Diaria
+                                        </h4>
+                                        <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+                                            La caja general registra todos los ingresos financieros por concepto de faenamiento y servicios de pesaje del camal. Una vez abierta, el operador del sistema podrá registrar cobros y gastos menores de forma centralizada.
+                                        </p>
+                                        <div style="display: flex; gap: 16px;">
+                                            <span style="font-size: 13px; color: var(--text-secondary);"><i class="fa-solid fa-shield-halved" style="color: var(--color-ops); margin-right: 6px;"></i>Trazabilidad Completa</span>
+                                            <span style="font-size: 13px; color: var(--text-secondary);"><i class="fa-solid fa-file-invoice-dollar" style="color: var(--color-ops); margin-right: 6px;"></i>Balances sin descuadres</span>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="form-label">Monto de Apertura (S/.)</label>
-                                    <input type="number" id="caja-monto-apertura" class="form-control" placeholder="Ej. 150.00" min="0" step="0.10" value="0.00" required>
+                            </div>
+
+                            <!-- ESTADO: CAJA ABIERTA (Resumen, Movimientos, Cierre) -->
+                            <div id="caja-estado-abierta" class="caja-view-panel">
+                                <div class="dashboard-grid" style="grid-template-columns: 340px 1fr; gap: 24px;">
+                                    <!-- Columna Izquierda: Resumen de Caja y Movimientos Extraordinarios -->
+                                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                                        
+                                        <!-- Tarjeta 1: Resumen de Turno Activo -->
+                                        <div class="card" style="padding: 20px;">
+                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                                <h4 class="card-title" style="font-size: 14px; margin-bottom: 0;">
+                                                    <i class="fa-solid fa-wallet" style="color: var(--color-ops);"></i>
+                                                    Resumen de Turno
+                                                </h4>
+                                                <span class="badge badge-success" style="background: rgba(5, 150, 105, 0.08); color: var(--color-ops); border: 1px solid rgba(5, 150, 105, 0.15); display: flex; align-items: center; gap: 4px; padding: 2px 8px; font-size: 11px;">
+                                                    <span style="display: inline-block; width: 6px; height: 6px; background-color: var(--color-ops); border-radius: 50%; animation: pulse-green 1.5s infinite;"></span>
+                                                    Abierta
+                                                </span>
+                                            </div>
+                                            
+                                            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                                                <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
+                                                    <span>Monto Apertura:</span>
+                                                    <span id="caja-val-apertura" style="font-weight: 500; color: var(--text-primary);">S/. 0.00</span>
+                                                </div>
+                                                <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
+                                                    <span>Ingresos del Turno:</span>
+                                                    <span id="caja-val-ingresos" style="font-weight: 500; color: var(--color-ops);">+ S/. 0.00</span>
+                                                </div>
+                                                <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
+                                                    <span>Egresos del Turno:</span>
+                                                    <span id="caja-val-egresos" style="font-weight: 500; color: #ef4444;">- S/. 0.00</span>
+                                                </div>
+                                                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 6px 0;">
+                                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                                    <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Saldo Actual:</span>
+                                                    <span id="caja-val-saldo" style="font-size: 20px; font-weight: 700; color: #047857;">S/. 0.00</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <button onclick="cerrarCaja()" class="btn-primary" style="margin-top: 0; padding: 12px; background: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15); font-size: 13px; width: 100%;">
+                                                <i class="fa-solid fa-lock"></i> Cerrar Turno de Caja
+                                            </button>
+                                        </div>
+
+                                        <!-- Tarjeta 2: Registrar Movimiento Extra -->
+                                        <div class="card" style="padding: 20px;">
+                                            <h4 class="card-title" style="font-size: 14px; margin-bottom: 12px;">
+                                                <i class="fa-solid fa-circle-dollar-to-slot" style="color: var(--color-client);"></i>
+                                                Movimiento Extraordinario
+                                            </h4>
+                                            <form id="form-movimiento-extra" onsubmit="registrarMovimientoExtra(event)">
+                                                <div class="form-group" style="margin-bottom: 10px;">
+                                                    <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Tipo de Movimiento</label>
+                                                    <div class="custom-select-container" id="custom-select-mov-tipo-container">
+                                                        <input type="hidden" id="mov-tipo" value="Egreso" required>
+                                                        <div class="custom-select-trigger" onclick="toggleCustomSelect('mov-tipo', event)" style="padding: 8px 12px; font-size: 13px; height: 36px; display: flex; justify-content: space-between; align-items: center;">
+                                                            <span id="custom-select-mov-tipo-text">Egreso (Gasto / Salida)</span>
+                                                            <i class="fa-solid fa-chevron-down arrow"></i>
+                                                        </div>
+                                                        <div class="custom-select-options" id="custom-select-mov-tipo-options">
+                                                            <div class="custom-select-option selected" data-value="Egreso" onclick="selectMovTipoOption('Egreso', 'Egreso (Gasto / Salida)', event)">Egreso (Gasto / Salida)</div>
+                                                            <div class="custom-select-option" data-value="Ingreso" onclick="selectMovTipoOption('Ingreso', 'Ingreso (Entrada Extra)', event)">Ingreso (Entrada Extra)</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group" style="margin-bottom: 10px;">
+                                                    <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Monto (S/.)</label>
+                                                    <input type="number" id="mov-monto" class="form-control" style="padding: 8px 12px; font-size: 13px; height: 36px;" placeholder="Ej. 25.00" min="0.10" step="0.10" required>
+                                                </div>
+                                                <div class="form-group" style="margin-bottom: 14px;">
+                                                    <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Concepto / Motivo</label>
+                                                    <input type="text" id="mov-concepto" class="form-control" style="padding: 8px 12px; font-size: 13px; height: 36px;" placeholder="Ej. Artículos de limpieza" required>
+                                                </div>
+                                                <button type="submit" class="btn-primary" style="margin-top: 0; padding: 10px; font-size: 13px; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 10px rgba(234, 88, 12, 0.15); width: 100%;">
+                                                    <i class="fa-solid fa-plus"></i> Registrar Movimiento
+                                                </button>
+                                            </form>
+                                        </div>
+
+                                    </div>
+
+                                    <!-- Columna Derecha: Movimientos del Turno Activo -->
+                                    <div class="table-container" style="margin-bottom: 0; display: flex; flex-direction: column;">
+                                        <div class="table-header-row" style="padding: 16px 24px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                                            <h3 class="card-title" style="margin-bottom: 0; font-size: 14px;">
+                                                <i class="fa-solid fa-list-check" style="color: var(--color-admin);"></i>
+                                                Movimientos de la Caja Activa
+                                            </h3>
+                                        </div>
+                                        <div class="table-responsive-wrapper" style="flex: 1; min-height: 380px;">
+                                            <table>
+                                                <thead>
+                                                    <tr>
+                                                        <th>Hora</th>
+                                                        <th>Concepto / Referencia</th>
+                                                        <th>Método</th>
+                                                        <th>Tipo</th>
+                                                        <th>Monto</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="table-movimientos-body">
+                                                    <!-- Cargado dinámicamente -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
-                                <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: 0 4px 15px rgba(5, 150, 105, 0.25);">
-                                    <i class="fa-solid fa-lock-open"></i> Aperturar Caja
-                                </button>
-                            </form>
+                            </div>
                         </div>
                         
-                        <!-- Panel Informativo -->
-                        <div class="card" style="display: flex; flex-direction: column; justify-content: center; padding: 32px;">
-                            <h4 style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px;">
-                                Control de Caja y Liquidación Diaria
-                            </h4>
-                            <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
-                                La caja general registra todos los ingresos financieros por concepto de faenamiento y servicios de pesaje del camal. Una vez abierta, el operador del sistema podrá registrar cobros y gastos menores de forma centralizada.
-                            </p>
-                            <div style="display: flex; gap: 16px;">
-                                <span style="font-size: 13px; color: var(--text-secondary);"><i class="fa-solid fa-shield-halved" style="color: var(--color-ops); margin-right: 6px;"></i>Trazabilidad Completa</span>
-                                <span style="font-size: 13px; color: var(--text-secondary);"><i class="fa-solid fa-file-invoice-dollar" style="color: var(--color-ops); margin-right: 6px;"></i>Balances sin descuadres</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ESTADO: CAJA ABIERTA (Resumen, Movimientos, Cierre) -->
-                <div id="caja-estado-abierta" class="caja-view-panel">
-                    <div class="dashboard-grid" style="grid-template-columns: 340px 1fr; gap: 24px;">
-                        <!-- Columna Izquierda: Resumen de Caja y Movimientos Extraordinarios -->
-                        <div style="display: flex; flex-direction: column; gap: 20px;">
-                            
-                            <!-- Tarjeta 1: Resumen de Turno Activo -->
-                            <div class="card" style="padding: 20px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                                    <h4 class="card-title" style="font-size: 14px; margin-bottom: 0;">
-                                        <i class="fa-solid fa-wallet" style="color: var(--color-ops);"></i>
-                                        Resumen de Turno
-                                    </h4>
-                                    <span class="badge badge-success" style="background: rgba(5, 150, 105, 0.08); color: var(--color-ops); border: 1px solid rgba(5, 150, 105, 0.15); display: flex; align-items: center; gap: 4px; padding: 2px 8px; font-size: 11px;">
-                                        <span style="display: inline-block; width: 6px; height: 6px; background-color: var(--color-ops); border-radius: 50%; animation: pulse-green 1.5s infinite;"></span>
-                                        Abierta
-                                    </span>
+                        <!-- SUB-SECCIÓN: HISTORIAL DE CAJAS -->
+                        <div id="caja-subtab-historial" class="caja-subtab-section">
+                            <div class="table-container" style="margin-top: 0;">
+                                <div class="table-header-row">
+                                    <h3 class="card-title" style="margin-bottom: 0; font-size: 16px;">
+                                        <i class="fa-solid fa-clock-rotate-left" style="color: var(--text-secondary);"></i>
+                                        Historial de Cajas Cerradas (Liquidaciones Anteriores)
+                                    </h3>
                                 </div>
-                                
-                                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
-                                    <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
-                                        <span>Monto Apertura:</span>
-                                        <span id="caja-val-apertura" style="font-weight: 500; color: var(--text-primary);">S/. 0.00</span>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
-                                        <span>Ingresos del Turno:</span>
-                                        <span id="caja-val-ingresos" style="font-weight: 500; color: var(--color-ops);">+ S/. 0.00</span>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
-                                        <span>Egresos del Turno:</span>
-                                        <span id="caja-val-egresos" style="font-weight: 500; color: #ef4444;">- S/. 0.00</span>
-                                    </div>
-                                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 6px 0;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Saldo Actual:</span>
-                                        <span id="caja-val-saldo" style="font-size: 20px; font-weight: 700; color: #047857;">S/. 0.00</span>
-                                    </div>
+                                <div class="table-responsive-wrapper">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Apertura</th>
+                                                <th>Cierre</th>
+                                                <th>Encargado</th>
+                                                <th>Monto Inicial</th>
+                                                <th>Saldo Teórico</th>
+                                                <th>Efectivo Real</th>
+                                                <th>Diferencia (Arqueo)</th>
+                                                <th>Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="table-historial-cajas-body">
+                                            <!-- Cargado dinámicamente -->
+                                        </tbody>
+                                    </table>
                                 </div>
-                                
-                                <button onclick="cerrarCaja()" class="btn-primary" style="margin-top: 0; padding: 12px; background: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15); font-size: 13px; width: 100%;">
-                                    <i class="fa-solid fa-lock"></i> Cerrar Turno de Caja
-                                </button>
-                            </div>
-
-                            <!-- Tarjeta 2: Registrar Movimiento Extra -->
-                            <div class="card" style="padding: 20px;">
-                                <h4 class="card-title" style="font-size: 14px; margin-bottom: 12px;">
-                                    <i class="fa-solid fa-circle-dollar-to-slot" style="color: var(--color-client);"></i>
-                                    Movimiento Extraordinario
-                                </h4>
-                                <form id="form-movimiento-extra" onsubmit="registrarMovimientoExtra(event)">
-                                    <div class="form-group" style="margin-bottom: 10px;">
-                                        <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Tipo de Movimiento</label>
-                                        <div class="custom-select-container" id="custom-select-mov-tipo-container">
-                                            <input type="hidden" id="mov-tipo" value="Egreso" required>
-                                            <div class="custom-select-trigger" onclick="toggleCustomSelect('mov-tipo', event)" style="padding: 8px 12px; font-size: 13px; height: 36px; display: flex; justify-content: space-between; align-items: center;">
-                                                <span id="custom-select-mov-tipo-text">Egreso (Gasto / Salida)</span>
-                                                <i class="fa-solid fa-chevron-down arrow"></i>
-                                            </div>
-                                            <div class="custom-select-options" id="custom-select-mov-tipo-options">
-                                                <div class="custom-select-option selected" data-value="Egreso" onclick="selectMovTipoOption('Egreso', 'Egreso (Gasto / Salida)', event)">Egreso (Gasto / Salida)</div>
-                                                <div class="custom-select-option" data-value="Ingreso" onclick="selectMovTipoOption('Ingreso', 'Ingreso (Entrada Extra)', event)">Ingreso (Entrada Extra)</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="form-group" style="margin-bottom: 10px;">
-                                        <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Monto (S/.)</label>
-                                        <input type="number" id="mov-monto" class="form-control" style="padding: 8px 12px; font-size: 13px; height: 36px;" placeholder="Ej. 25.00" min="0.10" step="0.10" required>
-                                    </div>
-                                    <div class="form-group" style="margin-bottom: 14px;">
-                                        <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Concepto / Motivo</label>
-                                        <input type="text" id="mov-concepto" class="form-control" style="padding: 8px 12px; font-size: 13px; height: 36px;" placeholder="Ej. Artículos de limpieza" required>
-                                    </div>
-                                    <button type="submit" class="btn-primary" style="margin-top: 0; padding: 10px; font-size: 13px; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 10px rgba(234, 88, 12, 0.15); width: 100%;">
-                                        <i class="fa-solid fa-plus"></i> Registrar Movimiento
-                                    </button>
-                                </form>
-                            </div>
-
-                        </div>
-
-                        <!-- Columna Derecha: Movimientos del Turno Activo -->
-                        <div class="table-container" style="margin-bottom: 0; display: flex; flex-direction: column;">
-                            <div class="table-header-row" style="padding: 16px 24px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
-                                <h3 class="card-title" style="margin-bottom: 0; font-size: 14px;">
-                                    <i class="fa-solid fa-list-check" style="color: var(--color-admin);"></i>
-                                    Movimientos de la Caja Activa
-                                </h3>
-                            </div>
-                            <div class="table-responsive-wrapper" style="flex: 1; min-height: 380px;">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Hora</th>
-                                            <th>Concepto / Referencia</th>
-                                            <th>Método</th>
-                                            <th>Tipo</th>
-                                            <th>Monto</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="table-movimientos-body">
-                                        <!-- Cargado dinámicamente -->
-                                    </tbody>
-                                </table>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <!-- SECCIÓN HISTORIAL DE CAJAS CERRADAS (Siempre visible debajo) -->
-                <div class="table-container" style="margin-top: 40px;">
-                    <div class="table-header-row">
-                        <h3 class="card-title" style="margin-bottom: 0; font-size: 16px;">
-                            <i class="fa-solid fa-clock-rotate-left" style="color: var(--text-secondary);"></i>
-                            Historial de Cajas Cerradas (Liquidaciones Anteriores)
-                        </h3>
-                    </div>
-                    <div class="table-responsive-wrapper">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Apertura</th>
-                                    <th>Cierre</th>
-                                    <th>Encargado</th>
-                                    <th>Monto Inicial</th>
-                                    <th>Saldo Teórico</th>
-                                    <th>Efectivo Real</th>
-                                    <th>Diferencia (Arqueo)</th>
-                                    <th>Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody id="table-historial-cajas-body">
-                                <!-- Cargado dinámicamente -->
-                            </tbody>
-                        </table>
                     </div>
                 </div>
 
