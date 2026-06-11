@@ -1762,14 +1762,12 @@ function renderRoles() {
                 <span class="badge ${badgeClass}">${badgeText}</span>
             </td>
             <td>
-                <div class="actions-wrapper">
-                    <button class="btn-action btn-action-edit" onclick="editRol('${r.id}')" title="Editar Cargo">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                    </button>
-                    <button class="btn-action btn-action-delete" onclick="deleteRol('${r.id}')" title="Eliminar Cargo">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                </div>
+                <button onclick="editRol('${r.id}')" style="background: none; border: none; color: var(--color-admin); cursor: pointer; font-size: 15px; margin-right: 12px;" title="Editar">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button onclick="deleteRol('${r.id}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 15px;" title="Eliminar">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
             </td>
         `;
         tbody.appendChild(tr);
