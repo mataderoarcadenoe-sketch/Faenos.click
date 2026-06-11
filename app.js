@@ -3,7 +3,9 @@
 // Estructuras de datos iniciales en localStorage
 let ganaderos = JSON.parse(localStorage.getItem('ganaderos')) || [];
 let recepciones = JSON.parse(localStorage.getItem('recepciones')) || [];
+let especies = JSON.parse(localStorage.getItem('especies')) || [];
 let editingGanaderoId = null; // Estado de edición global
+let editingEspecieId = null; // Estado de edición de especie global
 
 // ==========================================
 // CONTROL DE MODALES DE FORMULARIO
@@ -24,6 +26,11 @@ function closeModal(tipo) {
         // Si cancelamos la edición de ganadero al cerrar
         if (tipo === 'ganadero' && editingGanaderoId !== null) {
             cancelarEdicion();
+        }
+        
+        // Si cerramos el modal de especie, restablecer estado
+        if (tipo === 'especie') {
+            cancelarEdicionEspecie();
         }
     }
 }
@@ -130,6 +137,16 @@ function customConfirm(mensaje) {
 
 // Inicialización de datos de prueba si el almacén local está vacío
 function initDataPrueba() {
+    if (especies.length === 0) {
+        especies = [
+            { id: 'e-1', nombre: 'Vacuno', codigo: 'VA', icono: '🐄', activo: true },
+            { id: 'e-2', nombre: 'Porcino', codigo: 'PO', icono: '🐖', activo: true },
+            { id: 'e-3', nombre: 'Ovino', codigo: 'OV', icono: '🐑', activo: true },
+            { id: 'e-4', nombre: 'Caprino', codigo: 'CA', icono: '🐐', activo: true }
+        ];
+        localStorage.setItem('especies', JSON.stringify(especies));
+    }
+
     if (ganaderos.length === 0) {
         ganaderos = [
             { id: 'g-1', nombre: 'Agroindustria Atlántica S.A.C.', ruc: '20601245891', whatsapp: '+51 987654321', codigo: 'AA', activo: true },
@@ -197,12 +214,22 @@ function switchTab(tabName) {
         }
     });
 
-    const titleText = tabName === 'ganaderos' ? 'Gestión de Ganaderos' : 'Ingreso de Ganado (Recepción)';
+    let titleText = 'Ingreso de Ganado (Recepción)';
+    if (tabName === 'ganaderos') {
+        titleText = 'Gestión de Ganaderos';
+    } else if (tabName === 'configuraciones') {
+        titleText = 'Configuración del Sistema';
+    }
     document.getElementById('header-title-text').innerText = titleText;
 
     // Si salimos de ganaderos, cancelamos la edición activa por seguridad
     if (tabName !== 'ganaderos' && editingGanaderoId !== null) {
         cancelarEdicion();
+    }
+
+    // Si salimos de configuraciones, cancelamos la edición de especies activa
+    if (tabName !== 'configuraciones' && editingEspecieId !== null) {
+        cancelarEdicionEspecie();
     }
 
     // Cerrar sidebar en móviles tras cambiar de pestaña
@@ -214,6 +241,24 @@ function switchTab(tabName) {
     }
 
     renderAll();
+}
+
+// Navegación de Sub-Pestañas en el Módulo de Configuración
+function switchConfigSubTab(subTabName) {
+    document.querySelectorAll('.config-subtab-section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.config-nav-item').forEach(el => el.classList.remove('active'));
+    
+    const targetSubTab = document.getElementById(`config-subtab-${subTabName}`);
+    if (targetSubTab) {
+        targetSubTab.classList.add('active');
+    }
+    
+    const navItems = document.querySelectorAll('.config-nav-item');
+    navItems.forEach(item => {
+        if (item.getAttribute('onclick').includes(subTabName)) {
+            item.classList.add('active');
+        }
+    });
 }
 
 // Preview del Lote Juliano en tiempo real en el formulario de recepción
@@ -525,6 +570,27 @@ function renderAll() {
         });
     }
 
+    // 2b. Dropdown de Especies Personalizado
+    const customOptionsEspecie = document.getElementById('custom-select-especie-options');
+    if (customOptionsEspecie) {
+        customOptionsEspecie.innerHTML = '';
+        especies.forEach(e => {
+            if (e.activo) {
+                const divOpt = document.createElement('div');
+                divOpt.className = 'custom-select-option';
+                divOpt.innerText = `${e.icono} ${e.nombre} (${e.codigo})`;
+                divOpt.setAttribute('data-value', e.codigo);
+                // Comprobar si es el seleccionado actual
+                const selectedVal = document.getElementById('recepcion-especie').value;
+                if (selectedVal === e.codigo) {
+                    divOpt.classList.add('selected');
+                }
+                divOpt.onclick = (event) => selectEspecieOption(e.codigo, `${e.icono} ${e.nombre} (${e.codigo})`, event);
+                customOptionsEspecie.appendChild(divOpt);
+            }
+        });
+    }
+
     // 3. Tabla de Recepciones
     const tbodyRecepciones = document.getElementById('table-recepciones-body');
     tbodyRecepciones.innerHTML = '';
@@ -537,13 +603,10 @@ function renderAll() {
             hour: '2-digit', minute: '2-digit' 
         });
         
-        let especieLabel = '';
-        switch(r.especie) {
-            case 'VA': especieLabel = '🐄 Vacuno'; break;
-            case 'PO': especieLabel = '🐖 Porcino'; break;
-            case 'OV': especieLabel = '🐑 Ovino'; break;
-            case 'CA': especieLabel = '🐐 Caprino'; break;
-            default: especieLabel = r.especie;
+        let especieLabel = r.especie;
+        const especieObj = especies.find(e => e.codigo === r.especie);
+        if (especieObj) {
+            especieLabel = `${especieObj.icono} ${especieObj.nombre}`;
         }
 
         const tr = document.createElement('tr');
@@ -570,6 +633,30 @@ function renderAll() {
     document.getElementById('stat-ingresos-hoy').innerText = ingresosHoy.length;
     document.getElementById('stat-total-cabezas').innerText = recepciones.reduce((acc, curr) => acc + curr.cantidad, 0);
     document.getElementById('stat-dia-juliano').innerText = getJulianDay(new Date());
+
+    // 5. Tabla de Especies en Módulo de Configuración
+    const tbodyEspecies = document.getElementById('table-especies-body');
+    if (tbodyEspecies) {
+        tbodyEspecies.innerHTML = '';
+        especies.forEach(e => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-size: 20px;">${e.icono}</td>
+                <td><strong>${e.nombre}</strong></td>
+                <td><span class="lote-tag" style="border-color: var(--color-client); color: var(--color-client); background: rgba(234, 88, 12, 0.05);">${e.codigo}</span></td>
+                <td><span class="badge badge-success">Activo</span></td>
+                <td>
+                    <button onclick="editEspecie('${e.id}')" style="background: none; border: none; color: var(--color-admin); cursor: pointer; font-size: 15px; margin-right: 12px;" title="Editar">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button onclick="deleteEspecie('${e.id}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 15px;" title="Eliminar">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </td>
+            `;
+            tbodyEspecies.appendChild(tr);
+        });
+    }
 
 }
 
@@ -734,6 +821,167 @@ document.addEventListener('click', () => {
         el.classList.remove('active');
     });
 });
+
+// ==========================================
+// GESTIÓN DEL CATÁLOGO DE ESPECIES (CRUD)
+// ==========================================
+
+function iniciarNuevaEspecie() {
+    cancelarEdicionEspecie();
+    openModal('especie');
+}
+
+function cancelarEdicionEspecie() {
+    editingEspecieId = null;
+    
+    const form = document.getElementById('form-especie');
+    if (form) form.reset();
+    
+    const inputCodigo = document.getElementById('especie-codigo');
+    if (inputCodigo) {
+        inputCodigo.disabled = false;
+        inputCodigo.title = "";
+    }
+    
+    const modalTitle = document.getElementById('modal-especie-title');
+    if (modalTitle) {
+        modalTitle.innerHTML = `
+            <i class="fa-solid fa-circle-plus" style="color: var(--color-client);"></i>
+            Registrar Especie de Ganado
+        `;
+    }
+    
+    const submitText = document.getElementById('text-submit-especie');
+    if (submitText) {
+        submitText.innerText = 'Registrar Especie';
+    }
+}
+
+function saveEspecie(event) {
+    event.preventDefault();
+    const nombre = document.getElementById('especie-nombre').value.trim();
+    const codigo = document.getElementById('especie-codigo').value.trim().toUpperCase();
+    const icono = document.getElementById('especie-icono').value.trim();
+    
+    if (codigo.length !== 2) {
+        showToast('El código de especie debe tener exactamente 2 letras.', 'error');
+        return;
+    }
+    
+    // Validaciones de unicidad (excepto para sí mismo si edita)
+    if (especies.some(e => e.codigo === codigo && e.id !== editingEspecieId)) {
+        showToast('El código de especie ya está asignado a otra especie.', 'error');
+        return;
+    }
+    if (especies.some(e => e.nombre.toLowerCase() === nombre.toLowerCase() && e.id !== editingEspecieId)) {
+        showToast('El nombre de especie ya existe en el catálogo.', 'error');
+        return;
+    }
+    
+    if (editingEspecieId !== null) {
+        // Modo Edición
+        const idx = especies.findIndex(e => e.id === editingEspecieId);
+        if (idx !== -1) {
+            const antiguoCodigo = especies[idx].codigo;
+            especies[idx].nombre = nombre;
+            especies[idx].codigo = codigo;
+            especies[idx].icono = icono;
+            
+            // Actualizar recepciones que usaban el antiguo código
+            recepciones.forEach(r => {
+                if (r.especie === antiguoCodigo) {
+                    r.especie = codigo;
+                    // Actualizar el lote_codigo si corresponde
+                    const ganaderoCod = r.lote_codigo.substring(0, 2);
+                    const diaJuliano = r.lote_codigo.substring(4);
+                    r.lote_codigo = `${ganaderoCod}${codigo}${diaJuliano}`;
+                }
+            });
+            
+            localStorage.setItem('recepciones', JSON.stringify(recepciones));
+            localStorage.setItem('especies', JSON.stringify(especies));
+            showToast('Especie actualizada correctamente.', 'success');
+            closeModal('especie');
+        }
+    } else {
+        // Modo Nuevo
+        const nuevaEspecie = {
+            id: 'e-' + Date.now(),
+            nombre,
+            codigo,
+            icono,
+            activo: true
+        };
+        especies.push(nuevaEspecie);
+        localStorage.setItem('especies', JSON.stringify(especies));
+        showToast('Especie registrada correctamente.', 'success');
+        closeModal('especie');
+    }
+    
+    renderAll();
+}
+
+function editEspecie(id) {
+    const especie = especies.find(e => e.id === id);
+    if (!especie) return;
+    
+    editingEspecieId = id;
+    
+    document.getElementById('especie-nombre').value = especie.nombre;
+    
+    const inputCodigo = document.getElementById('especie-codigo');
+    inputCodigo.value = especie.codigo;
+    
+    document.getElementById('especie-icono').value = especie.icono;
+    
+    const modalTitle = document.getElementById('modal-especie-title');
+    if (modalTitle) {
+        modalTitle.innerHTML = `
+            <i class="fa-solid fa-pen-to-square" style="color: var(--color-client);"></i>
+            Editar Especie de Ganado
+        `;
+    }
+    
+    const submitText = document.getElementById('text-submit-especie');
+    if (submitText) {
+        submitText.innerText = 'Guardar Cambios';
+    }
+    
+    // Proteger integridad
+    const tieneLotes = recepciones.some(r => r.especie === especie.codigo);
+    if (tieneLotes) {
+        inputCodigo.disabled = true;
+        inputCodigo.title = "No se puede editar el código porque hay lotes de esta especie en el historial.";
+    } else {
+        inputCodigo.disabled = false;
+        inputCodigo.title = "";
+    }
+    
+    openModal('especie');
+}
+
+async function deleteEspecie(id) {
+    const especie = especies.find(e => e.id === id);
+    if (!especie) return;
+    
+    // Verificar trazabilidad
+    const tieneLotes = recepciones.some(r => r.especie === especie.codigo);
+    if (tieneLotes) {
+        showToast('No se puede eliminar la especie: existen registros de ingresos asociados en el historial.', 'error');
+        return;
+    }
+    
+    const confirmado = await customConfirm(`¿Está seguro de eliminar la especie "${especie.nombre}"? Esta acción no se puede deshacer.`);
+    if (confirmado) {
+        if (editingEspecieId === id) {
+            cancelarEdicionEspecie();
+        }
+        especies = especies.filter(e => e.id !== id);
+        localStorage.setItem('especies', JSON.stringify(especies));
+        renderAll();
+        showToast('Especie eliminada correctamente.', 'success');
+    }
+}
 
 // ==========================================
 // VALIDACIÓN DE DOCUMENTOS (DNI/RUC) VÍA API PERÚ

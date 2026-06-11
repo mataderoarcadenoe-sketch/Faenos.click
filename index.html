@@ -43,6 +43,12 @@
                             <span>Ingreso de Ganado</span>
                         </a>
                     </li>
+                    <li>
+                        <a class="nav-item" onclick="switchTab('configuraciones')">
+                            <i class="fa-solid fa-sliders"></i>
+                            <span>Configuraciones</span>
+                        </a>
+                    </li>
                 </ul>
             </nav>
             
@@ -193,6 +199,63 @@
 
             </section>
 
+            <!-- SECCIÓN 3: CONFIGURACIONES -->
+            <section id="tab-configuraciones" class="content-section">
+                
+                <div class="config-layout">
+                    <!-- Menú Interno de Configuración -->
+                    <aside class="config-sidebar">
+                        <ul class="config-nav-menu">
+                            <li>
+                                <a class="config-nav-item active" onclick="switchConfigSubTab('animales')">
+                                    <i class="fa-solid fa-cow"></i>
+                                    <span>Especies (Animales)</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </aside>
+                    
+                    <!-- Panel de Configuración Activo -->
+                    <div class="config-panel-content">
+                        
+                        <!-- SUB-SECCIÓN: ANIMALES (ESPECIES) -->
+                        <div id="config-subtab-animales" class="config-subtab-section active">
+                            <div class="table-container" style="border-radius: 12px; padding: 20px;">
+                                <div class="table-header-row" style="margin-bottom: 16px;">
+                                    <h3 class="card-title" style="margin-bottom: 0; font-size: 16px;">
+                                        <i class="fa-solid fa-cow" style="color: var(--color-client);"></i>
+                                        Catálogo de Especies de Ganado
+                                    </h3>
+                                    
+                                    <button class="btn-primary" onclick="iniciarNuevaEspecie()" style="width: auto; padding: 8px 16px; font-size: 13px; white-space: nowrap; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);">
+                                        <i class="fa-solid fa-plus"></i> Nueva Especie
+                                    </button>
+                                </div>
+                                
+                                <div class="table-responsive-wrapper">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Icono</th>
+                                                <th>Especie</th>
+                                                <th>Código Lote (2 letras)</th>
+                                                <th>Estado</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="table-especies-body">
+                                            <!-- Cargado dinámicamente -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+
+            </section>
+
         </main>
 
     </div>
@@ -326,6 +389,49 @@
                 <div class="modal-form-actions">
                     <button type="submit" class="btn-primary btn-flex" style="margin-top: 0; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: 0 4px 15px rgba(5, 150, 105, 0.2);">
                         <i class="fa-solid fa-truck-ramp-box"></i> Guardar Lote
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: Registro/Edición de Especie -->
+    <div id="modal-especie" class="form-modal-overlay">
+        <div class="form-modal-card">
+            <button class="btn-modal-close" onclick="closeModal('especie')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <h2 class="card-title" id="modal-especie-title">
+                <i class="fa-solid fa-circle-plus" style="color: var(--color-client);"></i>
+                Registrar Especie de Ganado
+            </h2>
+            
+            <form id="form-especie" onsubmit="saveEspecie(event)">
+                <div class="form-group">
+                    <label class="form-label">Nombre de la Especie</label>
+                    <input type="text" id="especie-nombre" class="form-control" placeholder="Ej. Equino" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Código de Especie (2 letras)</label>
+                    <input type="text" id="especie-codigo" class="form-control" placeholder="Ej. EQ" maxlength="2" style="text-transform: uppercase;" required>
+                    <small style="display: block; margin-top: 6px; font-size: 11px; color: var(--text-secondary);">
+                        Código identificador único para componer el Lote Juliano.
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Emoji / Icono Representativo</label>
+                    <input type="text" id="especie-icono" class="form-control" placeholder="Ej. 🐴" maxlength="2" required>
+                    <small style="display: block; margin-top: 6px; font-size: 11px; color: var(--text-secondary);">
+                        Pega un emoji representativo del animal.
+                    </small>
+                </div>
+                
+                <div class="modal-form-actions">
+                    <button type="submit" id="btn-guardar-especie" class="btn-primary btn-flex" style="margin-top: 0; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 15px rgba(234, 88, 12, 0.25);">
+                        <i class="fa-solid fa-check"></i> <span id="text-submit-especie">Registrar Especie</span>
                     </button>
                 </div>
             </form>
