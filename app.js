@@ -1300,6 +1300,13 @@ function cancelarEdicionPago() {
     const form = document.getElementById('form-pago');
     if (form) form.reset();
     
+    // Reset custom select
+    const inputTipo = document.getElementById('pago-tipo');
+    if (inputTipo) inputTipo.value = '';
+    const txtTipo = document.getElementById('custom-select-pago-tipo-text');
+    if (txtTipo) txtTipo.innerText = 'Elige un tipo de pago...';
+    document.querySelectorAll('#custom-select-pago-tipo-options .custom-select-option').forEach(el => el.classList.remove('selected'));
+    
     const modalTitle = document.getElementById('modal-pago-title');
     if (modalTitle) {
         modalTitle.innerHTML = `
@@ -1319,6 +1326,11 @@ function savePago(event) {
     const nombre = document.getElementById('pago-nombre').value.trim();
     const tipo = document.getElementById('pago-tipo').value;
     const detalle = document.getElementById('pago-detalle').value.trim();
+    
+    if (!tipo) {
+        showToast('Debe seleccionar un tipo de pago.', 'error');
+        return;
+    }
     
     // Validaciones de unicidad (excepto para sí mismo si edita)
     if (metodosPago.some(m => m.nombre.toLowerCase() === nombre.toLowerCase() && m.id !== editingPagoId)) {
@@ -1363,8 +1375,15 @@ function editPago(id) {
     editingPagoId = id;
     
     document.getElementById('pago-nombre').value = pago.nombre;
-    document.getElementById('pago-tipo').value = pago.tipo;
     document.getElementById('pago-detalle').value = pago.detalle === 'Sin detalles adicionales' ? '' : pago.detalle;
+    
+    // Set custom select
+    let tipoText = pago.tipo;
+    if (pago.tipo === 'Transferencia') tipoText = 'Transferencia Bancaria';
+    else if (pago.tipo === 'Tarjeta') tipoText = 'Tarjeta de Crédito/Débito';
+    else if (pago.tipo === 'Yape/Plin') tipoText = 'Yape / Plin / Billetera Digital';
+    
+    selectPagoTipoOption(pago.tipo, tipoText);
     
     const modalTitle = document.getElementById('modal-pago-title');
     if (modalTitle) {
@@ -1509,6 +1528,7 @@ function registrarMovimientoExtra(event) {
     localStorage.setItem('cajas', JSON.stringify(cajas));
     showToast('Movimiento extraordinario registrado con éxito.', 'success');
     document.getElementById('form-movimiento-extra').reset();
+    selectMovTipoOption('Egreso', 'Egreso (Gasto / Salida)');
     renderAll();
 }
 
@@ -1785,6 +1805,13 @@ function cancelarEdicionTrabajador() {
     const form = document.getElementById('form-trabajador');
     if (form) form.reset();
 
+    // Reset custom select
+    const inputRol = document.getElementById('trabajador-rol');
+    if (inputRol) inputRol.value = '';
+    const txtRol = document.getElementById('custom-select-trabajador-rol-text');
+    if (txtRol) txtRol.innerText = 'Elige un cargo...';
+    document.querySelectorAll('#custom-select-trabajador-rol-options .custom-select-option').forEach(el => el.classList.remove('selected'));
+
     const modalTitle = document.getElementById('modal-trabajador-title');
     if (modalTitle) {
         modalTitle.innerHTML = `
@@ -1804,6 +1831,11 @@ function saveTrabajador(event) {
     const nombre = document.getElementById('trabajador-nombre').value.trim();
     const rol = document.getElementById('trabajador-rol').value;
     const whatsapp = document.getElementById('trabajador-whatsapp').value.trim();
+
+    if (!rol) {
+        showToast('Debe seleccionar un cargo para el trabajador.', 'error');
+        return;
+    }
 
     if (!nombre || !whatsapp) {
         showToast('Complete todos los campos del trabajador.', 'error');
@@ -1851,8 +1883,15 @@ function editTrabajador(id) {
 
     editingTrabajadorId = id;
     document.getElementById('trabajador-nombre').value = trab.nombre;
-    document.getElementById('trabajador-rol').value = trab.rol;
     document.getElementById('trabajador-whatsapp').value = trab.whatsapp;
+
+    // Set custom select
+    let rolText = trab.rol;
+    if (trab.rol === 'Cajero') rolText = 'Cajero(a)';
+    else if (trab.rol === 'Operador') rolText = 'Operador de Turno';
+    else if (trab.rol === 'Supervisor') rolText = 'Supervisor de Planta';
+    
+    selectTrabajadorRolOption(trab.rol, rolText);
 
     const modalTitle = document.getElementById('modal-trabajador-title');
     if (modalTitle) {
@@ -1999,6 +2038,72 @@ function procesarCierreConArqueo(event) {
     showToast('Caja cerrada con éxito. Turno liquidado con arqueo.', 'success');
     closeModal('arqueo');
     renderAll();
+}
+
+function selectMovTipoOption(value, text, event) {
+    if (event) event.stopPropagation();
+    const inputHidden = document.getElementById('mov-tipo');
+    const triggerText = document.getElementById('custom-select-mov-tipo-text');
+    const container = document.getElementById('custom-select-mov-tipo-container');
+    const options = document.querySelectorAll('#custom-select-mov-tipo-options .custom-select-option');
+    
+    if (inputHidden && triggerText && container) {
+        inputHidden.value = value;
+        triggerText.innerText = text;
+        
+        options.forEach(opt => {
+            if (opt.getAttribute('data-value') === value) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        container.classList.remove('active');
+    }
+}
+
+function selectTrabajadorRolOption(value, text, event) {
+    if (event) event.stopPropagation();
+    const inputHidden = document.getElementById('trabajador-rol');
+    const triggerText = document.getElementById('custom-select-trabajador-rol-text');
+    const container = document.getElementById('custom-select-trabajador-rol-container');
+    const options = document.querySelectorAll('#custom-select-trabajador-rol-options .custom-select-option');
+    
+    if (inputHidden && triggerText && container) {
+        inputHidden.value = value;
+        triggerText.innerText = text;
+        
+        options.forEach(opt => {
+            if (opt.getAttribute('data-value') === value) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        container.classList.remove('active');
+    }
+}
+
+function selectPagoTipoOption(value, text, event) {
+    if (event) event.stopPropagation();
+    const inputHidden = document.getElementById('pago-tipo');
+    const triggerText = document.getElementById('custom-select-pago-tipo-text');
+    const container = document.getElementById('custom-select-pago-tipo-container');
+    const options = document.querySelectorAll('#custom-select-pago-tipo-options .custom-select-option');
+    
+    if (inputHidden && triggerText && container) {
+        inputHidden.value = value;
+        triggerText.innerText = text;
+        
+        options.forEach(opt => {
+            if (opt.getAttribute('data-value') === value) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        container.classList.remove('active');
+    }
 }
 
 // Cargar la aplicación al iniciar la ventana

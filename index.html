@@ -472,10 +472,17 @@
                                 <form id="form-movimiento-extra" onsubmit="registrarMovimientoExtra(event)">
                                     <div class="form-group" style="margin-bottom: 10px;">
                                         <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Tipo de Movimiento</label>
-                                        <select id="mov-tipo" class="form-control" style="padding: 8px 12px; font-size: 13px; height: 36px;" required>
-                                            <option value="Egreso">Egreso (Gasto / Salida)</option>
-                                            <option value="Ingreso">Ingreso (Entrada Extra)</option>
-                                        </select>
+                                        <div class="custom-select-container" id="custom-select-mov-tipo-container">
+                                            <input type="hidden" id="mov-tipo" value="Egreso" required>
+                                            <div class="custom-select-trigger" onclick="toggleCustomSelect('mov-tipo', event)" style="padding: 8px 12px; font-size: 13px; height: 36px; display: flex; justify-content: space-between; align-items: center;">
+                                                <span id="custom-select-mov-tipo-text">Egreso (Gasto / Salida)</span>
+                                                <i class="fa-solid fa-chevron-down arrow"></i>
+                                            </div>
+                                            <div class="custom-select-options" id="custom-select-mov-tipo-options">
+                                                <div class="custom-select-option selected" data-value="Egreso" onclick="selectMovTipoOption('Egreso', 'Egreso (Gasto / Salida)', event)">Egreso (Gasto / Salida)</div>
+                                                <div class="custom-select-option" data-value="Ingreso" onclick="selectMovTipoOption('Ingreso', 'Ingreso (Entrada Extra)', event)">Ingreso (Entrada Extra)</div>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="form-group" style="margin-bottom: 10px;">
                                         <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Monto (S/.)</label>
@@ -754,13 +761,20 @@
                 
                 <div class="form-group">
                     <label class="form-label">Tipo de Pago</label>
-                    <select id="pago-tipo" class="form-control" required>
-                        <option value="Efectivo">Efectivo</option>
-                        <option value="Transferencia">Transferencia Bancaria</option>
-                        <option value="Tarjeta">Tarjeta de Crédito/Débito</option>
-                        <option value="Yape/Plin">Yape / Plin / Billetera Digital</option>
-                        <option value="Otro">Otro</option>
-                    </select>
+                    <div class="custom-select-container" id="custom-select-pago-tipo-container">
+                        <input type="hidden" id="pago-tipo" required>
+                        <div class="custom-select-trigger" onclick="toggleCustomSelect('pago-tipo', event)">
+                            <span id="custom-select-pago-tipo-text">Elige un tipo de pago...</span>
+                            <i class="fa-solid fa-chevron-down arrow"></i>
+                        </div>
+                        <div class="custom-select-options" id="custom-select-pago-tipo-options">
+                            <div class="custom-select-option" data-value="Efectivo" onclick="selectPagoTipoOption('Efectivo', 'Efectivo', event)">Efectivo</div>
+                            <div class="custom-select-option" data-value="Transferencia" onclick="selectPagoTipoOption('Transferencia', 'Transferencia Bancaria', event)">Transferencia Bancaria</div>
+                            <div class="custom-select-option" data-value="Tarjeta" onclick="selectPagoTipoOption('Tarjeta', 'Tarjeta de Crédito/Débito', event)">Tarjeta de Crédito/Débito</div>
+                            <div class="custom-select-option" data-value="Yape/Plin" onclick="selectPagoTipoOption('Yape/Plin', 'Yape / Plin / Billetera Digital', event)">Yape / Plin / Billetera Digital</div>
+                            <div class="custom-select-option" data-value="Otro" onclick="selectPagoTipoOption('Otro', 'Otro', event)">Otro</div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="form-group">
@@ -869,12 +883,19 @@
                 
                 <div class="form-group">
                     <label class="form-label">Cargo / Rol</label>
-                    <select id="trabajador-rol" class="form-control" required>
-                        <option value="Cajero">Cajero(a)</option>
-                        <option value="Operador">Operador de Turno</option>
-                        <option value="Supervisor">Supervisor de Planta</option>
-                        <option value="Administrador">Administrador</option>
-                    </select>
+                    <div class="custom-select-container" id="custom-select-trabajador-rol-container">
+                        <input type="hidden" id="trabajador-rol" required>
+                        <div class="custom-select-trigger" onclick="toggleCustomSelect('trabajador-rol', event)">
+                            <span id="custom-select-trabajador-rol-text">Elige un cargo...</span>
+                            <i class="fa-solid fa-chevron-down arrow"></i>
+                        </div>
+                        <div class="custom-select-options" id="custom-select-trabajador-rol-options">
+                            <div class="custom-select-option" data-value="Cajero" onclick="selectTrabajadorRolOption('Cajero', 'Cajero(a)', event)">Cajero(a)</div>
+                            <div class="custom-select-option" data-value="Operador" onclick="selectTrabajadorRolOption('Operador', 'Operador de Turno', event)">Operador de Turno</div>
+                            <div class="custom-select-option" data-value="Supervisor" onclick="selectTrabajadorRolOption('Supervisor', 'Supervisor de Planta', event)">Supervisor de Planta</div>
+                            <div class="custom-select-option" data-value="Administrador" onclick="selectTrabajadorRolOption('Administrador', 'Administrador', event)">Administrador</div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="form-group">
