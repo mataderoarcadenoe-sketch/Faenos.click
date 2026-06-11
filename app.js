@@ -1,16 +1,16 @@
 /* C:\Users\Administrador\Desktop\Faenos.click\app.js */
 
-// Estructuras de datos iniciales en localStorage
-let ganaderos = JSON.parse(localStorage.getItem('ganaderos')) || [];
-let recepciones = JSON.parse(localStorage.getItem('recepciones')) || [];
-let especies = JSON.parse(localStorage.getItem('especies')) || [];
-let metodosPago = JSON.parse(localStorage.getItem('metodosPago')) || [];
-let cajas = JSON.parse(localStorage.getItem('cajas')) || [];
-let trabajadores = JSON.parse(localStorage.getItem('trabajadores')) || [];
-let roles = JSON.parse(localStorage.getItem('roles')) || [];
-let tiposPago = JSON.parse(localStorage.getItem('tiposPago')) || [];
-let deudas = JSON.parse(localStorage.getItem('deudas')) || [];
-let abonos = JSON.parse(localStorage.getItem('abonos')) || [];
+// Estructuras de datos iniciales vacías (se cargan desde el servidor)
+let ganaderos = [];
+let recepciones = [];
+let especies = [];
+let metodosPago = [];
+let cajas = [];
+let trabajadores = [];
+let roles = [];
+let tiposPago = [];
+let deudas = [];
+let abonos = [];
 let editingGanaderoId = null; // Estado de edición global
 let editingEspecieId = null; // Estado de edición de especie global
 let editingPagoId = null; // Estado de edición de pago global
