@@ -2729,6 +2729,45 @@ function cerrarDetalleDeudas() {
     renderCuentasCobrar();
 }
 
+function obtenerAbonosDeLote(deudaId) {
+    const lista = [];
+    abonos.forEach(ab => {
+        if (ab.detalles && Array.isArray(ab.detalles)) {
+            const det = ab.detalles.find(d => d.deudaId === deudaId);
+            if (det) {
+                lista.push({
+                    id: ab.id,
+                    fecha: ab.fecha,
+                    metodoPagoNombre: ab.metodo_pago_nombre || ab.metodoPagoNombre || 'Efectivo',
+                    observaciones: ab.observaciones || 'Abono a lote',
+                    montoAbonadoLote: parseFloat(det.monto)
+                });
+            }
+        }
+    });
+    return lista.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+}
+
+function toggleAbonosLote(deudaId) {
+    const row = document.getElementById(`abonos-lote-${deudaId}`);
+    const btn = document.getElementById(`btn-toggle-abonos-${deudaId}`);
+    if (!row) return;
+    
+    if (row.style.display === 'none') {
+        row.style.display = 'table-row';
+        if (btn) {
+            btn.innerHTML = '<i class="fa-solid fa-chevron-up"></i>';
+            btn.style.color = 'var(--color-client)';
+        }
+    } else {
+        row.style.display = 'none';
+        if (btn) {
+            btn.innerHTML = '<i class="fa-solid fa-chevron-down"></i>';
+            btn.style.color = 'var(--text-secondary)';
+        }
+    }
+}
+
 function renderDetalleDeudas() {
     const tbody = document.getElementById('table-detalle-deudas-body');
     if (!tbody || !selectedGanaderoDeudaId) return;
@@ -2740,7 +2779,7 @@ function renderDetalleDeudas() {
         const fechaLegible = new Date(d.fecha).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         
         let cabezas = '--';
-        const rec = recepciones.find(r => r.id === d.recepcionId || r.lote_codigo === d.lote_codigo);
+        const rec = recepciones.find(r => r.id === d.recepcion_id || r.id === d.recepcionId || r.lote_codigo === d.lote_codigo);
         if (rec) cabezas = rec.cantidad;
         
         let badgeEstado = '';
@@ -2753,7 +2792,7 @@ function renderDetalleDeudas() {
         }
         
         let accionBtn = '';
-        if (d.saldo > 0) {
+        if (parseFloat(d.saldo) > 0) {
             accionBtn = `
                 <button onclick="iniciarAbonoEspecifico('${d.ganadero_id}', '${d.id}')" class="btn-primary" style="width: auto; padding: 4px 8px; font-size: 11px; margin-top: 0; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: none;">
                     <i class="fa-solid fa-circle-dollar-to-slot"></i> Abonar Lote
@@ -2763,18 +2802,77 @@ function renderDetalleDeudas() {
             accionBtn = `<span style="font-size: 11px; color: var(--color-ops); font-weight: 600;"><i class="fa-solid fa-check-double"></i> Pagado</span>`;
         }
         
+        // Cargar historial de abonos para este lote
+        const abonosLote = obtenerAbonosDeLote(d.id);
+        let toggleAbonosBtn = '';
+        if (abonosLote.length > 0) {
+            toggleAbonosBtn = `
+                <button id="btn-toggle-abonos-${d.id}" onclick="toggleAbonosLote('${d.id}')" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); margin-left: 6px; padding: 2px 6px; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; vertical-align: middle;" title="Ver historial de abonos">
+                    <i class="fa-solid fa-chevron-down"></i>
+                </button>
+            `;
+        }
+        
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td style="font-size: 12px; color: var(--text-secondary);">${fechaLegible}</td>
             <td><span class="lote-tag" style="border-color: var(--color-client); color: #ea580c; background: rgba(234, 88, 12, 0.05);">${d.lote_codigo}</span></td>
             <td style="font-weight: 600;">${cabezas}</td>
-            <td style="font-weight: 500;">S/. ${d.monto_total.toFixed(2)}</td>
-            <td style="color: var(--color-ops); font-weight: 500;">S/. ${d.monto_abonado.toFixed(2)}</td>
-            <td style="font-weight: 700; color: ${d.saldo > 0 ? '#ef4444' : 'var(--color-ops)'};">S/. ${d.saldo.toFixed(2)}</td>
+            <td style="font-weight: 500;">S/. ${parseFloat(d.monto_total).toFixed(2)}</td>
+            <td style="color: var(--color-ops); font-weight: 500; white-space: nowrap;">
+                S/. ${parseFloat(d.monto_abonado).toFixed(2)}
+                ${toggleAbonosBtn}
+            </td>
+            <td style="font-weight: 700; color: ${parseFloat(d.saldo) > 0 ? '#ef4444' : 'var(--color-ops)'};">S/. ${parseFloat(d.saldo).toFixed(2)}</td>
             <td>${badgeEstado}</td>
             <td>${accionBtn}</td>
         `;
         tbody.appendChild(tr);
+        
+        // Si hay abonos, agregar la subfila colapsable
+        if (abonosLote.length > 0) {
+            let abonosRowsHtml = '';
+            abonosLote.forEach(ab => {
+                const fechaAbLegible = new Date(ab.fecha).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                abonosRowsHtml += `
+                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                        <td style="padding: 6px 10px; color: var(--text-secondary);">${fechaAbLegible}</td>
+                        <td style="padding: 6px 10px; font-weight: 500;">${ab.metodoPagoNombre}</td>
+                        <td style="padding: 6px 10px; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ab.observaciones}</td>
+                        <td style="padding: 6px 10px; text-align: right; font-weight: 600; color: var(--color-ops);">S/. ${ab.montoAbonadoLote.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            
+            const trAbonos = document.createElement('tr');
+            trAbonos.id = `abonos-lote-${d.id}`;
+            trAbonos.className = 'abonos-lote-row';
+            trAbonos.style.display = 'none';
+            trAbonos.style.background = '#fafafa';
+            trAbonos.innerHTML = `
+                <td colspan="8" style="padding: 10px 20px;">
+                    <div style="border-left: 3px solid var(--color-ops); padding-left: 12px; margin: 2px 0;">
+                        <div style="margin: 0 0 6px 0; font-size: 11px; color: var(--text-primary); font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-clock-rotate-left" style="color: var(--color-ops);"></i> Historial de Abonos Aplicados al Lote ${d.lote_codigo}
+                        </div>
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 10px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                            <thead>
+                                <tr style="background: #f1f5f9; border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
+                                    <th style="padding: 6px 10px; text-align: left; font-weight: 600;">Fecha y Hora</th>
+                                    <th style="padding: 6px 10px; text-align: left; font-weight: 600;">Método de Pago</th>
+                                    <th style="padding: 6px 10px; text-align: left; font-weight: 600;">Observaciones</th>
+                                    <th style="padding: 6px 10px; text-align: right; font-weight: 600;">Monto Abonado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${abonosRowsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(trAbonos);
+        }
     });
 }
 
