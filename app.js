@@ -203,7 +203,27 @@ function initDataPrueba() {
         localStorage.setItem('trabajadores', JSON.stringify(trabajadores));
     }
 
-    if (tiposPago.length === 0 || tiposPago.length > 2) {
+    // Control de esquema para migraciones
+    const dbSchemaVersion = localStorage.getItem('db_schema_version') || '1';
+
+    if (dbSchemaVersion === '1') {
+        // Forzar limpieza inicial para migrar a la estructura limpia de 2 elementos
+        tiposPago = [
+            { id: 'tp-1', nombre: 'Efectivo', activo: true },
+            { id: 'tp-2', nombre: 'Crédito', activo: true }
+        ];
+        localStorage.setItem('tiposPago', JSON.stringify(tiposPago));
+
+        metodosPago = [
+            { id: 'mp-1', nombre: 'Efectivo Caja Chica', tipo: 'tp-1', detalle: 'Pago en oficina principal', activo: true },
+            { id: 'mp-2', nombre: 'Línea de Crédito Camal', tipo: 'tp-2', detalle: 'Crédito aprobado para ganaderos recurrentes', activo: true }
+        ];
+        localStorage.setItem('metodosPago', JSON.stringify(metodosPago));
+        
+        localStorage.setItem('db_schema_version', '2');
+    }
+
+    if (tiposPago.length === 0) {
         tiposPago = [
             { id: 'tp-1', nombre: 'Efectivo', activo: true },
             { id: 'tp-2', nombre: 'Crédito', activo: true }
@@ -211,7 +231,7 @@ function initDataPrueba() {
         localStorage.setItem('tiposPago', JSON.stringify(tiposPago));
     }
 
-    if (metodosPago.length === 0 || metodosPago.length > 2) {
+    if (metodosPago.length === 0) {
         metodosPago = [
             { id: 'mp-1', nombre: 'Efectivo Caja Chica', tipo: 'tp-1', detalle: 'Pago en oficina principal', activo: true },
             { id: 'mp-2', nombre: 'Línea de Crédito Camal', tipo: 'tp-2', detalle: 'Crédito aprobado para ganaderos recurrentes', activo: true }
