@@ -203,24 +203,18 @@ function initDataPrueba() {
         localStorage.setItem('trabajadores', JSON.stringify(trabajadores));
     }
 
-    if (tiposPago.length === 0) {
+    if (tiposPago.length === 0 || tiposPago.length > 2) {
         tiposPago = [
             { id: 'tp-1', nombre: 'Efectivo', activo: true },
-            { id: 'tp-2', nombre: 'Transferencia Bancaria', activo: true },
-            { id: 'tp-3', nombre: 'Tarjeta de Crédito/Débito', activo: true },
-            { id: 'tp-4', nombre: 'Yape / Plin / Billetera Digital', activo: true },
-            { id: 'tp-5', nombre: 'Crédito', activo: true },
-            { id: 'tp-6', nombre: 'Otro', activo: true }
+            { id: 'tp-2', nombre: 'Crédito', activo: true }
         ];
         localStorage.setItem('tiposPago', JSON.stringify(tiposPago));
     }
 
-    if (metodosPago.length === 0) {
+    if (metodosPago.length === 0 || metodosPago.length > 2) {
         metodosPago = [
             { id: 'mp-1', nombre: 'Efectivo Caja Chica', tipo: 'tp-1', detalle: 'Pago en oficina principal', activo: true },
-            { id: 'mp-2', nombre: 'Transferencia BCP', tipo: 'tp-2', detalle: 'Cta Corriente BCP N° 191-12345678-0-90', activo: true },
-            { id: 'mp-3', nombre: 'Yape Camal', tipo: 'tp-4', detalle: 'Cel: +51 987654321', activo: true },
-            { id: 'mp-4', nombre: 'Línea de Crédito Camal', tipo: 'tp-5', detalle: 'Crédito aprobado para ganaderos recurrentes', activo: true }
+            { id: 'mp-2', nombre: 'Línea de Crédito Camal', tipo: 'tp-2', detalle: 'Crédito aprobado para ganaderos recurrentes', activo: true }
         ];
         localStorage.setItem('metodosPago', JSON.stringify(metodosPago));
     }
@@ -2019,7 +2013,7 @@ function procesarCobro(event) {
     if (!mp) return;
     
     // Comprobar si el método de pago tiene tipo "Crédito"
-    const esCredito = mp.tipo === 'tp-5' || mp.tipo === 'Crédito' || (tiposPago.find(t => t.id === mp.tipo) && tiposPago.find(t => t.id === mp.tipo).nombre === 'Crédito');
+    const esCredito = mp.tipo === 'tp-2' || mp.tipo === 'tp-5' || mp.tipo === 'Crédito' || (tiposPago.find(t => t.id === mp.tipo) && tiposPago.find(t => t.id === mp.tipo).nombre === 'Crédito');
     
     const rIdx = recepciones.findIndex(rec => rec.id === recepcionId);
     if (rIdx !== -1) {
@@ -2995,7 +2989,7 @@ function poblarSelectorAbonoMetodo() {
     customOptions.innerHTML = '';
     
     metodosPago.forEach(m => {
-        const esCredito = m.tipo === 'tp-5' || m.tipo === 'Crédito' || (tiposPago.find(t => t.id === m.tipo) && tiposPago.find(t => t.id === m.tipo).nombre === 'Crédito');
+        const esCredito = m.tipo === 'tp-2' || m.tipo === 'tp-5' || m.tipo === 'Crédito' || (tiposPago.find(t => t.id === m.tipo) && tiposPago.find(t => t.id === m.tipo).nombre === 'Crédito');
         if (m.activo && !esCredito) {
             const divOpt = document.createElement('div');
             divOpt.className = 'custom-select-option';
