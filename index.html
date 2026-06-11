@@ -56,6 +56,12 @@
                         </a>
                     </li>
                     <li>
+                        <a class="nav-item" onclick="switchTab('cuentas-cobrar')">
+                            <i class="fa-solid fa-receipt"></i>
+                            <span>Cuentas por Cobrar</span>
+                        </a>
+                    </li>
+                    <li>
                         <a class="nav-item" onclick="switchTab('configuraciones')">
                             <i class="fa-solid fa-sliders"></i>
                             <span>Configuraciones</span>
@@ -292,6 +298,12 @@
                                     <span>Cargo / Rol</span>
                                 </a>
                             </li>
+                            <li>
+                                <a class="config-nav-item" onclick="switchConfigSubTab('tipos-pago')">
+                                    <i class="fa-solid fa-money-check-dollar"></i>
+                                    <span>Tipos de Pago</span>
+                                </a>
+                            </li>
                         </ul>
                     </aside>
                     
@@ -388,6 +400,37 @@
                                             </tr>
                                         </thead>
                                         <tbody id="table-roles-body">
+                                            <!-- Cargado dinámicamente -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SUB-SECCIÓN: TIPOS DE PAGO -->
+                        <div id="config-subtab-tipos-pago" class="config-subtab-section">
+                            <div class="table-container" style="border-radius: 12px; padding: 20px;">
+                                <div class="table-header-row" style="margin-bottom: 16px;">
+                                    <h3 class="card-title" style="margin-bottom: 0; font-size: 16px;">
+                                        <i class="fa-solid fa-money-check-dollar" style="color: var(--color-client);"></i>
+                                        Catálogo de Tipos de Pago
+                                    </h3>
+                                    
+                                    <button class="btn-primary" onclick="iniciarNuevoTipoPago()" style="width: auto; padding: 8px 16px; font-size: 13px; white-space: nowrap; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);">
+                                        <i class="fa-solid fa-plus"></i> Nuevo Tipo
+                                    </button>
+                                </div>
+                                
+                                <div class="table-responsive-wrapper">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Nombre del Tipo</th>
+                                                <th>Estado</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="table-tipos-pago-body">
                                             <!-- Cargado dinámicamente -->
                                         </tbody>
                                     </table>
@@ -501,20 +544,24 @@
                                             
                                             <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
                                                 <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
-                                                    <span>Monto Apertura:</span>
+                                                    <span>Monto Apertura (Efectivo):</span>
                                                     <span id="caja-val-apertura" style="font-weight: 500; color: var(--text-primary);">S/. 0.00</span>
                                                 </div>
                                                 <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
-                                                    <span>Ingresos del Turno:</span>
+                                                    <span>Ingresos Efectivo:</span>
                                                     <span id="caja-val-ingresos" style="font-weight: 500; color: var(--color-ops);">+ S/. 0.00</span>
                                                 </div>
                                                 <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
-                                                    <span>Egresos del Turno:</span>
+                                                    <span>Egresos Efectivo:</span>
                                                     <span id="caja-val-egresos" style="font-weight: 500; color: #ef4444;">- S/. 0.00</span>
+                                                </div>
+                                                <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
+                                                    <span>Ingresos Bancos / Crédito:</span>
+                                                    <span id="caja-val-otros-ingresos" style="font-weight: 500; color: var(--color-client);">+ S/. 0.00</span>
                                                 </div>
                                                 <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 6px 0;">
                                                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                                                    <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Saldo Actual:</span>
+                                                    <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Efectivo Físico Teórico:</span>
                                                     <span id="caja-val-saldo" style="font-size: 20px; font-weight: 700; color: #047857;">S/. 0.00</span>
                                                 </div>
                                             </div>
@@ -621,6 +668,84 @@
                             </div>
                         </div>
 
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- SECCIÓN 5: CUENTAS POR COBRAR (CRÉDITOS) -->
+            <section id="tab-cuentas-cobrar" class="content-section">
+                
+                <div class="section-header" style="margin-bottom: 24px;">
+                    <h2 class="section-title" style="font-size: 20px; font-weight: 700;">
+                        <i class="fa-solid fa-receipt" style="color: var(--color-client);"></i>
+                        Cuentas por Cobrar (Administración de Créditos)
+                    </h2>
+                </div>
+
+                <!-- VISTA 1: RESUMEN GENERAL POR GANADERO -->
+                <div id="cuentas-cobrar-resumen-panel" class="caja-view-panel active">
+                    <div class="card" style="padding: 20px;">
+                        <div class="table-header-row" style="margin-bottom: 16px;">
+                            <h3 class="card-title" style="margin-bottom: 0; font-size: 16px;">
+                                <i class="fa-solid fa-users-viewfinder" style="color: var(--color-client);"></i>
+                                Saldos Deudores Consolidados
+                            </h3>
+                        </div>
+                        
+                        <div class="table-responsive-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Ganadero</th>
+                                        <th>N° Documento</th>
+                                        <th>Créditos Otorgados</th>
+                                        <th>Total Abonado</th>
+                                        <th>Saldo Pendiente</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-cuentas-cobrar-body">
+                                    <!-- Cargado dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VISTA 2: HISTORIAL DE CRÉDITOS DETALLADO POR GANADERO -->
+                <div id="cuentas-cobrar-detalle-panel" class="caja-view-panel">
+                    <div class="card" style="padding: 20px;">
+                        <div class="table-header-row" style="margin-bottom: 20px; align-items: center; justify-content: space-between;">
+                            <h3 class="card-title" id="cuentas-cobrar-detalle-titulo" style="margin-bottom: 0; font-size: 16px;">
+                                <i class="fa-solid fa-list-check" style="color: var(--color-client);"></i>
+                                Desglose de Lotes al Crédito
+                            </h3>
+                            
+                            <button class="btn-primary" onclick="cerrarDetalleDeudas()" style="width: auto; padding: 6px 14px; font-size: 12px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); box-shadow: none; margin-top: 0;">
+                                <i class="fa-solid fa-arrow-left"></i> Volver al Resumen
+                            </button>
+                        </div>
+                        
+                        <div class="table-responsive-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Fecha Lote</th>
+                                        <th>Código Lote</th>
+                                        <th>Cabezas</th>
+                                        <th>Total Servicio</th>
+                                        <th>Monto Abonado</th>
+                                        <th>Saldo Restante</th>
+                                        <th>Estado Deuda</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-detalle-deudas-body">
+                                    <!-- Cargado dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -835,11 +960,7 @@
                             <i class="fa-solid fa-chevron-down arrow"></i>
                         </div>
                         <div class="custom-select-options" id="custom-select-pago-tipo-options">
-                            <div class="custom-select-option" data-value="Efectivo" onclick="selectPagoTipoOption('Efectivo', 'Efectivo', event)">Efectivo</div>
-                            <div class="custom-select-option" data-value="Transferencia" onclick="selectPagoTipoOption('Transferencia', 'Transferencia Bancaria', event)">Transferencia Bancaria</div>
-                            <div class="custom-select-option" data-value="Tarjeta" onclick="selectPagoTipoOption('Tarjeta', 'Tarjeta de Crédito/Débito', event)">Tarjeta de Crédito/Débito</div>
-                            <div class="custom-select-option" data-value="Yape/Plin" onclick="selectPagoTipoOption('Yape/Plin', 'Yape / Plin / Billetera Digital', event)">Yape / Plin / Billetera Digital</div>
-                            <div class="custom-select-option" data-value="Otro" onclick="selectPagoTipoOption('Otro', 'Otro', event)">Otro</div>
+                            <!-- Se carga dinámicamente desde JavaScript -->
                         </div>
                     </div>
                 </div>
@@ -1068,6 +1189,105 @@
                 <div class="modal-form-actions">
                      <button type="submit" class="btn-primary btn-flex" style="margin-top: 0; background: #ef4444; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2); width: 100%;">
                          <i class="fa-solid fa-lock"></i> Liquidar y Cerrar Caja
+                     </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 8: Registro/Edición de Tipo de Pago -->
+    <div id="modal-tipo-pago" class="form-modal-overlay">
+        <div class="form-modal-card" style="max-width: 420px;">
+            <button class="btn-modal-close" onclick="closeModal('tipo-pago')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <h2 class="card-title" id="modal-tipo-pago-title">
+                <i class="fa-solid fa-money-check-dollar" style="color: var(--color-client);"></i>
+                Registrar Tipo de Pago
+            </h2>
+            
+            <form id="form-tipo-pago" onsubmit="saveTipoPago(event)">
+                <div class="form-group">
+                    <label class="form-label">Nombre del Tipo de Pago</label>
+                    <input type="text" id="tipo-pago-nombre" class="form-control" placeholder="Ej. Efectivo, Tarjeta, etc." required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Estado</label>
+                    <div class="custom-select-container" id="custom-select-tipo-pago-estado-container">
+                        <input type="hidden" id="tipo-pago-estado" value="Activo" required>
+                        <div class="custom-select-trigger" onclick="toggleCustomSelect('tipo-pago-estado', event)">
+                            <span id="custom-select-tipo-pago-estado-text">Activo</span>
+                            <i class="fa-solid fa-chevron-down arrow"></i>
+                        </div>
+                        <div class="custom-select-options" id="custom-select-tipo-pago-estado-options">
+                            <div class="custom-select-option selected" data-value="Activo" onclick="selectTipoPagoEstadoOption('Activo', 'Activo', event)">Activo</div>
+                            <div class="custom-select-option" data-value="Inactivo" onclick="selectTipoPagoEstadoOption('Inactivo', 'Inactivo', event)">Inactivo</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-form-actions">
+                     <button type="submit" id="btn-guardar-tipo-pago" class="btn-primary btn-flex" style="margin-top: 0;">
+                         <i class="fa-solid fa-check"></i> <span id="text-submit-tipo-pago">Registrar Tipo</span>
+                     </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 9: Registro de Abono / Pago de Deuda -->
+    <div id="modal-abono" class="form-modal-overlay">
+        <div class="form-modal-card" style="max-width: 440px;">
+            <button class="btn-modal-close" onclick="closeModal('abono')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <h2 class="card-title">
+                <i class="fa-solid fa-circle-dollar-to-slot" style="color: var(--color-ops);"></i>
+                Registrar Abono
+            </h2>
+            
+            <form id="form-abono" onsubmit="registrarAbonoDeuda(event)">
+                <input type="hidden" id="abono-ganadero-id">
+                
+                <div style="background: rgba(14, 116, 144, 0.05); border: 1px solid rgba(14, 116, 144, 0.1); border-radius: 12px; padding: 14px; margin-bottom: 20px;">
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 6px;">
+                        Ganadero: <strong id="abono-txt-ganadero" style="color: var(--text-primary);">[Cargando...]</strong>
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">
+                        Deuda Pendiente Total: <strong id="abono-txt-deuda-total" style="color: #ef4444; font-size: 15px;">S/. 0.00</strong>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Monto a Abonar (S/.)</label>
+                    <input type="number" id="abono-monto" class="form-control" style="font-size: 16px; font-weight: 700; text-align: center; border-color: var(--color-ops);" placeholder="0.00" min="0.10" step="0.10" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Método de Pago con el que cobra</label>
+                    <div class="custom-select-container" id="custom-select-abono-metodo-container">
+                        <input type="hidden" id="abono-metodo-id" required>
+                        <div class="custom-select-trigger" onclick="toggleCustomSelect('abono-metodo', event)">
+                            <span id="custom-select-abono-metodo-text">Elige un método...</span>
+                            <i class="fa-solid fa-chevron-down arrow"></i>
+                        </div>
+                        <div class="custom-select-options" id="custom-select-abono-metodo-options">
+                            <!-- Se carga dinámicamente con métodos de pago reales, EXCLUYENDO el de tipo "Crédito" -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Observaciones (Opcional)</label>
+                    <input type="text" id="abono-observaciones" class="form-control" placeholder="Ej. Pago parcial lote juliano..." max="150">
+                </div>
+
+                <div class="modal-form-actions">
+                     <button type="submit" class="btn-primary btn-flex" style="margin-top: 0; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: 0 4px 15px rgba(5, 150, 105, 0.25);">
+                         <i class="fa-solid fa-check"></i> Registrar Abono
                      </button>
                 </div>
             </form>

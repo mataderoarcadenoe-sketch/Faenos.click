@@ -8,11 +8,15 @@ let metodosPago = JSON.parse(localStorage.getItem('metodosPago')) || [];
 let cajas = JSON.parse(localStorage.getItem('cajas')) || [];
 let trabajadores = JSON.parse(localStorage.getItem('trabajadores')) || [];
 let roles = JSON.parse(localStorage.getItem('roles')) || [];
+let tiposPago = JSON.parse(localStorage.getItem('tiposPago')) || [];
+let deudas = JSON.parse(localStorage.getItem('deudas')) || [];
+let abonos = JSON.parse(localStorage.getItem('abonos')) || [];
 let editingGanaderoId = null; // Estado de edición global
 let editingEspecieId = null; // Estado de edición de especie global
 let editingPagoId = null; // Estado de edición de pago global
 let editingTrabajadorId = null; // Estado de edición de trabajador global
 let editingRolId = null; // Estado de edición de cargo / rol global
+let editingTipoPagoId = null; // Estado de edición de tipo de pago global
 
 
 // ==========================================
@@ -199,13 +203,81 @@ function initDataPrueba() {
         localStorage.setItem('trabajadores', JSON.stringify(trabajadores));
     }
 
+    if (tiposPago.length === 0) {
+        tiposPago = [
+            { id: 'tp-1', nombre: 'Efectivo', activo: true },
+            { id: 'tp-2', nombre: 'Transferencia Bancaria', activo: true },
+            { id: 'tp-3', nombre: 'Tarjeta de Crédito/Débito', activo: true },
+            { id: 'tp-4', nombre: 'Yape / Plin / Billetera Digital', activo: true },
+            { id: 'tp-5', nombre: 'Crédito', activo: true },
+            { id: 'tp-6', nombre: 'Otro', activo: true }
+        ];
+        localStorage.setItem('tiposPago', JSON.stringify(tiposPago));
+    }
+
     if (metodosPago.length === 0) {
         metodosPago = [
-            { id: 'mp-1', nombre: 'Efectivo Caja Chica', tipo: 'Efectivo', detalle: 'Pago en oficina principal', activo: true },
-            { id: 'mp-2', nombre: 'Transferencia BCP', tipo: 'Transferencia', detalle: 'Cta Corriente BCP N° 191-12345678-0-90', activo: true },
-            { id: 'mp-3', nombre: 'Yape Camal', tipo: 'Yape/Plin', detalle: 'Cel: +51 987654321', activo: true }
+            { id: 'mp-1', nombre: 'Efectivo Caja Chica', tipo: 'tp-1', detalle: 'Pago en oficina principal', activo: true },
+            { id: 'mp-2', nombre: 'Transferencia BCP', tipo: 'tp-2', detalle: 'Cta Corriente BCP N° 191-12345678-0-90', activo: true },
+            { id: 'mp-3', nombre: 'Yape Camal', tipo: 'tp-4', detalle: 'Cel: +51 987654321', activo: true },
+            { id: 'mp-4', nombre: 'Línea de Crédito Camal', tipo: 'tp-5', detalle: 'Crédito aprobado para ganaderos recurrentes', activo: true }
         ];
         localStorage.setItem('metodosPago', JSON.stringify(metodosPago));
+    }
+
+    if (deudas.length === 0) {
+        const haceDosDias = new Date();
+        haceDosDias.setDate(haceDosDias.getDate() - 2);
+        
+        deudas = [
+            {
+                id: 'deuda-1',
+                recepcionId: 'r-ex-1',
+                lote_codigo: 'LBVA159',
+                ganadero_id: 'g-2',
+                ganadero_nombre: 'Fundo Las Brisas',
+                monto_total: 240.00,
+                monto_abonado: 100.00,
+                saldo: 140.00,
+                fecha: haceDosDias.toISOString(),
+                estado: 'Parcial'
+            },
+            {
+                id: 'deuda-2',
+                recepcionId: 'r-ex-2',
+                lote_codigo: 'LBPO160',
+                ganadero_id: 'g-2',
+                ganadero_nombre: 'Fundo Las Brisas',
+                monto_total: 180.00,
+                monto_abonado: 0.00,
+                saldo: 180.00,
+                fecha: haceDosDias.toISOString(),
+                estado: 'Pendiente'
+            }
+        ];
+        localStorage.setItem('deudas', JSON.stringify(deudas));
+    }
+
+    if (abonos.length === 0) {
+        const haceUnDia = new Date();
+        haceUnDia.setDate(haceUnDia.getDate() - 1);
+        
+        abonos = [
+            {
+                id: 'abono-ex-1',
+                ganadero_id: 'g-2',
+                ganadero_nombre: 'Fundo Las Brisas',
+                monto: 100.00,
+                fecha: haceUnDia.toISOString(),
+                metodoPagoId: 'mp-1',
+                metodoPagoNombre: 'Efectivo Caja Chica',
+                observaciones: 'Abono inicial en efectivo',
+                detalles: [
+                    { deudaId: 'deuda-1', monto: 100.00 }
+                ]
+            }
+        ];
+        localStorage.setItem('abonos', JSON.stringify(abonos));
     }
 
     if (especies.length === 0) {
@@ -296,6 +368,10 @@ function switchTab(tabName) {
         titleText = 'Configuración del Sistema';
     } else if (tabName === 'caja') {
         titleText = 'Caja General y Control de Cobros';
+    } else if (tabName === 'cuentas-cobrar') {
+        titleText = 'Cuentas por Cobrar (Créditos)';
+        // Resetear vista al entrar
+        cerrarDetalleDeudas();
     }
     document.getElementById('header-title-text').innerText = titleText;
 
@@ -322,6 +398,7 @@ function switchTab(tabName) {
         if (editingEspecieId !== null) cancelarEdicionEspecie();
         if (editingPagoId !== null) cancelarEdicionPago();
         if (editingRolId !== null) cancelarEdicionRol();
+        if (editingTipoPagoId !== null) cancelarEdicionTipoPago();
     }
 
     // Cerrar sidebar en móviles tras cambiar de pestaña
@@ -723,6 +800,8 @@ function renderAll() {
         let cobroCell = '';
         if (r.estadoCobro === 'Cobrado') {
             cobroCell = `<span class="badge badge-success" style="background: rgba(5, 150, 105, 0.08); color: var(--color-ops); border: 1px solid rgba(5, 150, 105, 0.15);"><i class="fa-solid fa-circle-check"></i> Cobrado</span>`;
+        } else if (r.estadoCobro === 'A Crédito') {
+            cobroCell = `<span class="badge" style="background: rgba(234, 88, 12, 0.08); color: #ea580c; border: 1px solid rgba(234, 88, 12, 0.15); padding: 4px 8px; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-receipt"></i> Al Crédito</span>`;
         } else {
             cobroCell = `
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -839,20 +918,24 @@ function renderAll() {
         if (panelAbierta) panelAbierta.classList.add('active');
         
         // Calcular métricas
-        const ingresos = cajaActiva.movimientos.filter(m => m.tipo === 'Ingreso').reduce((acc, curr) => acc + curr.monto, 0);
-        const egresos = cajaActiva.movimientos.filter(m => m.tipo === 'Egreso').reduce((acc, curr) => acc + curr.monto, 0);
-        const saldoActual = cajaActiva.montoApertura + ingresos - egresos;
+        const ingresosEfectivo = cajaActiva.movimientos.filter(m => m.tipo === 'Ingreso' && esMovimientoEfectivo(m)).reduce((acc, curr) => acc + curr.monto, 0);
+        const egresosEfectivo = cajaActiva.movimientos.filter(m => m.tipo === 'Egreso' && esMovimientoEfectivo(m)).reduce((acc, curr) => acc + curr.monto, 0);
+        const saldoFisicoTeorico = cajaActiva.montoApertura + ingresosEfectivo - egresosEfectivo;
+        
+        const ingresosOtros = cajaActiva.movimientos.filter(m => m.tipo === 'Ingreso' && !esMovimientoEfectivo(m)).reduce((acc, curr) => acc + curr.monto, 0);
         
         // Pintar métricas
         const valApertura = document.getElementById('caja-val-apertura');
         const valIngresos = document.getElementById('caja-val-ingresos');
         const valEgresos = document.getElementById('caja-val-egresos');
+        const valOtrosIngresos = document.getElementById('caja-val-otros-ingresos');
         const valSaldo = document.getElementById('caja-val-saldo');
         
         if (valApertura) valApertura.innerText = `S/. ${cajaActiva.montoApertura.toFixed(2)}`;
-        if (valIngresos) valIngresos.innerText = `S/. ${ingresos.toFixed(2)}`;
-        if (valEgresos) valEgresos.innerText = `S/. ${egresos.toFixed(2)}`;
-        if (valSaldo) valSaldo.innerText = `S/. ${saldoActual.toFixed(2)}`;
+        if (valIngresos) valIngresos.innerText = `+ S/. ${ingresosEfectivo.toFixed(2)}`;
+        if (valEgresos) valEgresos.innerText = `- S/. ${egresosEfectivo.toFixed(2)}`;
+        if (valOtrosIngresos) valOtrosIngresos.innerText = `+ S/. ${ingresosOtros.toFixed(2)}`;
+        if (valSaldo) valSaldo.innerText = `S/. ${saldoFisicoTeorico.toFixed(2)}`;
         
         // Poblar movimientos del turno activo
         const tbodyMovs = document.getElementById('table-movimientos-body');
@@ -1006,6 +1089,20 @@ function renderAll() {
     
     // 14. Dropdown de Cargos y Roles en el Formulario de Trabajadores
     poblarSelectorTrabajadorRol();
+
+    // 15. Tabla de Tipos de Pago (Configuración)
+    renderTiposPago();
+    
+    // 16. Dropdown de Tipos de Pago en el Formulario de Métodos de Pago
+    poblarSelectorPagoTipo();
+    
+    // 17. Tabla de Cuentas por Cobrar (Saldos Deudores)
+    renderCuentasCobrar();
+    
+    // 17b. Actualizar detalle si está activo
+    if (selectedGanaderoDeudaId) {
+        renderDetalleDeudas();
+    }
 }
 
 // Generar un código único de 2 letras a partir de una razón social
@@ -1776,15 +1873,15 @@ function cerrarCaja() {
     const cajaActiva = cajas.find(c => c.estado === 'Abierta');
     if (!cajaActiva) return;
     
-    const ingresos = cajaActiva.movimientos.filter(m => m.tipo === 'Ingreso').reduce((acc, curr) => acc + curr.monto, 0);
-    const egresos = cajaActiva.movimientos.filter(m => m.tipo === 'Egreso').reduce((acc, curr) => acc + curr.monto, 0);
-    const saldoCalculado = cajaActiva.montoApertura + ingresos - egresos;
+    const ingresosEfectivo = cajaActiva.movimientos.filter(m => m.tipo === 'Ingreso' && esMovimientoEfectivo(m)).reduce((acc, curr) => acc + curr.monto, 0);
+    const egresosEfectivo = cajaActiva.movimientos.filter(m => m.tipo === 'Egreso' && esMovimientoEfectivo(m)).reduce((acc, curr) => acc + curr.monto, 0);
+    const saldoTeoricoFisico = cajaActiva.montoApertura + ingresosEfectivo - egresosEfectivo;
     
     // Cargar datos en el modal de arqueo
     document.getElementById('arqueo-txt-apertura').innerText = `S/. ${cajaActiva.montoApertura.toFixed(2)}`;
-    document.getElementById('arqueo-txt-ingresos').innerText = `+ S/. ${ingresos.toFixed(2)}`;
-    document.getElementById('arqueo-txt-egresos').innerText = `- S/. ${egresos.toFixed(2)}`;
-    document.getElementById('arqueo-txt-teorico').innerText = `S/. ${saldoCalculado.toFixed(2)}`;
+    document.getElementById('arqueo-txt-ingresos').innerText = `+ S/. ${ingresosEfectivo.toFixed(2)}`;
+    document.getElementById('arqueo-txt-egresos').innerText = `- S/. ${egresosEfectivo.toFixed(2)}`;
+    document.getElementById('arqueo-txt-teorico').innerText = `S/. ${saldoTeoricoFisico.toFixed(2)}`;
     
     // Reset inputs
     document.getElementById('arqueo-monto-real').value = '';
@@ -1918,10 +2015,22 @@ function procesarCobro(event) {
         return;
     }
     
+    const mp = metodosPago.find(m => m.id === metodoId);
+    if (!mp) return;
+    
+    // Comprobar si el método de pago tiene tipo "Crédito"
+    const esCredito = mp.tipo === 'tp-5' || mp.tipo === 'Crédito' || (tiposPago.find(t => t.id === mp.tipo) && tiposPago.find(t => t.id === mp.tipo).nombre === 'Crédito');
+    
     const rIdx = recepciones.findIndex(rec => rec.id === recepcionId);
     if (rIdx !== -1) {
         const rec = recepciones[rIdx];
-        const concepto = `Cobro Faenamiento ${rec.lote_codigo} (${rec.cantidad} cab.) - ${rec.ganadero_nombre}`;
+        
+        let concepto = '';
+        if (esCredito) {
+            concepto = `Cobro Faenamiento ${rec.lote_codigo} (${rec.cantidad} cab.) - ${rec.ganadero_nombre} (Al Crédito)`;
+        } else {
+            concepto = `Cobro Faenamiento ${rec.lote_codigo} (${rec.cantidad} cab.) - ${rec.ganadero_nombre}`;
+        }
         
         const nuevoMov = {
             id: 'mov-' + Date.now(),
@@ -1935,13 +2044,35 @@ function procesarCobro(event) {
         
         cajaActiva.movimientos.push(nuevoMov);
         
-        rec.estadoCobro = 'Cobrado';
+        if (esCredito) {
+            rec.estadoCobro = 'A Crédito';
+            
+            // Registrar la deuda
+            const nuevaDeuda = {
+                id: 'deuda-' + Date.now(),
+                recepcionId: rec.id,
+                lote_codigo: rec.lote_codigo,
+                ganadero_id: rec.ganadero_id,
+                ganadero_nombre: rec.ganadero_nombre,
+                monto_total: total,
+                monto_abonado: 0.00,
+                saldo: total,
+                fecha: new Date().toISOString(),
+                estado: 'Pendiente'
+            };
+            deudas.push(nuevaDeuda);
+            localStorage.setItem('deudas', JSON.stringify(deudas));
+            showToast(`Servicio del lote ${rec.lote_codigo} registrado al crédito con éxito.`, 'success');
+        } else {
+            rec.estadoCobro = 'Cobrado';
+            showToast(`Servicio del lote ${rec.lote_codigo} cobrado con éxito.`, 'success');
+        }
+        
         rec.cobroMovimientoId = nuevoMov.id;
         
         localStorage.setItem('cajas', JSON.stringify(cajas));
         localStorage.setItem('recepciones', JSON.stringify(recepciones));
         
-        showToast(`Servicio del lote ${rec.lote_codigo} cobrado con éxito.`, 'success');
         closeModal('cobrar');
         renderAll();
     }
@@ -2281,9 +2412,9 @@ function calcularDiferenciaArqueo() {
     const cajaActiva = cajas.find(c => c.estado === 'Abierta');
     if (!cajaActiva) return;
 
-    const ingresos = cajaActiva.movimientos.filter(m => m.tipo === 'Ingreso').reduce((acc, curr) => acc + curr.monto, 0);
-    const egresos = cajaActiva.movimientos.filter(m => m.tipo === 'Egreso').reduce((acc, curr) => acc + curr.monto, 0);
-    const saldoTeorico = cajaActiva.montoApertura + ingresos - egresos;
+    const ingresosEfectivo = cajaActiva.movimientos.filter(m => m.tipo === 'Ingreso' && esMovimientoEfectivo(m)).reduce((acc, curr) => acc + curr.monto, 0);
+    const egresosEfectivo = cajaActiva.movimientos.filter(m => m.tipo === 'Egreso' && esMovimientoEfectivo(m)).reduce((acc, curr) => acc + curr.monto, 0);
+    const saldoTeoricoFisico = cajaActiva.montoApertura + ingresosEfectivo - egresosEfectivo;
 
     const realVal = parseFloat(document.getElementById('arqueo-monto-real').value);
     const statusBox = document.getElementById('arqueo-status-box');
@@ -2296,7 +2427,7 @@ function calcularDiferenciaArqueo() {
         return;
     }
 
-    const diferencia = realVal - saldoTeorico;
+    const diferencia = realVal - saldoTeoricoFisico;
 
     if (Math.abs(diferencia) < 0.01) {
         statusBox.innerText = 'Caja Cuadrada (S/. 0.00 de diferencia)';
@@ -2323,15 +2454,15 @@ function procesarCierreConArqueo(event) {
         return;
     }
 
-    const ingresos = cajaActiva.movimientos.filter(m => m.tipo === 'Ingreso').reduce((acc, curr) => acc + curr.monto, 0);
-    const egresos = cajaActiva.movimientos.filter(m => m.tipo === 'Egreso').reduce((acc, curr) => acc + curr.monto, 0);
-    const saldoTeorico = cajaActiva.montoApertura + ingresos - egresos;
+    const ingresosEfectivo = cajaActiva.movimientos.filter(m => m.tipo === 'Ingreso' && esMovimientoEfectivo(m)).reduce((acc, curr) => acc + curr.monto, 0);
+    const egresosEfectivo = cajaActiva.movimientos.filter(m => m.tipo === 'Egreso' && esMovimientoEfectivo(m)).reduce((acc, curr) => acc + curr.monto, 0);
+    const saldoTeoricoFisico = cajaActiva.montoApertura + ingresosEfectivo - egresosEfectivo;
     
-    const diferenciaCalculada = realVal - saldoTeorico;
+    const diferenciaCalculada = realVal - saldoTeoricoFisico;
 
     cajaActiva.estado = 'Cerrada';
     cajaActiva.fechaCierre = new Date().toISOString();
-    cajaActiva.montoCierre = saldoTeorico;
+    cajaActiva.montoCierre = saldoTeoricoFisico;
     cajaActiva.montoReal = realVal;
     cajaActiva.diferencia = diferenciaCalculada;
     cajaActiva.observacionArqueo = obs;
@@ -2406,6 +2537,627 @@ function selectPagoTipoOption(value, text, event) {
         });
         container.classList.remove('active');
     }
+}
+
+// ==========================================
+// DETECTAR SI UN MOVIMIENTO ES EN EFECTIVO (RETROCOMPATIBLE)
+// ==========================================
+function esMovimientoEfectivo(mov) {
+    if (!mov.metodoPagoId) return false;
+    const mp = metodosPago.find(item => item.id === mov.metodoPagoId);
+    if (!mp) return false;
+    
+    // Retrocompatibilidad con métodos iniciales o con id directo
+    if (mp.tipo === 'Efectivo' || mp.tipo === 'tp-1') return true;
+    
+    // Buscar en el catálogo dinámico tiposPago
+    const tp = tiposPago.find(item => item.id === mp.tipo || item.nombre === mp.tipo);
+    if (tp && (tp.nombre === 'Efectivo' || tp.id === 'tp-1')) {
+        return true;
+    }
+    return false;
+}
+
+// ==========================================
+// GESTIÓN DEL CATÁLOGO DE TIPOS DE PAGO (CRUD)
+// ==========================================
+function iniciarNuevoTipoPago() {
+    cancelarEdicionTipoPago();
+    openModal('tipo-pago');
+}
+
+function cancelarEdicionTipoPago() {
+    editingTipoPagoId = null;
+    
+    const form = document.getElementById('form-tipo-pago');
+    if (form) form.reset();
+    
+    // Reset custom select de estado
+    const inputEstado = document.getElementById('tipo-pago-estado');
+    if (inputEstado) inputEstado.value = 'Activo';
+    const txtEstado = document.getElementById('custom-select-tipo-pago-estado-text');
+    if (txtEstado) txtEstado.innerText = 'Activo';
+    document.querySelectorAll('#custom-select-tipo-pago-estado-options .custom-select-option').forEach(el => {
+        if (el.getAttribute('data-value') === 'Activo') {
+            el.classList.add('selected');
+        } else {
+            el.classList.remove('selected');
+        }
+    });
+    
+    const modalTitle = document.getElementById('modal-tipo-pago-title');
+    if (modalTitle) {
+        modalTitle.innerHTML = `
+            <i class="fa-solid fa-money-check-dollar" style="color: var(--color-client);"></i>
+            Registrar Tipo de Pago
+        `;
+    }
+    
+    const submitText = document.getElementById('text-submit-tipo-pago');
+    if (submitText) {
+        submitText.innerText = 'Registrar Tipo';
+    }
+}
+
+function saveTipoPago(event) {
+    event.preventDefault();
+    const nombre = document.getElementById('tipo-pago-nombre').value.trim();
+    const activoVal = document.getElementById('tipo-pago-estado').value === 'Activo';
+    
+    if (tiposPago.some(tp => tp.nombre.toLowerCase() === nombre.toLowerCase() && tp.id !== editingTipoPagoId)) {
+        showToast('El nombre de tipo de pago ya existe en el catálogo.', 'error');
+        return;
+    }
+    
+    if (editingTipoPagoId !== null) {
+        // Modo Edición
+        const idx = tiposPago.findIndex(tp => tp.id === editingTipoPagoId);
+        if (idx !== -1) {
+            tiposPago[idx].nombre = nombre;
+            tiposPago[idx].activo = activoVal;
+            
+            localStorage.setItem('tiposPago', JSON.stringify(tiposPago));
+            showToast('Tipo de pago actualizado correctamente.', 'success');
+            closeModal('tipo-pago');
+        }
+    } else {
+        // Modo Nuevo
+        const nuevoTipo = {
+            id: 'tp-' + Date.now(),
+            nombre: nombre,
+            activo: activoVal
+        };
+        tiposPago.push(nuevoTipo);
+        localStorage.setItem('tiposPago', JSON.stringify(tiposPago));
+        showToast('Tipo de pago registrado correctamente.', 'success');
+        closeModal('tipo-pago');
+    }
+    
+    renderAll();
+}
+
+function editTipoPago(id) {
+    const tp = tiposPago.find(item => item.id === id);
+    if (!tp) return;
+    
+    editingTipoPagoId = id;
+    
+    document.getElementById('tipo-pago-nombre').value = tp.nombre;
+    
+    const estadoStr = tp.activo ? 'Activo' : 'Inactivo';
+    selectTipoPagoEstadoOption(estadoStr, estadoStr);
+    
+    const modalTitle = document.getElementById('modal-tipo-pago-title');
+    if (modalTitle) {
+        modalTitle.innerHTML = `
+            <i class="fa-solid fa-pen-to-square" style="color: var(--color-client);"></i>
+            Editar Tipo de Pago
+        `;
+    }
+    
+    const submitText = document.getElementById('text-submit-tipo-pago');
+    if (submitText) {
+        submitText.innerText = 'Guardar Cambios';
+    }
+    
+    openModal('tipo-pago');
+}
+
+function selectTipoPagoEstadoOption(value, text, event) {
+    if (event) event.stopPropagation();
+    const inputHidden = document.getElementById('tipo-pago-estado');
+    const triggerText = document.getElementById('custom-select-tipo-pago-estado-text');
+    const container = document.getElementById('custom-select-tipo-pago-estado-container');
+    const options = document.querySelectorAll('#custom-select-tipo-pago-estado-options .custom-select-option');
+    
+    if (inputHidden && triggerText) {
+        inputHidden.value = value;
+        triggerText.innerText = text;
+        
+        options.forEach(opt => {
+            if (opt.getAttribute('data-value') === value) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        
+        if (container) container.classList.remove('active');
+    }
+}
+
+function deleteTipoPago(id) {
+    const tp = tiposPago.find(item => item.id === id);
+    if (!tp) return;
+    
+    // Validar si está siendo usado por algún método de pago
+    const estaUsado = metodosPago.some(mp => mp.tipo === id || mp.tipo === tp.nombre);
+    if (estaUsado) {
+        showToast('No se puede eliminar este tipo de pago porque está en uso por uno o más métodos de pago.', 'error');
+        return;
+    }
+    
+    // Validar si es de los predeterminados protegidos
+    if (id.startsWith('tp-') && parseInt(id.split('-')[1]) <= 6) {
+        showToast('No se pueden eliminar los tipos de pago predeterminados del sistema.', 'error');
+        return;
+    }
+    
+    customConfirm(`¿Está seguro de eliminar el tipo de pago "${tp.nombre}"? Esta acción no se puede deshacer.`).then(confirmado => {
+        if (confirmado) {
+            if (editingTipoPagoId === id) {
+                cancelarEdicionTipoPago();
+            }
+            tiposPago = tiposPago.filter(item => item.id !== id);
+            localStorage.setItem('tiposPago', JSON.stringify(tiposPago));
+            renderAll();
+            showToast('Tipo de pago eliminado correctamente.', 'success');
+        }
+    });
+}
+
+function renderTiposPago() {
+    const tbody = document.getElementById('table-tipos-pago-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    tiposPago.forEach(tp => {
+        const tr = document.createElement('tr');
+        
+        const statusBadge = tp.activo 
+            ? `<span class="badge badge-success" style="background: rgba(5, 150, 105, 0.08); color: var(--color-ops); border: 1px solid rgba(5, 150, 105, 0.15);"><i class="fa-solid fa-circle-check"></i> Activo</span>`
+            : `<span class="badge" style="background: rgba(100, 116, 139, 0.08); color: #64748b; border: 1px solid rgba(100, 116, 139, 0.15);"><i class="fa-solid fa-circle-minus"></i> Inactivo</span>`;
+            
+        let accionesHtml = `
+            <button onclick="editTipoPago('${tp.id}')" style="background: none; border: none; color: var(--color-admin); cursor: pointer; font-size: 15px; margin-right: 12px;" title="Editar">
+                <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button onclick="deleteTipoPago('${tp.id}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 15px;" title="Eliminar">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+        `;
+        
+        if (tp.id.startsWith('tp-') && parseInt(tp.id.split('-')[1]) <= 6) {
+            accionesHtml = `
+                <button onclick="editTipoPago('${tp.id}')" style="background: none; border: none; color: var(--color-admin); cursor: pointer; font-size: 15px;" title="Editar">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+            `;
+        }
+        
+        tr.innerHTML = `
+            <td><strong>${tp.nombre}</strong></td>
+            <td>${statusBadge}</td>
+            <td>${accionesHtml}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function poblarSelectorPagoTipo() {
+    const customOptions = document.getElementById('custom-select-pago-tipo-options');
+    if (!customOptions) return;
+    customOptions.innerHTML = '';
+    
+    tiposPago.forEach(tp => {
+        if (tp.activo) {
+            const divOpt = document.createElement('div');
+            divOpt.className = 'custom-select-option';
+            divOpt.innerText = tp.nombre;
+            divOpt.setAttribute('data-value', tp.id);
+            
+            const selectedVal = document.getElementById('pago-tipo').value;
+            if (selectedVal === tp.id) {
+                divOpt.classList.add('selected');
+            }
+            
+            divOpt.onclick = (event) => selectPagoTipoOption(tp.id, tp.nombre, event);
+            customOptions.appendChild(divOpt);
+        }
+    });
+}
+
+
+// ==========================================
+// LÓGICA DE CUENTAS POR COBRAR (CRÉDITOS)
+// ==========================================
+let selectedGanaderoDeudaId = null;
+
+function renderCuentasCobrar() {
+    const tbody = document.getElementById('table-cuentas-cobrar-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    const deudasPorGanadero = {};
+    deudas.forEach(d => {
+        if (!deudasPorGanadero[d.ganadero_id]) {
+            deudasPorGanadero[d.ganadero_id] = [];
+        }
+        deudasPorGanadero[d.ganadero_id].push(d);
+    });
+    
+    const ganaderosConDeudas = ganaderos.filter(g => deudasPorGanadero[g.id] && deudasPorGanadero[g.id].length > 0);
+    
+    if (ganaderosConDeudas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 16px;">No se registran cuentas por cobrar ni saldos pendientes.</td></tr>`;
+        return;
+    }
+    
+    ganaderosConDeudas.forEach(g => {
+        const misDeudas = deudasPorGanadero[g.id];
+        const totalCreditos = misDeudas.reduce((acc, curr) => acc + curr.monto_total, 0);
+        const totalAbonado = misDeudas.reduce((acc, curr) => acc + curr.monto_abonado, 0);
+        const saldoPendiente = misDeudas.reduce((acc, curr) => acc + curr.saldo, 0);
+        
+        let abonoBtn = '';
+        if (saldoPendiente > 0) {
+            abonoBtn = `
+                <button onclick="iniciarAbono('${g.id}')" class="btn-primary" style="width: auto; padding: 4px 8px; font-size: 11px; margin-top: 0; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: none;">
+                    <i class="fa-solid fa-circle-dollar-to-slot"></i> Registrar Abono
+                </button>
+            `;
+        } else {
+            abonoBtn = `<span style="font-size: 11px; color: var(--color-ops); font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Al Día</span>`;
+        }
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${g.nombre}</strong></td>
+            <td style="font-size: 12px; color: var(--text-secondary);">${g.ruc}</td>
+            <td style="font-weight: 500;">S/. ${totalCreditos.toFixed(2)}</td>
+            <td style="color: var(--color-ops); font-weight: 500;">S/. ${totalAbonado.toFixed(2)}</td>
+            <td style="font-weight: 700; color: ${saldoPendiente > 0 ? '#ef4444' : 'var(--color-ops)'};">S/. ${saldoPendiente.toFixed(2)}</td>
+            <td>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button onclick="verDetalleDeudasGanadero('${g.id}')" class="btn-primary" style="width: auto; padding: 4px 8px; font-size: 11px; margin-top: 0; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); box-shadow: none;">
+                        <i class="fa-solid fa-eye"></i> Ver Detalle
+                    </button>
+                    ${abonoBtn}
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function verDetalleDeudasGanadero(ganaderoId) {
+    const ganadero = ganaderos.find(g => g.id === ganaderoId);
+    if (!ganadero) return;
+    
+    selectedGanaderoDeudaId = ganaderoId;
+    
+    document.getElementById('cuentas-cobrar-resumen-panel').classList.remove('active');
+    document.getElementById('cuentas-cobrar-detalle-panel').classList.add('active');
+    
+    document.getElementById('cuentas-cobrar-detalle-titulo').innerHTML = `
+        <i class="fa-solid fa-receipt" style="color: var(--color-client);"></i>
+        Desglose de Lotes al Crédito de <strong>${ganadero.nombre}</strong>
+    `;
+    
+    renderDetalleDeudas();
+}
+
+function cerrarDetalleDeudas() {
+    selectedGanaderoDeudaId = null;
+    const panelDetalle = document.getElementById('cuentas-cobrar-detalle-panel');
+    const panelResumen = document.getElementById('cuentas-cobrar-resumen-panel');
+    if (panelDetalle) panelDetalle.classList.remove('active');
+    if (panelResumen) panelResumen.classList.add('active');
+    renderCuentasCobrar();
+}
+
+function renderDetalleDeudas() {
+    const tbody = document.getElementById('table-detalle-deudas-body');
+    if (!tbody || !selectedGanaderoDeudaId) return;
+    tbody.innerHTML = '';
+    
+    const misDeudas = deudas.filter(d => d.ganadero_id === selectedGanaderoDeudaId).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    
+    misDeudas.forEach(d => {
+        const fechaLegible = new Date(d.fecha).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        
+        let cabezas = '--';
+        const rec = recepciones.find(r => r.id === d.recepcionId || r.lote_codigo === d.lote_codigo);
+        if (rec) cabezas = rec.cantidad;
+        
+        let badgeEstado = '';
+        if (d.estado === 'Cancelado') {
+            badgeEstado = `<span class="badge badge-success" style="background: rgba(5, 150, 105, 0.08); color: var(--color-ops); border: 1px solid rgba(5, 150, 105, 0.15);"><i class="fa-solid fa-circle-check"></i> Cancelado</span>`;
+        } else if (d.estado === 'Parcial') {
+            badgeEstado = `<span class="badge" style="background: rgba(245, 158, 11, 0.08); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.15);"><i class="fa-solid fa-circle-half-stroke"></i> Parcial</span>`;
+        } else {
+            badgeEstado = `<span class="badge badge-pending" style="padding: 2px 6px; font-size: 10px;">Pendiente</span>`;
+        }
+        
+        let accionBtn = '';
+        if (d.saldo > 0) {
+            accionBtn = `
+                <button onclick="iniciarAbonoEspecifico('${d.ganadero_id}', '${d.id}')" class="btn-primary" style="width: auto; padding: 4px 8px; font-size: 11px; margin-top: 0; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: none;">
+                    <i class="fa-solid fa-circle-dollar-to-slot"></i> Abonar Lote
+                </button>
+            `;
+        } else {
+            accionBtn = `<span style="font-size: 11px; color: var(--color-ops); font-weight: 600;"><i class="fa-solid fa-check-double"></i> Pagado</span>`;
+        }
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="font-size: 12px; color: var(--text-secondary);">${fechaLegible}</td>
+            <td><span class="lote-tag" style="border-color: var(--color-client); color: #ea580c; background: rgba(234, 88, 12, 0.05);">${d.lote_codigo}</span></td>
+            <td style="font-weight: 600;">${cabezas}</td>
+            <td style="font-weight: 500;">S/. ${d.monto_total.toFixed(2)}</td>
+            <td style="color: var(--color-ops); font-weight: 500;">S/. ${d.monto_abonado.toFixed(2)}</td>
+            <td style="font-weight: 700; color: ${d.saldo > 0 ? '#ef4444' : 'var(--color-ops)'};">S/. ${d.saldo.toFixed(2)}</td>
+            <td>${badgeEstado}</td>
+            <td>${accionBtn}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function iniciarAbono(ganaderoId) {
+    const ganadero = ganaderos.find(g => g.id === ganaderoId);
+    if (!ganadero) return;
+    
+    const cajaActiva = cajas.find(c => c.estado === 'Abierta');
+    if (!cajaActiva) {
+        showToast('Debe aperturar la caja general para registrar abonos.', 'error');
+        return;
+    }
+    
+    const misDeudas = deudas.filter(d => d.ganadero_id === ganaderoId && d.saldo > 0);
+    const deudaTotal = misDeudas.reduce((acc, curr) => acc + curr.saldo, 0);
+    
+    document.getElementById('abono-ganadero-id').value = ganaderoId;
+    
+    let inputEspecifica = document.getElementById('abono-deuda-especifica-id');
+    if (!inputEspecifica) {
+        inputEspecifica = document.createElement('input');
+        inputEspecifica.type = 'hidden';
+        inputEspecifica.id = 'abono-deuda-especifica-id';
+        document.getElementById('form-abono').appendChild(inputEspecifica);
+    }
+    inputEspecifica.value = '';
+    
+    document.getElementById('abono-txt-ganadero').innerText = ganadero.nombre;
+    document.getElementById('abono-txt-deuda-total').innerText = `S/. ${deudaTotal.toFixed(2)}`;
+    document.getElementById('abono-monto').value = '';
+    document.getElementById('abono-monto').max = deudaTotal.toFixed(2);
+    document.getElementById('abono-observaciones').value = '';
+    
+    document.getElementById('abono-metodo-id').value = '';
+    document.getElementById('custom-select-abono-metodo-text').innerText = 'Elige un método...';
+    
+    poblarSelectorAbonoMetodo();
+    openModal('abono');
+}
+
+function iniciarAbonoEspecifico(ganaderoId, deudaId) {
+    const ganadero = ganaderos.find(g => g.id === ganaderoId);
+    if (!ganadero) return;
+    
+    const deuda = deudas.find(d => d.id === deudaId);
+    if (!deuda) return;
+    
+    const cajaActiva = cajas.find(c => c.estado === 'Abierta');
+    if (!cajaActiva) {
+        showToast('Debe aperturar la caja general para registrar abonos.', 'error');
+        return;
+    }
+    
+    document.getElementById('abono-ganadero-id').value = ganaderoId;
+    
+    let inputEspecifica = document.getElementById('abono-deuda-especifica-id');
+    if (!inputEspecifica) {
+        inputEspecifica = document.createElement('input');
+        inputEspecifica.type = 'hidden';
+        inputEspecifica.id = 'abono-deuda-especifica-id';
+        document.getElementById('form-abono').appendChild(inputEspecifica);
+    }
+    inputEspecifica.value = deudaId;
+    
+    document.getElementById('abono-txt-ganadero').innerText = `${ganadero.nombre} (Lote: ${deuda.lote_codigo})`;
+    document.getElementById('abono-txt-deuda-total').innerText = `S/. ${deuda.saldo.toFixed(2)}`;
+    document.getElementById('abono-monto').value = deuda.saldo.toFixed(2);
+    document.getElementById('abono-monto').max = deuda.saldo.toFixed(2);
+    document.getElementById('abono-observaciones').value = `Pago lote ${deuda.lote_codigo}`;
+    
+    document.getElementById('abono-metodo-id').value = '';
+    document.getElementById('custom-select-abono-metodo-text').innerText = 'Elige un método...';
+    
+    poblarSelectorAbonoMetodo();
+    openModal('abono');
+}
+
+function poblarSelectorAbonoMetodo() {
+    const customOptions = document.getElementById('custom-select-abono-metodo-options');
+    if (!customOptions) return;
+    customOptions.innerHTML = '';
+    
+    metodosPago.forEach(m => {
+        const esCredito = m.tipo === 'tp-5' || m.tipo === 'Crédito' || (tiposPago.find(t => t.id === m.tipo) && tiposPago.find(t => t.id === m.tipo).nombre === 'Crédito');
+        if (m.activo && !esCredito) {
+            const divOpt = document.createElement('div');
+            divOpt.className = 'custom-select-option';
+            divOpt.innerText = `${m.nombre}`;
+            divOpt.setAttribute('data-value', m.id);
+            
+            const selectedVal = document.getElementById('abono-metodo-id').value;
+            if (selectedVal === m.id) {
+                divOpt.classList.add('selected');
+            }
+            
+            divOpt.onclick = (event) => selectAbonoMetodoOption(m.id, `${m.nombre}`, event);
+            customOptions.appendChild(divOpt);
+        }
+    });
+}
+
+function selectAbonoMetodoOption(value, text, event) {
+    if (event) event.stopPropagation();
+    const inputHidden = document.getElementById('abono-metodo-id');
+    const triggerText = document.getElementById('custom-select-abono-metodo-text');
+    const container = document.getElementById('custom-select-abono-metodo-container');
+    const options = document.querySelectorAll('#custom-select-abono-metodo-options .custom-select-option');
+    
+    if (inputHidden && triggerText) {
+        inputHidden.value = value;
+        triggerText.innerText = text;
+        
+        options.forEach(opt => {
+            if (opt.getAttribute('data-value') === value) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        
+        if (container) container.classList.remove('active');
+    }
+}
+
+function registrarAbonoDeuda(event) {
+    event.preventDefault();
+    const ganaderoId = document.getElementById('abono-ganadero-id').value;
+    const deudaEspecificaId = document.getElementById('abono-deuda-especifica-id') ? document.getElementById('abono-deuda-especifica-id').value : '';
+    const montoAbono = parseFloat(document.getElementById('abono-monto').value);
+    const metodoId = document.getElementById('abono-metodo-id').value;
+    const obs = document.getElementById('abono-observaciones').value.trim();
+    
+    if (isNaN(montoAbono) || montoAbono <= 0) {
+        showToast('Monto de abono no válido.', 'error');
+        return;
+    }
+    
+    if (!metodoId) {
+        showToast('Debe seleccionar un método de pago.', 'error');
+        return;
+    }
+    
+    const ganadero = ganaderos.find(g => g.id === ganaderoId);
+    if (!ganadero) return;
+    
+    const cajaActiva = cajas.find(c => c.estado === 'Abierta');
+    if (!cajaActiva) {
+        showToast('Debe aperturar la caja antes de registrar movimientos.', 'error');
+        return;
+    }
+    
+    const metodoObj = metodosPago.find(m => m.id === metodoId);
+    if (!metodoObj) return;
+    
+    let restante = montoAbono;
+    const detallesAbono = [];
+    const lotesAfectados = [];
+    
+    if (deudaEspecificaId) {
+        const deuda = deudas.find(d => d.id === deudaEspecificaId);
+        if (deuda) {
+            const montoAmortizar = Math.min(deuda.saldo, restante);
+            deuda.monto_abonado += montoAmortizar;
+            deuda.saldo = deuda.monto_total - deuda.monto_abonado;
+            if (deuda.saldo < 0.01) {
+                deuda.saldo = 0;
+                deuda.estado = 'Cancelado';
+                const rec = recepciones.find(r => r.id === deuda.recepcionId || r.lote_codigo === deuda.lote_codigo);
+                if (rec) rec.estadoCobro = 'Cobrado';
+            } else {
+                deuda.estado = 'Parcial';
+            }
+            restante -= montoAmortizar;
+            detallesAbono.push({ deudaId: deuda.id, monto: montoAmortizar });
+            lotesAfectados.push(deuda.lote_codigo);
+        }
+    } else {
+        const deudasPendientes = deudas
+            .filter(d => d.ganadero_id === ganaderoId && d.saldo > 0)
+            .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+            
+        for (let i = 0; i < deudasPendientes.length; i++) {
+            if (restante <= 0) break;
+            const deuda = deudasPendientes[i];
+            const montoAmortizar = Math.min(deuda.saldo, restante);
+            
+            deuda.monto_abonado += montoAmortizar;
+            deuda.saldo = deuda.monto_total - deuda.monto_abonado;
+            
+            if (deuda.saldo < 0.01) {
+                deuda.saldo = 0;
+                deuda.estado = 'Cancelado';
+                const rec = recepciones.find(r => r.id === deuda.recepcionId || r.lote_codigo === deuda.lote_codigo);
+                if (rec) rec.estadoCobro = 'Cobrado';
+            } else {
+                deuda.estado = 'Parcial';
+            }
+            
+            restante -= montoAmortizar;
+            detallesAbono.push({ deudaId: deuda.id, monto: montoAmortizar });
+            lotesAfectados.push(deuda.lote_codigo);
+        }
+    }
+    
+    const refLotes = lotesAfectados.join(', ');
+    const concepto = `Abono Deuda - ${ganadero.nombre} (Lotes: ${refLotes})`;
+    
+    const nuevoMov = {
+        id: 'mov-' + Date.now(),
+        fecha: new Date().toISOString(),
+        tipo: 'Ingreso',
+        monto: montoAbono,
+        concepto: concepto,
+        metodoPagoId: metodoId,
+        referencia: refLotes
+    };
+    
+    cajaActiva.movimientos.push(nuevoMov);
+    
+    const nuevoAbono = {
+        id: 'abono-' + Date.now(),
+        ganadero_id: ganaderoId,
+        ganadero_nombre: ganadero.nombre,
+        monto: montoAbono,
+        fecha: new Date().toISOString(),
+        metodoPagoId: metodoId,
+        metodoPagoNombre: metodoObj.nombre,
+        observaciones: obs,
+        detalles: detallesAbono
+    };
+    abonos.push(nuevoAbono);
+    
+    localStorage.setItem('deudas', JSON.stringify(deudas));
+    localStorage.setItem('abonos', JSON.stringify(abonos));
+    localStorage.setItem('cajas', JSON.stringify(cajas));
+    localStorage.setItem('recepciones', JSON.stringify(recepciones));
+    
+    showToast(`Abono de S/. ${montoAbono.toFixed(2)} registrado con éxito.`, 'success');
+    closeModal('abono');
+    
+    if (selectedGanaderoDeudaId) {
+        renderDetalleDeudas();
+    } else {
+        renderCuentasCobrar();
+    }
+    renderAll();
 }
 
 // Cargar la aplicación al iniciar la ventana
