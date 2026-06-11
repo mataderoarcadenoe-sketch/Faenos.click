@@ -38,6 +38,12 @@
                         </a>
                     </li>
                     <li>
+                        <a class="nav-item" onclick="switchTab('trabajadores')">
+                            <i class="fa-solid fa-users-gear"></i>
+                            <span>Trabajadores</span>
+                        </a>
+                    </li>
+                    <li>
                         <a class="nav-item" onclick="switchTab('recepcion')">
                             <i class="fa-solid fa-truck-ramp-box"></i>
                             <span>Ingreso de Ganado</span>
@@ -142,6 +148,61 @@
                     </div>
                 </div>
 
+            </section>
+
+            <!-- SECCIÓN TRABAJADORES -->
+            <section id="tab-trabajadores" class="content-section">
+                <!-- Métricas Trabajadores -->
+                <div class="stats-grid" style="margin-bottom: 32px;">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Personal</div>
+                        <div class="stat-value" id="stat-total-trabajadores">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Personal Activo</div>
+                        <div class="stat-value" id="stat-trabajadores-activos" style="color: var(--color-ops);">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Cajeros / Encargados</div>
+                        <div class="stat-value" id="stat-trabajadores-cajeros" style="color: var(--color-admin);">0</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-header-row">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <i class="fa-solid fa-users-gear" style="font-size: 22px; color: var(--color-client);"></i>
+                            <h3 class="card-title" style="margin-bottom: 0;">Catálogo de Personal</h3>
+                        </div>
+                        <div style="display: flex; gap: 16px; align-items: center;">
+                            <div class="search-box">
+                                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                                <input type="text" id="search-trabajadores" class="search-input" placeholder="Buscar trabajador..." oninput="filterTrabajadores()">
+                            </div>
+                            
+                            <button class="btn-primary" onclick="iniciarNuevoTrabajador()" style="width: auto; padding: 10px 20px; white-space: nowrap;">
+                                <i class="fa-solid fa-plus"></i> Nuevo Trabajador
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nombres y Apellidos</th>
+                                    <th>Cargo / Rol</th>
+                                    <th>WhatsApp</th>
+                                    <th>Estado</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-trabajadores-body">
+                                <!-- Filas cargadas dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </section>
 
             <!-- SECCIÓN 2: INGRESO DE GANADO (RECEPCIÓN) -->
@@ -320,6 +381,19 @@
                             
                             <form id="form-apertura-caja" onsubmit="aperturarCaja(event)">
                                 <div class="form-group">
+                                    <label class="form-label">Seleccionar Encargado (Cajero)</label>
+                                    <div class="custom-select-container" id="custom-select-trabajador-container">
+                                        <input type="hidden" id="caja-trabajador-id" required>
+                                        <div class="custom-select-trigger" onclick="toggleCustomSelect('trabajador', event)">
+                                            <span id="custom-select-trabajador-text">Elige un trabajador...</span>
+                                            <i class="fa-solid fa-chevron-down arrow"></i>
+                                        </div>
+                                        <div class="custom-select-options" id="custom-select-trabajador-options">
+                                            <!-- Cargado dinámicamente -->
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
                                     <label class="form-label">Monto de Apertura (S/.)</label>
                                     <input type="number" id="caja-monto-apertura" class="form-control" placeholder="Ej. 150.00" min="0" step="0.10" value="0.00" required>
                                 </div>
@@ -461,10 +535,11 @@
                                 <tr>
                                     <th>Apertura</th>
                                     <th>Cierre</th>
+                                    <th>Encargado</th>
                                     <th>Monto Inicial</th>
-                                    <th>Ingresos</th>
-                                    <th>Egresos</th>
-                                    <th>Monto Final</th>
+                                    <th>Saldo Teórico</th>
+                                    <th>Efectivo Real</th>
+                                    <th>Diferencia (Arqueo)</th>
                                     <th>Estado</th>
                                 </tr>
                             </thead>
@@ -769,6 +844,104 @@
                     <button type="submit" id="btn-guardar-cobro" class="btn-primary btn-flex" style="margin-top: 0; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: 0 4px 15px rgba(5, 150, 105, 0.25);">
                         <i class="fa-solid fa-check"></i> <span>Confirmar Cobro</span>
                     </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 6: Registro/Edición de Trabajador -->
+    <div id="modal-trabajador" class="form-modal-overlay">
+        <div class="form-modal-card">
+            <button class="btn-modal-close" onclick="closeModal('trabajador')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <h2 class="card-title" id="modal-trabajador-title">
+                <i class="fa-solid fa-user-plus" style="color: var(--color-client);"></i>
+                Registrar Trabajador
+            </h2>
+            
+            <form id="form-trabajador" onsubmit="saveTrabajador(event)">
+                <div class="form-group">
+                    <label class="form-label">Nombres y Apellidos</label>
+                    <input type="text" id="trabajador-nombre" class="form-control" placeholder="Ej. Ana Torres Prado" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Cargo / Rol</label>
+                    <select id="trabajador-rol" class="form-control" required>
+                        <option value="Cajero">Cajero(a)</option>
+                        <option value="Operador">Operador de Turno</option>
+                        <option value="Supervisor">Supervisor de Planta</option>
+                        <option value="Administrador">Administrador</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Celular / WhatsApp</label>
+                    <input type="tel" id="trabajador-whatsapp" class="form-control" placeholder="Ej. +51 912345678" required>
+                </div>
+                
+                <div class="modal-form-actions">
+                     <button type="submit" id="btn-guardar-trabajador" class="btn-primary btn-flex" style="margin-top: 0;">
+                         <i class="fa-solid fa-check"></i> <span id="text-submit-trabajador">Registrar Trabajador</span>
+                     </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 7: Arqueo de Caja y Cierre -->
+    <div id="modal-arqueo" class="form-modal-overlay">
+        <div class="form-modal-card" style="max-width: 480px;">
+            <button class="btn-modal-close" onclick="closeModal('arqueo')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <h2 class="card-title" style="color: #ef4444;">
+                <i class="fa-solid fa-calculator" style="color: #ef4444;"></i>
+                Arqueo y Cierre de Caja
+            </h2>
+            
+            <form id="form-arqueo" onsubmit="procesarCierreConArqueo(event)">
+                <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div style="font-size: 12px; color: var(--text-secondary);">
+                        Monto Inicial:
+                        <div id="arqueo-txt-apertura" style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-top: 4px;">S/. 0.00</div>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">
+                        Ingresos (+) :
+                        <div id="arqueo-txt-ingresos" style="font-size: 14px; font-weight: 700; color: var(--color-ops); margin-top: 4px;">+ S/. 0.00</div>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">
+                        Egresos (-) :
+                        <div id="arqueo-txt-egresos" style="font-size: 14px; font-weight: 700; color: #ef4444; margin-top: 4px;">- S/. 0.00</div>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">
+                        Saldo Teórico:
+                        <div id="arqueo-txt-teorico" style="font-size: 14px; font-weight: 800; color: var(--color-admin); margin-top: 4px;">S/. 0.00</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" style="font-weight: 600;">Efectivo Físico en Caja (Contado) (S/.)</label>
+                    <input type="number" id="arqueo-monto-real" class="form-control" style="font-size: 18px; font-weight: 700; text-align: center; height: 44px; border-color: var(--color-admin);" placeholder="0.00" min="0" step="0.10" oninput="calcularDiferenciaArqueo()" required>
+                </div>
+                
+                <!-- Visualización interactiva del cuadre en tiempo real -->
+                <div id="arqueo-status-box" style="padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 20px; font-weight: 700; font-size: 13px; background: #f1f5f9; border: 1px solid var(--border-color); color: var(--text-secondary);">
+                    Ingrese el monto físico para calcular el cuadre
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Observaciones del Arqueo (Opcional)</label>
+                    <input type="text" id="arqueo-observaciones" class="form-control" placeholder="Ej. Faltante por entrega de sencillo">
+                </div>
+                
+                <div class="modal-form-actions">
+                     <button type="submit" class="btn-primary btn-flex" style="margin-top: 0; background: #ef4444; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2); width: 100%;">
+                         <i class="fa-solid fa-lock"></i> Liquidar y Cerrar Caja
+                     </button>
                 </div>
             </form>
         </div>

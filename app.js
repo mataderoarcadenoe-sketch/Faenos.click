@@ -6,9 +6,12 @@ let recepciones = JSON.parse(localStorage.getItem('recepciones')) || [];
 let especies = JSON.parse(localStorage.getItem('especies')) || [];
 let metodosPago = JSON.parse(localStorage.getItem('metodosPago')) || [];
 let cajas = JSON.parse(localStorage.getItem('cajas')) || [];
+let trabajadores = JSON.parse(localStorage.getItem('trabajadores')) || [];
 let editingGanaderoId = null; // Estado de edición global
 let editingEspecieId = null; // Estado de edición de especie global
 let editingPagoId = null; // Estado de edición de pago global
+let editingTrabajadorId = null; // Estado de edición de trabajador global
+
 
 // ==========================================
 // CONTROL DE MODALES DE FORMULARIO
@@ -39,6 +42,22 @@ function closeModal(tipo) {
         // Si cerramos el modal de pago, restablecer estado
         if (tipo === 'pago') {
             cancelarEdicionPago();
+        }
+        
+        // Si cerramos el modal de trabajador, restablecer estado
+        if (tipo === 'trabajador') {
+            cancelarEdicionTrabajador();
+        }
+        
+        // Si cerramos el modal de arqueo, limpiar campos y estilos
+        if (tipo === 'arqueo') {
+            const form = document.getElementById('form-arqueo');
+            if (form) form.reset();
+            const statusBox = document.getElementById('arqueo-status-box');
+            if (statusBox) {
+                statusBox.innerText = 'Ingrese el monto físico para calcular el cuadre';
+                statusBox.className = '';
+            }
         }
         
         // Si cerramos el modal de cobrar, limpiar campos
@@ -159,6 +178,15 @@ function customConfirm(mensaje) {
 
 // Inicialización de datos de prueba si el almacén local está vacío
 function initDataPrueba() {
+    if (trabajadores.length === 0) {
+        trabajadores = [
+            { id: 't-1', nombre: 'Juan Pérez Prado', rol: 'Cajero', whatsapp: '+51 987654321', activo: true },
+            { id: 't-2', nombre: 'María Gómez Torres', rol: 'Operador', whatsapp: '+51 944587123', activo: true },
+            { id: 't-3', nombre: 'Carlos Ruiz Rojas', rol: 'Administrador', whatsapp: '+51 912365478', activo: true }
+        ];
+        localStorage.setItem('trabajadores', JSON.stringify(trabajadores));
+    }
+
     if (metodosPago.length === 0) {
         metodosPago = [
             { id: 'mp-1', nombre: 'Efectivo Caja Chica', tipo: 'Efectivo', detalle: 'Pago en oficina principal', activo: true },
@@ -250,6 +278,8 @@ function switchTab(tabName) {
     let titleText = 'Ingreso de Ganado (Recepción)';
     if (tabName === 'ganaderos') {
         titleText = 'Gestión de Ganaderos';
+    } else if (tabName === 'trabajadores') {
+        titleText = 'Gestión de Personal (Trabajadores)';
     } else if (tabName === 'configuraciones') {
         titleText = 'Configuración del Sistema';
     } else if (tabName === 'caja') {
@@ -260,6 +290,11 @@ function switchTab(tabName) {
     // Si salimos de ganaderos, cancelamos la edición activa por seguridad
     if (tabName !== 'ganaderos' && editingGanaderoId !== null) {
         cancelarEdicion();
+    }
+
+    // Si salimos de trabajadores, cancelamos la edición activa por seguridad
+    if (tabName !== 'trabajadores' && editingTrabajadorId !== null) {
+        cancelarEdicionTrabajador();
     }
 
     // Si salimos de configuraciones, cancelamos la edición de especies activa
@@ -830,28 +865,100 @@ function renderAll() {
         const cajasCerradas = cajas.filter(c => c.estado === 'Cerrada').sort((a, b) => new Date(b.fechaCierre) - new Date(a.fechaCierre));
         
         if (cajasCerradas.length === 0) {
-            tbodyHistorialCajas.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 16px;">No hay registros de cajas liquidadas anteriores.</td></tr>`;
+            tbodyHistorialCajas.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-secondary); padding: 16px;">No hay registros de cajas liquidadas anteriores.</td></tr>`;
         } else {
             cajasCerradas.forEach(c => {
                 const fechaAperturaLegible = new Date(c.fechaApertura).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 const fechaCierreLegible = new Date(c.fechaCierre).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 
-                const ingresos = c.movimientos.filter(m => m.tipo === 'Ingreso').reduce((acc, curr) => acc + curr.monto, 0);
-                const egresos = c.movimientos.filter(m => m.tipo === 'Egreso').reduce((acc, curr) => acc + curr.monto, 0);
+                const encargado = c.trabajadorNombre || 'Operador General';
+                const teorico = c.montoCierre || 0;
+                const real = c.montoReal !== null && c.montoReal !== undefined ? c.montoReal : teorico;
+                const dif = c.diferencia !== null && c.diferencia !== undefined ? c.diferencia : 0;
+                
+                let badgeArqueo = '';
+                if (Math.abs(dif) < 0.01) {
+                    badgeArqueo = `<span class="badge arqueo-cuadrado" style="font-size: 11px;">S/. 0.00 (Ok)</span>`;
+                } else if (dif < 0) {
+                    badgeArqueo = `<span class="badge arqueo-faltante" style="font-size: 11px;">S/. ${dif.toFixed(2)} (Faltante)</span>`;
+                } else {
+                    badgeArqueo = `<span class="badge arqueo-sobrante" style="font-size: 11px;">S/. +${dif.toFixed(2)} (Sobrante)</span>`;
+                }
                 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td style="font-size: 12px; color: var(--text-secondary);">${fechaAperturaLegible}</td>
                     <td style="font-size: 12px; color: var(--text-secondary);">${fechaCierreLegible}</td>
+                    <td><strong>${encargado}</strong></td>
                     <td style="font-weight: 500;">S/. ${c.montoApertura.toFixed(2)}</td>
-                    <td style="color: var(--color-ops);">S/. ${ingresos.toFixed(2)}</td>
-                    <td style="color: #ef4444;">S/. ${egresos.toFixed(2)}</td>
-                    <td style="font-weight: 700; color: var(--color-admin);">S/. ${c.montoCierre.toFixed(2)}</td>
+                    <td style="color: var(--color-admin); font-weight: 500;">S/. ${teorico.toFixed(2)}</td>
+                    <td style="font-weight: 600; color: var(--text-primary);">S/. ${real.toFixed(2)}</td>
+                    <td>${badgeArqueo}</td>
                     <td><span class="badge badge-success" style="background: rgba(5, 150, 105, 0.08); color: var(--color-ops); border: 1px solid rgba(5, 150, 105, 0.15);"><i class="fa-solid fa-circle-check"></i> Liquidada</span></td>
                 `;
                 tbodyHistorialCajas.appendChild(tr);
             });
         }
+    }
+
+    // 10. Tabla de Trabajadores
+    const tbodyTrabajadores = document.getElementById('table-trabajadores-body');
+    if (tbodyTrabajadores) {
+        tbodyTrabajadores.innerHTML = '';
+        trabajadores.forEach(t => {
+            const tr = document.createElement('tr');
+            const statusBadge = t.activo 
+                ? `<span class="badge badge-success">Activo</span>`
+                : `<span class="badge" style="background: rgba(100, 116, 139, 0.08); color: #64748b; border: 1px solid rgba(100, 116, 139, 0.15);">Inactivo</span>`;
+                
+            tr.innerHTML = `
+                <td><strong>${t.nombre}</strong></td>
+                <td><span class="badge" style="background: rgba(79, 70, 229, 0.08); color: var(--color-admin); border: 1px solid rgba(79, 70, 229, 0.15); font-weight: 600;">${t.rol}</span></td>
+                <td><i class="fa-brands fa-whatsapp" style="color: #25d366; margin-right: 6px;"></i>${t.whatsapp}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <button onclick="editTrabajador('${t.id}')" style="background: none; border: none; color: var(--color-admin); cursor: pointer; font-size: 15px; margin-right: 12px;" title="Editar">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button onclick="deleteTrabajador('${t.id}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 15px;" title="Eliminar">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </td>
+            `;
+            tbodyTrabajadores.appendChild(tr);
+        });
+    }
+
+    // 11. Métricas de Trabajadores
+    const totalTrab = document.getElementById('stat-total-trabajadores');
+    if (totalTrab) totalTrab.innerText = trabajadores.length;
+    
+    const activosTrab = document.getElementById('stat-trabajadores-activos');
+    if (activosTrab) activosTrab.innerText = trabajadores.filter(t => t.activo).length;
+    
+    const cajerosTrab = document.getElementById('stat-trabajadores-cajeros');
+    if (cajerosTrab) cajerosTrab.innerText = trabajadores.filter(t => t.activo && (t.rol === 'Cajero' || t.rol === 'Administrador')).length;
+
+    // 12. Dropdown de Trabajadores en Apertura de Caja
+    const customOptionsTrabajador = document.getElementById('custom-select-trabajador-options');
+    if (customOptionsTrabajador) {
+        customOptionsTrabajador.innerHTML = '';
+        trabajadores.forEach(t => {
+            if (t.activo) {
+                const divOpt = document.createElement('div');
+                divOpt.className = 'custom-select-option';
+                divOpt.innerText = `${t.nombre} (${t.rol})`;
+                divOpt.setAttribute('data-value', t.id);
+                
+                const selectedVal = document.getElementById('caja-trabajador-id').value;
+                if (selectedVal === t.id) {
+                    divOpt.classList.add('selected');
+                }
+                
+                divOpt.onclick = (event) => selectTrabajadorAperturaOption(t.id, `${t.nombre} (${t.rol})`, event);
+                customOptionsTrabajador.appendChild(divOpt);
+            }
+        });
     }
 }
 
@@ -1297,7 +1404,20 @@ async function deletePago(id) {
 
 function aperturarCaja(event) {
     event.preventDefault();
+    const trabajadorId = document.getElementById('caja-trabajador-id').value;
     const monto = parseFloat(document.getElementById('caja-monto-apertura').value);
+    
+    if (!trabajadorId) {
+        showToast('Debe seleccionar un encargado para el turno.', 'error');
+        return;
+    }
+    
+    const trab = trabajadores.find(t => t.id === trabajadorId);
+    if (!trab) {
+        showToast('El encargado seleccionado no es válido.', 'error');
+        return;
+    }
+    
     if (isNaN(monto) || monto < 0) {
         showToast('Monto de apertura no válido.', 'error');
         return;
@@ -1309,18 +1429,29 @@ function aperturarCaja(event) {
         fechaCierre: null,
         montoApertura: monto,
         montoCierre: null,
+        montoReal: null,
+        diferencia: null,
+        observacionArqueo: null,
         estado: 'Abierta',
+        trabajadorId: trab.id,
+        trabajadorNombre: trab.nombre,
         movimientos: []
     };
     
     cajas.push(nuevaCaja);
     localStorage.setItem('cajas', JSON.stringify(cajas));
     showToast('Caja general aperturada con éxito.', 'success');
+    
+    // Limpiar formulario y selector
     document.getElementById('form-apertura-caja').reset();
+    document.getElementById('caja-trabajador-id').value = '';
+    document.getElementById('custom-select-trabajador-text').innerText = 'Elige un trabajador...';
+    document.querySelectorAll('#custom-select-trabajador-options .custom-select-option').forEach(el => el.classList.remove('selected'));
+    
     renderAll();
 }
 
-async function cerrarCaja() {
+function cerrarCaja() {
     const cajaActiva = cajas.find(c => c.estado === 'Abierta');
     if (!cajaActiva) return;
     
@@ -1328,16 +1459,23 @@ async function cerrarCaja() {
     const egresos = cajaActiva.movimientos.filter(m => m.tipo === 'Egreso').reduce((acc, curr) => acc + curr.monto, 0);
     const saldoCalculado = cajaActiva.montoApertura + ingresos - egresos;
     
-    const confirmado = await customConfirm(`¿Está seguro de cerrar el turno de caja general?\nBalance final: S/. ${saldoCalculado.toFixed(2)}\n(Apertura: S/. ${cajaActiva.montoApertura.toFixed(2)}, Ingresos: S/. ${ingresos.toFixed(2)}, Egresos: S/. ${egresos.toFixed(2)})`);
-    if (confirmado) {
-        cajaActiva.estado = 'Cerrada';
-        cajaActiva.fechaCierre = new Date().toISOString();
-        cajaActiva.montoCierre = saldoCalculado;
-        
-        localStorage.setItem('cajas', JSON.stringify(cajas));
-        showToast('Caja cerrada con éxito. Turno liquidado.', 'success');
-        renderAll();
+    // Cargar datos en el modal de arqueo
+    document.getElementById('arqueo-txt-apertura').innerText = `S/. ${cajaActiva.montoApertura.toFixed(2)}`;
+    document.getElementById('arqueo-txt-ingresos').innerText = `+ S/. ${ingresos.toFixed(2)}`;
+    document.getElementById('arqueo-txt-egresos').innerText = `- S/. ${egresos.toFixed(2)}`;
+    document.getElementById('arqueo-txt-teorico').innerText = `S/. ${saldoCalculado.toFixed(2)}`;
+    
+    // Reset inputs
+    document.getElementById('arqueo-monto-real').value = '';
+    document.getElementById('arqueo-observaciones').value = '';
+    
+    const statusBox = document.getElementById('arqueo-status-box');
+    if (statusBox) {
+        statusBox.innerText = 'Ingrese el monto físico para calcular el cuadre';
+        statusBox.className = 'arqueo-cuadrado'; // Reset a estilo neutral
     }
+    
+    openModal('arqueo');
 }
 
 function registrarMovimientoExtra(event) {
@@ -1633,6 +1771,236 @@ function iniciarNuevoIngreso() {
     openModal('recepcion');
 }
 
+// ==========================================
+// GESTIÓN DE PERSONAL / TRABAJADORES (CRUD)
+// ==========================================
+
+function iniciarNuevoTrabajador() {
+    cancelarEdicionTrabajador();
+    openModal('trabajador');
+}
+
+function cancelarEdicionTrabajador() {
+    editingTrabajadorId = null;
+    const form = document.getElementById('form-trabajador');
+    if (form) form.reset();
+
+    const modalTitle = document.getElementById('modal-trabajador-title');
+    if (modalTitle) {
+        modalTitle.innerHTML = `
+            <i class="fa-solid fa-user-plus" style="color: var(--color-client);"></i>
+            Registrar Trabajador
+        `;
+    }
+
+    const submitBtn = document.getElementById('text-submit-trabajador');
+    if (submitBtn) {
+        submitBtn.innerText = 'Registrar Trabajador';
+    }
+}
+
+function saveTrabajador(event) {
+    event.preventDefault();
+    const nombre = document.getElementById('trabajador-nombre').value.trim();
+    const rol = document.getElementById('trabajador-rol').value;
+    const whatsapp = document.getElementById('trabajador-whatsapp').value.trim();
+
+    if (!nombre || !whatsapp) {
+        showToast('Complete todos los campos del trabajador.', 'error');
+        return;
+    }
+
+    // Validar unicidad de nombre (excepto para sí mismo)
+    if (trabajadores.some(t => t.nombre.toLowerCase() === nombre.toLowerCase() && t.id !== editingTrabajadorId)) {
+        showToast('Ya existe un trabajador registrado con ese nombre.', 'error');
+        return;
+    }
+
+    if (editingTrabajadorId !== null) {
+        // Editar
+        const idx = trabajadores.findIndex(t => t.id === editingTrabajadorId);
+        if (idx !== -1) {
+            trabajadores[idx].nombre = nombre;
+            trabajadores[idx].rol = rol;
+            trabajadores[idx].whatsapp = whatsapp;
+            localStorage.setItem('trabajadores', JSON.stringify(trabajadores));
+            showToast('Datos del trabajador actualizados.', 'success');
+            closeModal('trabajador');
+        }
+    } else {
+        // Crear
+        const nuevo = {
+            id: 't-' + Date.now(),
+            nombre,
+            rol,
+            whatsapp,
+            activo: true
+        };
+        trabajadores.push(nuevo);
+        localStorage.setItem('trabajadores', JSON.stringify(trabajadores));
+        showToast('Trabajador registrado exitosamente.', 'success');
+        closeModal('trabajador');
+    }
+
+    renderAll();
+}
+
+function editTrabajador(id) {
+    const trab = trabajadores.find(t => t.id === id);
+    if (!trab) return;
+
+    editingTrabajadorId = id;
+    document.getElementById('trabajador-nombre').value = trab.nombre;
+    document.getElementById('trabajador-rol').value = trab.rol;
+    document.getElementById('trabajador-whatsapp').value = trab.whatsapp;
+
+    const modalTitle = document.getElementById('modal-trabajador-title');
+    if (modalTitle) {
+        modalTitle.innerHTML = `
+            <i class="fa-solid fa-pen-to-square" style="color: var(--color-client);"></i>
+            Editar Trabajador
+        `;
+    }
+
+    const submitBtn = document.getElementById('text-submit-trabajador');
+    if (submitBtn) {
+        submitBtn.innerText = 'Guardar Cambios';
+    }
+
+    openModal('trabajador');
+}
+
+async function deleteTrabajador(id) {
+    const trab = trabajadores.find(t => t.id === id);
+    if (!trab) return;
+
+    // Verificar si tiene cajas registradas
+    const tieneCajas = cajas.some(c => c.trabajadorId === id);
+    if (tieneCajas) {
+        const desactivar = await customConfirm(`No se puede eliminar físicamente a "${trab.nombre}" porque cuenta con turnos de caja registrados.\n¿Desea desactivar su cuenta para que no figure en nuevas aperturas de caja?`);
+        if (desactivar) {
+            trab.activo = false;
+            localStorage.setItem('trabajadores', JSON.stringify(trabajadores));
+            showToast('Trabajador desactivado correctamente.', 'success');
+            renderAll();
+        }
+        return;
+    }
+
+    const confirmado = await customConfirm(`¿Está seguro de eliminar al trabajador "${trab.nombre}"? Esta acción no se puede deshacer.`);
+    if (confirmado) {
+        if (editingTrabajadorId === id) {
+            cancelarEdicionTrabajador();
+        }
+        trabajadores = trabajadores.filter(t => t.id !== id);
+        localStorage.setItem('trabajadores', JSON.stringify(trabajadores));
+        showToast('Trabajador eliminado correctamente.', 'success');
+        renderAll();
+    }
+}
+
+function filterTrabajadores() {
+    const query = document.getElementById('search-trabajadores').value.toLowerCase();
+    const rows = document.querySelectorAll('#table-trabajadores-body tr');
+
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(query) ? '' : 'none';
+    });
+}
+
+function selectTrabajadorAperturaOption(id, nombre, event) {
+    if (event) event.stopPropagation();
+    const inputHidden = document.getElementById('caja-trabajador-id');
+    const triggerText = document.getElementById('custom-select-trabajador-text');
+    const container = document.getElementById('custom-select-trabajador-container');
+    const options = document.querySelectorAll('#custom-select-trabajador-options .custom-select-option');
+
+    if (inputHidden && triggerText && container) {
+        inputHidden.value = id;
+        triggerText.innerText = nombre;
+
+        options.forEach(opt => {
+            if (opt.getAttribute('data-value') === id) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+
+        container.classList.remove('active');
+    }
+}
+
+// ==========================================
+// LÓGICA DE ARQUEO E INTERACCIÓN
+// ==========================================
+
+function calcularDiferenciaArqueo() {
+    const cajaActiva = cajas.find(c => c.estado === 'Abierta');
+    if (!cajaActiva) return;
+
+    const ingresos = cajaActiva.movimientos.filter(m => m.tipo === 'Ingreso').reduce((acc, curr) => acc + curr.monto, 0);
+    const egresos = cajaActiva.movimientos.filter(m => m.tipo === 'Egreso').reduce((acc, curr) => acc + curr.monto, 0);
+    const saldoTeorico = cajaActiva.montoApertura + ingresos - egresos;
+
+    const realVal = parseFloat(document.getElementById('arqueo-monto-real').value);
+    const statusBox = document.getElementById('arqueo-status-box');
+
+    if (!statusBox) return;
+
+    if (isNaN(realVal)) {
+        statusBox.innerText = 'Ingrese el monto físico para calcular el cuadre';
+        statusBox.className = 'arqueo-cuadrado';
+        return;
+    }
+
+    const diferencia = realVal - saldoTeorico;
+
+    if (Math.abs(diferencia) < 0.01) {
+        statusBox.innerText = 'Caja Cuadrada (S/. 0.00 de diferencia)';
+        statusBox.className = 'arqueo-cuadrado';
+    } else if (diferencia < 0) {
+        statusBox.innerText = `Faltante en Caja (S/. ${diferencia.toFixed(2)} de diferencia)`;
+        statusBox.className = 'arqueo-faltante';
+    } else {
+        statusBox.innerText = `Sobrante en Caja (S/. +${diferencia.toFixed(2)} de diferencia)`;
+        statusBox.className = 'arqueo-sobrante';
+    }
+}
+
+function procesarCierreConArqueo(event) {
+    event.preventDefault();
+    const cajaActiva = cajas.find(c => c.estado === 'Abierta');
+    if (!cajaActiva) return;
+
+    const realVal = parseFloat(document.getElementById('arqueo-monto-real').value);
+    const obs = document.getElementById('arqueo-observaciones').value.trim();
+
+    if (isNaN(realVal) || realVal < 0) {
+        showToast('Ingrese un monto físico válido.', 'error');
+        return;
+    }
+
+    const ingresos = cajaActiva.movimientos.filter(m => m.tipo === 'Ingreso').reduce((acc, curr) => acc + curr.monto, 0);
+    const egresos = cajaActiva.movimientos.filter(m => m.tipo === 'Egreso').reduce((acc, curr) => acc + curr.monto, 0);
+    const saldoTeorico = cajaActiva.montoApertura + ingresos - egresos;
+    
+    const diferenciaCalculada = realVal - saldoTeorico;
+
+    cajaActiva.estado = 'Cerrada';
+    cajaActiva.fechaCierre = new Date().toISOString();
+    cajaActiva.montoCierre = saldoTeorico;
+    cajaActiva.montoReal = realVal;
+    cajaActiva.diferencia = diferenciaCalculada;
+    cajaActiva.observacionArqueo = obs;
+
+    localStorage.setItem('cajas', JSON.stringify(cajas));
+    showToast('Caja cerrada con éxito. Turno liquidado con arqueo.', 'success');
+    closeModal('arqueo');
+    renderAll();
+}
+
 // Cargar la aplicación al iniciar la ventana
 window.onload = () => {
     initDataPrueba();
@@ -1640,3 +2008,4 @@ window.onload = () => {
     setupCodigoAutogenerado();
     setupValidacionDocumento();
 };
+
