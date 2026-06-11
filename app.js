@@ -182,171 +182,61 @@ function customConfirm(mensaje) {
     });
 }
 
-// Inicialización de datos de prueba si el almacén local está vacío
-function initDataPrueba() {
-    if (roles.length === 0) {
-        roles = [
-            { id: 'rol-1', nombre: 'Cajero', activo: true },
-            { id: 'rol-2', nombre: 'Operador', activo: true },
-            { id: 'rol-3', nombre: 'Supervisor', activo: true },
-            { id: 'rol-4', nombre: 'Administrador', activo: true }
-        ];
-        localStorage.setItem('roles', JSON.stringify(roles));
+// Funciones de sincronización API
+async function apiPost(url, data) {
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Error al guardar datos');
     }
+    return await res.json();
+}
 
-    if (trabajadores.length === 0) {
-        trabajadores = [
-            { id: 't-1', nombre: 'Juan Pérez Prado', rol: 'Cajero', whatsapp: '+51 987654321', activo: true },
-            { id: 't-2', nombre: 'María Gómez Torres', rol: 'Operador', whatsapp: '+51 944587123', activo: true },
-            { id: 't-3', nombre: 'Carlos Ruiz Rojas', rol: 'Administrador', whatsapp: '+51 912365478', activo: true }
-        ];
-        localStorage.setItem('trabajadores', JSON.stringify(trabajadores));
+async function apiPut(url, data) {
+    const res = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Error al actualizar datos');
     }
+    return await res.json();
+}
 
-    // Control de esquema para migraciones
-    const dbSchemaVersion = localStorage.getItem('db_schema_version') || '1';
-
-    if (dbSchemaVersion === '1') {
-        // Forzar limpieza inicial para migrar a la estructura limpia de 2 elementos
-        tiposPago = [
-            { id: 'tp-1', nombre: 'Efectivo', activo: true },
-            { id: 'tp-2', nombre: 'Crédito', activo: true }
-        ];
-        localStorage.setItem('tiposPago', JSON.stringify(tiposPago));
-
-        metodosPago = [
-            { id: 'mp-1', nombre: 'Efectivo Caja Chica', tipo: 'tp-1', detalle: 'Pago en oficina principal', activo: true },
-            { id: 'mp-2', nombre: 'Línea de Crédito Camal', tipo: 'tp-2', detalle: 'Crédito aprobado para ganaderos recurrentes', activo: true }
-        ];
-        localStorage.setItem('metodosPago', JSON.stringify(metodosPago));
-        
-        localStorage.setItem('db_schema_version', '2');
+async function apiDelete(url) {
+    const res = await fetch(url, { method: 'DELETE' });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Error al eliminar datos');
     }
+    return await res.json();
+}
 
-    if (tiposPago.length === 0) {
-        tiposPago = [
-            { id: 'tp-1', nombre: 'Efectivo', activo: true },
-            { id: 'tp-2', nombre: 'Crédito', activo: true }
-        ];
-        localStorage.setItem('tiposPago', JSON.stringify(tiposPago));
-    }
-
-    if (metodosPago.length === 0) {
-        metodosPago = [
-            { id: 'mp-1', nombre: 'Efectivo Caja Chica', tipo: 'tp-1', detalle: 'Pago en oficina principal', activo: true },
-            { id: 'mp-2', nombre: 'Línea de Crédito Camal', tipo: 'tp-2', detalle: 'Crédito aprobado para ganaderos recurrentes', activo: true }
-        ];
-        localStorage.setItem('metodosPago', JSON.stringify(metodosPago));
-    }
-
-    if (deudas.length === 0) {
-        const haceDosDias = new Date();
-        haceDosDias.setDate(haceDosDias.getDate() - 2);
-        
-        deudas = [
-            {
-                id: 'deuda-1',
-                recepcionId: 'r-ex-1',
-                lote_codigo: 'LBVA159',
-                ganadero_id: 'g-2',
-                ganadero_nombre: 'Fundo Las Brisas',
-                monto_total: 240.00,
-                monto_abonado: 100.00,
-                saldo: 140.00,
-                fecha: haceDosDias.toISOString(),
-                estado: 'Parcial'
-            },
-            {
-                id: 'deuda-2',
-                recepcionId: 'r-ex-2',
-                lote_codigo: 'LBPO160',
-                ganadero_id: 'g-2',
-                ganadero_nombre: 'Fundo Las Brisas',
-                monto_total: 180.00,
-                monto_abonado: 0.00,
-                saldo: 180.00,
-                fecha: haceDosDias.toISOString(),
-                estado: 'Pendiente'
-            }
-        ];
-        localStorage.setItem('deudas', JSON.stringify(deudas));
-    }
-
-    if (abonos.length === 0) {
-        const haceUnDia = new Date();
-        haceUnDia.setDate(haceUnDia.getDate() - 1);
-        
-        abonos = [
-            {
-                id: 'abono-ex-1',
-                ganadero_id: 'g-2',
-                ganadero_nombre: 'Fundo Las Brisas',
-                monto: 100.00,
-                fecha: haceUnDia.toISOString(),
-                metodoPagoId: 'mp-1',
-                metodoPagoNombre: 'Efectivo Caja Chica',
-                observaciones: 'Abono inicial en efectivo',
-                detalles: [
-                    { deudaId: 'deuda-1', monto: 100.00 }
-                ]
-            }
-        ];
-        localStorage.setItem('abonos', JSON.stringify(abonos));
-    }
-
-    if (especies.length === 0) {
-        especies = [
-            { id: 'e-1', nombre: 'Vacuno', codigo: 'VA', icono: '🐄', activo: true },
-            { id: 'e-2', nombre: 'Porcino', codigo: 'PO', icono: '🐖', activo: true },
-            { id: 'e-3', nombre: 'Ovino', codigo: 'OV', icono: '🐑', activo: true },
-            { id: 'e-4', nombre: 'Caprino', codigo: 'CA', icono: '🐐', activo: true }
-        ];
-        localStorage.setItem('especies', JSON.stringify(especies));
-    }
-
-    if (ganaderos.length === 0) {
-        ganaderos = [
-            { id: 'g-1', nombre: 'Agroindustria Atlántica S.A.C.', ruc: '20601245891', whatsapp: '+51 987654321', codigo: 'AA', activo: true },
-            { id: 'g-2', nombre: 'Fundo Las Brisas', ruc: '20551478962', whatsapp: '+51 944587123', codigo: 'LB', activo: true },
-            { id: 'g-3', nombre: 'Hacienda El Prado', ruc: '10447896325', whatsapp: '+51 912365478', codigo: 'EP', activo: true }
-        ];
-        localStorage.setItem('ganaderos', JSON.stringify(ganaderos));
-    }
-
-    if (recepciones.length === 0) {
-        const hoy = new Date();
-        const ayer = new Date();
-        ayer.setDate(hoy.getDate() - 1);
-
-        recepciones = [
-            {
-                id: 'r-1',
-                lote_codigo: 'AAPO' + getJulianDay(ayer),
-                ganadero_id: 'g-1',
-                ganadero_nombre: 'Agroindustria Atlántica S.A.C.',
-                especie: 'PO',
-                cantidad: 45,
-                guia_transito: 'GT-0012485',
-                fecha: ayer.toISOString(),
-                observaciones: 'Porcinos ingresados en óptimas condiciones corporales.',
-                estado: 'Pendiente Inspección',
-                estadoCobro: 'Pendiente'
-            },
-            {
-                id: 'r-2',
-                lote_codigo: 'LBVA' + getJulianDay(hoy),
-                ganadero_id: 'g-2',
-                ganadero_nombre: 'Fundo Las Brisas',
-                especie: 'VA',
-                cantidad: 12,
-                guia_transito: 'GT-0012590',
-                fecha: hoy.toISOString(),
-                observaciones: 'Vacunos sin signos clínicos de enfermedades infectocontagiosas.',
-                estado: 'Pendiente Inspección',
-                estadoCobro: 'Pendiente'
-            }
-        ];
-        localStorage.setItem('recepciones', JSON.stringify(recepciones));
+async function loadServerData() {
+    try {
+        const response = await fetch('/api/data');
+        if (!response.ok) throw new Error('Error al obtener datos');
+        const data = await response.json();
+        ganaderos = data.ganaderos;
+        recepciones = data.recepciones;
+        especies = data.especies;
+        metodosPago = data.metodosPago;
+        cajas = data.cajas;
+        trabajadores = data.trabajadores;
+        roles = data.roles;
+        tiposPago = data.tiposPago;
+        deudas = data.deudas;
+        abonos = data.abonos;
+        renderAll();
+    } catch (err) {
+        showToast('Error al conectar con el servidor de base de datos.', 'error');
+        console.error(err);
     }
 }
 
@@ -481,7 +371,7 @@ function previewLoteCode() {
 }
 
 // Guardar o Actualizar Ganadero
-function saveGanadero(event) {
+async function saveGanadero(event) {
     event.preventDefault();
     
     const nombre = document.getElementById('ganadero-nombre').value.trim();
@@ -504,51 +394,29 @@ function saveGanadero(event) {
         return;
     }
 
-    if (editingGanaderoId !== null) {
-        // MODO EDICIÓN
-        const ganaderoIdx = ganaderos.findIndex(g => g.id === editingGanaderoId);
-        if (ganaderoIdx !== -1) {
-            ganaderos[ganaderoIdx].nombre = nombre;
-            ganaderos[ganaderoIdx].ruc = ruc;
-            ganaderos[ganaderoIdx].whatsapp = whatsapp;
-            
-            const antiguoCodigo = ganaderos[ganaderoIdx].codigo;
-            ganaderos[ganaderoIdx].codigo = codigo;
-
-            // Actualizar recepciones
-            recepciones.forEach(r => {
-                if (r.ganadero_id === editingGanaderoId) {
-                    r.ganadero_nombre = nombre;
-                    if (antiguoCodigo !== codigo) {
-                        r.lote_codigo = r.lote_codigo.replace(antiguoCodigo, codigo);
-                    }
-                }
-            });
-
-            localStorage.setItem('recepciones', JSON.stringify(recepciones));
-            localStorage.setItem('ganaderos', JSON.stringify(ganaderos));
-            
+    try {
+        if (editingGanaderoId !== null) {
+            // MODO EDICIÓN
+            await apiPut('/api/ganaderos/' + editingGanaderoId, { nombre, ruc, whatsapp, codigo, activo: true });
             showToast('Ganadero actualizado exitosamente.', 'success');
-            closeModal('ganadero'); // Cerrará y cancelará la edición
+        } else {
+            // MODO NUEVO REGISTRO
+            const nuevoGanadero = {
+                id: 'g-' + Date.now(),
+                nombre,
+                ruc,
+                whatsapp,
+                codigo,
+                activo: true
+            };
+            await apiPost('/api/ganaderos', nuevoGanadero);
+            showToast('Ganadero registrado exitosamente.', 'success');
         }
-    } else {
-        // MODO NUEVO REGISTRO
-        const nuevoGanadero = {
-            id: 'g-' + Date.now(),
-            nombre,
-            ruc,
-            whatsapp,
-            codigo,
-            activo: true
-        };
-
-        ganaderos.push(nuevoGanadero);
-        localStorage.setItem('ganaderos', JSON.stringify(ganaderos));
-        showToast('Ganadero registrado exitosamente.', 'success');
+        await loadServerData();
         closeModal('ganadero');
+    } catch (err) {
+        showToast(err.message, 'error');
     }
-    
-    renderAll();
 }
 
 // Cargar Datos en Formulario para Edición
@@ -626,7 +494,7 @@ function cancelarEdicion() {
 }
 
 // Guardar Ingreso de Ganado
-function saveIngreso(event) {
+async function saveIngreso(event) {
     event.preventDefault();
 
     const ganaderoId = document.getElementById('recepcion-ganadero').value;
@@ -663,27 +531,30 @@ function saveIngreso(event) {
         estadoCobro: 'Pendiente'
     };
 
-    recepciones.push(nuevoIngreso);
-    localStorage.setItem('recepciones', JSON.stringify(recepciones));
+    try {
+        await apiPost('/api/recepciones', nuevoIngreso);
+        await loadServerData();
 
-    document.getElementById('form-recepcion').reset();
-    
-    // Restablecer Selects Personalizados
-    document.getElementById('recepcion-ganadero').value = '';
-    const textGanadero = document.getElementById('custom-select-ganadero-text');
-    if (textGanadero) textGanadero.innerText = 'Elige un ganadero...';
-    document.querySelectorAll('#custom-select-ganadero-options .custom-select-option').forEach(el => el.classList.remove('selected'));
-    
-    document.getElementById('recepcion-especie').value = '';
-    const textEspecie = document.getElementById('custom-select-especie-text');
-    if (textEspecie) textEspecie.innerText = 'Elige una especie...';
-    document.querySelectorAll('#custom-select-especie-options .custom-select-option').forEach(el => el.classList.remove('selected'));
-    
-    document.getElementById('lote-preview-code').innerText = '--';
-    
-    closeModal('recepcion');
-    renderAll();
-    showToast(`Ingreso registrado con Lote: ${codigoLote}`, 'success');
+        document.getElementById('form-recepcion').reset();
+        
+        // Restablecer Selects Personalizados
+        document.getElementById('recepcion-ganadero').value = '';
+        const textGanadero = document.getElementById('custom-select-ganadero-text');
+        if (textGanadero) textGanadero.innerText = 'Elige un ganadero...';
+        document.querySelectorAll('#custom-select-ganadero-options .custom-select-option').forEach(el => el.classList.remove('selected'));
+        
+        document.getElementById('recepcion-especie').value = '';
+        const textEspecie = document.getElementById('custom-select-especie-text');
+        if (textEspecie) textEspecie.innerText = 'Elige una especie...';
+        document.querySelectorAll('#custom-select-especie-options .custom-select-option').forEach(el => el.classList.remove('selected'));
+        
+        document.getElementById('lote-preview-code').innerText = '--';
+        
+        closeModal('recepcion');
+        showToast(`Ingreso registrado con Lote: ${codigoLote}`, 'success');
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
 }
 
 // Eliminar Ganadero
@@ -699,10 +570,13 @@ async function deleteGanadero(id) {
             cancelarEdicion();
         }
 
-        ganaderos = ganaderos.filter(g => g.id !== id);
-        localStorage.setItem('ganaderos', JSON.stringify(ganaderos));
-        renderAll();
-        showToast('Ganadero eliminado correctamente.', 'success');
+        try {
+            await apiDelete('/api/ganaderos/' + id);
+            await loadServerData();
+            showToast('Ganadero eliminado correctamente.', 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
     }
 }
 
@@ -1316,7 +1190,7 @@ function cancelarEdicionEspecie() {
     }
 }
 
-function saveEspecie(event) {
+async function saveEspecie(event) {
     event.preventDefault();
     const nombre = document.getElementById('especie-nombre').value.trim();
     const codigo = document.getElementById('especie-codigo').value.trim().toUpperCase();
@@ -1337,47 +1211,28 @@ function saveEspecie(event) {
         return;
     }
     
-    if (editingEspecieId !== null) {
-        // Modo Edición
-        const idx = especies.findIndex(e => e.id === editingEspecieId);
-        if (idx !== -1) {
-            const antiguoCodigo = especies[idx].codigo;
-            especies[idx].nombre = nombre;
-            especies[idx].codigo = codigo;
-            especies[idx].icono = icono;
-            
-            // Actualizar recepciones que usaban el antiguo código
-            recepciones.forEach(r => {
-                if (r.especie === antiguoCodigo) {
-                    r.especie = codigo;
-                    // Actualizar el lote_codigo si corresponde
-                    const ganaderoCod = r.lote_codigo.substring(0, 2);
-                    const diaJuliano = r.lote_codigo.substring(4);
-                    r.lote_codigo = `${ganaderoCod}${codigo}${diaJuliano}`;
-                }
-            });
-            
-            localStorage.setItem('recepciones', JSON.stringify(recepciones));
-            localStorage.setItem('especies', JSON.stringify(especies));
+    try {
+        if (editingEspecieId !== null) {
+            // Modo Edición
+            await apiPut('/api/especies/' + editingEspecieId, { nombre, codigo, icono, activo: true });
             showToast('Especie actualizada correctamente.', 'success');
-            closeModal('especie');
+        } else {
+            // Modo Nuevo
+            const nuevaEspecie = {
+                id: 'e-' + Date.now(),
+                nombre,
+                codigo,
+                icono,
+                activo: true
+            };
+            await apiPost('/api/especies', nuevaEspecie);
+            showToast('Especie registrada correctamente.', 'success');
         }
-    } else {
-        // Modo Nuevo
-        const nuevaEspecie = {
-            id: 'e-' + Date.now(),
-            nombre,
-            codigo,
-            icono,
-            activo: true
-        };
-        especies.push(nuevaEspecie);
-        localStorage.setItem('especies', JSON.stringify(especies));
-        showToast('Especie registrada correctamente.', 'success');
+        await loadServerData();
         closeModal('especie');
+    } catch (err) {
+        showToast(err.message, 'error');
     }
-    
-    renderAll();
 }
 
 function editEspecie(id) {
@@ -1435,10 +1290,13 @@ async function deleteEspecie(id) {
         if (editingEspecieId === id) {
             cancelarEdicionEspecie();
         }
-        especies = especies.filter(e => e.id !== id);
-        localStorage.setItem('especies', JSON.stringify(especies));
-        renderAll();
-        showToast('Especie eliminada correctamente.', 'success');
+        try {
+            await apiDelete('/api/especies/' + id);
+            await loadServerData();
+            showToast('Especie eliminada correctamente.', 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
     }
 }
 
@@ -1478,7 +1336,7 @@ function cancelarEdicionPago() {
     }
 }
 
-function savePago(event) {
+async function savePago(event) {
     event.preventDefault();
     const nombre = document.getElementById('pago-nombre').value.trim();
     const tipo = document.getElementById('pago-tipo').value;
@@ -1495,34 +1353,28 @@ function savePago(event) {
         return;
     }
     
-    if (editingPagoId !== null) {
-        // Modo Edición
-        const idx = metodosPago.findIndex(m => m.id === editingPagoId);
-        if (idx !== -1) {
-            metodosPago[idx].nombre = nombre;
-            metodosPago[idx].tipo = tipo;
-            metodosPago[idx].detalle = detalle;
-            
-            localStorage.setItem('metodosPago', JSON.stringify(metodosPago));
+    try {
+        if (editingPagoId !== null) {
+            // Modo Edición
+            await apiPut('/api/metodos-pago/' + editingPagoId, { nombre, tipo, detalle, activo: true });
             showToast('Método de pago actualizado correctamente.', 'success');
-            closeModal('pago');
+        } else {
+            // Modo Nuevo
+            const nuevoPago = {
+                id: 'mp-' + Date.now(),
+                nombre,
+                tipo,
+                detalle: detalle || 'Sin detalles adicionales',
+                activo: true
+            };
+            await apiPost('/api/metodos-pago', nuevoPago);
+            showToast('Método de pago registrado correctamente.', 'success');
         }
-    } else {
-        // Modo Nuevo
-        const nuevoPago = {
-            id: 'mp-' + Date.now(),
-            nombre,
-            tipo,
-            detalle: detalle || 'Sin detalles adicionales',
-            activo: true
-        };
-        metodosPago.push(nuevoPago);
-        localStorage.setItem('metodosPago', JSON.stringify(metodosPago));
-        showToast('Método de pago registrado correctamente.', 'success');
+        await loadServerData();
         closeModal('pago');
+    } catch (err) {
+        showToast(err.message, 'error');
     }
-    
-    renderAll();
 }
 
 function editPago(id) {
@@ -1567,10 +1419,13 @@ async function deletePago(id) {
         if (editingPagoId === id) {
             cancelarEdicionPago();
         }
-        metodosPago = metodosPago.filter(m => m.id !== id);
-        localStorage.setItem('metodosPago', JSON.stringify(metodosPago));
-        renderAll();
-        showToast('Método de pago eliminado correctamente.', 'success');
+        try {
+            await apiDelete('/api/metodos-pago/' + id);
+            await loadServerData();
+            showToast('Método de pago eliminado correctamente.', 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
     }
 }
 
@@ -1638,7 +1493,7 @@ function selectRolEstadoOption(value, text, event) {
     }
 }
 
-function saveRol(event) {
+async function saveRol(event) {
     event.preventDefault();
     const nombre = document.getElementById('rol-nombre').value.trim();
     const estado = document.getElementById('rol-estado').value;
@@ -1656,51 +1511,36 @@ function saveRol(event) {
         return;
     }
     
-    if (editingRolId) {
-        // Editar
-        const idx = roles.findIndex(r => r.id === editingRolId);
-        if (idx !== -1) {
+    try {
+        if (editingRolId) {
             // Validar si pasa de Activo a Inactivo y está en uso
-            if (!activo && roles[idx].activo) {
-                const enUso = trabajadores.some(t => t.rol.toLowerCase() === roles[idx].nombre.toLowerCase());
+            const rolActual = roles.find(r => r.id === editingRolId);
+            if (!activo && rolActual && rolActual.activo) {
+                const enUso = trabajadores.some(t => t.rol.toLowerCase() === rolActual.nombre.toLowerCase());
                 if (enUso) {
                     showToast('No se puede desactivar este cargo porque está asignado a trabajadores activos.', 'error');
                     return;
                 }
             }
-            // Si cambia el nombre, actualizar en cascada en los trabajadores
-            const nombreAnterior = roles[idx].nombre;
-            if (nombreAnterior.toLowerCase() !== nombre.toLowerCase()) {
-                trabajadores.forEach(t => {
-                    if (t.role && t.role.toLowerCase() === nombreAnterior.toLowerCase()) {
-                        t.role = nombre;
-                    }
-                    if (t.rol && t.rol.toLowerCase() === nombreAnterior.toLowerCase()) {
-                        t.rol = nombre;
-                    }
-                });
-                localStorage.setItem('trabajadores', JSON.stringify(trabajadores));
-            }
-            
-            roles[idx].nombre = nombre;
-            roles[idx].activo = activo;
+            // Editar
+            await apiPut('/api/roles/' + editingRolId, { nombre, activo });
             showToast('Cargo actualizado con éxito.', 'success');
+        } else {
+            // Crear
+            const nuevoRol = {
+                id: 'rol-' + Date.now(),
+                nombre: nombre,
+                activo: activo
+            };
+            await apiPost('/api/roles', nuevoRol);
+            showToast('Cargo registrado con éxito.', 'success');
         }
-    } else {
-        // Crear
-        const nuevoRol = {
-            id: 'rol-' + Date.now(),
-            nombre: nombre,
-            activo: activo
-        };
-        roles.push(nuevoRol);
-        showToast('Cargo registrado con éxito.', 'success');
+        await loadServerData();
+        cancelarEdicionRol();
+        closeModal('rol');
+    } catch (err) {
+        showToast(err.message, 'error');
     }
-    
-    localStorage.setItem('roles', JSON.stringify(roles));
-    cancelarEdicionRol();
-    closeModal('rol');
-    renderAll();
 }
 
 function editRol(id) {
@@ -1746,10 +1586,13 @@ async function deleteRol(id) {
         if (editingRolId === id) {
             cancelarEdicionRol();
         }
-        roles = roles.filter(r => r.id !== id);
-        localStorage.setItem('roles', JSON.stringify(roles));
-        renderAll();
-        showToast('Cargo eliminado correctamente.', 'success');
+        try {
+            await apiDelete('/api/roles/' + id);
+            await loadServerData();
+            showToast('Cargo eliminado correctamente.', 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
     }
 }
 
@@ -1832,7 +1675,7 @@ function poblarSelectorTrabajadorRol() {
 // GESTIÓN DE CAJA GENERAL Y COBROS
 // ==========================================
 
-function aperturarCaja(event) {
+async function aperturarCaja(event) {
     event.preventDefault();
     const trabajadorId = document.getElementById('caja-trabajador-id').value;
     const monto = parseFloat(document.getElementById('caja-monto-apertura').value);
@@ -1863,22 +1706,24 @@ function aperturarCaja(event) {
         diferencia: null,
         observacionArqueo: null,
         estado: 'Abierta',
-        trabajadorId: trab.id,
-        trabajadorNombre: trab.nombre,
+        encargadoId: trab.id,
+        encargadoNombre: trab.nombre,
         movimientos: []
     };
     
-    cajas.push(nuevaCaja);
-    localStorage.setItem('cajas', JSON.stringify(cajas));
-    showToast('Caja general aperturada con éxito.', 'success');
-    
-    // Limpiar formulario y selector
-    document.getElementById('form-apertura-caja').reset();
-    document.getElementById('caja-trabajador-id').value = '';
-    document.getElementById('custom-select-trabajador-text').innerText = 'Elige un trabajador...';
-    document.querySelectorAll('#custom-select-trabajador-options .custom-select-option').forEach(el => el.classList.remove('selected'));
-    
-    renderAll();
+    try {
+        await apiPost('/api/cajas', nuevaCaja);
+        await loadServerData();
+        showToast('Caja general aperturada con éxito.', 'success');
+        
+        // Limpiar formulario y selector
+        document.getElementById('form-apertura-caja').reset();
+        document.getElementById('caja-trabajador-id').value = '';
+        document.getElementById('custom-select-trabajador-text').innerText = 'Elige un trabajador...';
+        document.querySelectorAll('#custom-select-trabajador-options .custom-select-option').forEach(el => el.classList.remove('selected'));
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
 }
 
 function cerrarCaja() {
@@ -1908,7 +1753,7 @@ function cerrarCaja() {
     openModal('arqueo');
 }
 
-function registrarMovimientoExtra(event) {
+async function registrarMovimientoExtra(event) {
     event.preventDefault();
     const cajaActiva = cajas.find(c => c.estado === 'Abierta');
     if (!cajaActiva) {
@@ -1935,12 +1780,15 @@ function registrarMovimientoExtra(event) {
         referencia: 'Manual'
     };
     
-    cajaActiva.movimientos.push(nuevoMov);
-    localStorage.setItem('cajas', JSON.stringify(cajas));
-    showToast('Movimiento extraordinario registrado con éxito.', 'success');
-    document.getElementById('form-movimiento-extra').reset();
-    selectMovTipoOption('Egreso', 'Egreso (Gasto / Salida)');
-    renderAll();
+    try {
+        await apiPost(`/api/cajas/${cajaActiva.id}/movimientos`, nuevoMov);
+        await loadServerData();
+        showToast('Movimiento extraordinario registrado con éxito.', 'success');
+        document.getElementById('form-movimiento-extra').reset();
+        selectMovTipoOption('Egreso', 'Egreso (Gasto / Salida)');
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
 }
 
 function iniciarCobro(recepcionId) {
@@ -2009,7 +1857,7 @@ function selectCobroPagoOption(metodoId, texto, event) {
     }
 }
 
-function procesarCobro(event) {
+async function procesarCobro(event) {
     event.preventDefault();
     const cajaActiva = cajas.find(c => c.estado === 'Abierta');
     if (!cajaActiva) {
@@ -2033,60 +1881,61 @@ function procesarCobro(event) {
     // Comprobar si el método de pago tiene tipo "Crédito"
     const esCredito = mp.tipo === 'tp-2' || mp.tipo === 'tp-5' || mp.tipo === 'Crédito' || (tiposPago.find(t => t.id === mp.tipo) && tiposPago.find(t => t.id === mp.tipo).nombre === 'Crédito');
     
-    const rIdx = recepciones.findIndex(rec => rec.id === recepcionId);
-    if (rIdx !== -1) {
-        const rec = recepciones[rIdx];
-        
-        let concepto = '';
-        if (esCredito) {
-            concepto = `Cobro Faenamiento ${rec.lote_codigo} (${rec.cantidad} cab.) - ${rec.ganadero_nombre} (Al Crédito)`;
-        } else {
-            concepto = `Cobro Faenamiento ${rec.lote_codigo} (${rec.cantidad} cab.) - ${rec.ganadero_nombre}`;
-        }
-        
-        const nuevoMov = {
-            id: 'mov-' + Date.now(),
+    const rec = recepciones.find(rec => rec.id === recepcionId);
+    if (!rec) return;
+    
+    let concepto = '';
+    if (esCredito) {
+        concepto = `Cobro Faenamiento ${rec.lote_codigo} (${rec.cantidad} cab.) - ${rec.ganadero_nombre} (Al Crédito)`;
+    } else {
+        concepto = `Cobro Faenamiento ${rec.lote_codigo} (${rec.cantidad} cab.) - ${rec.ganadero_nombre}`;
+    }
+    
+    const nuevoMov = {
+        id: 'mov-' + Date.now(),
+        fecha: new Date().toISOString(),
+        tipo: 'Ingreso',
+        monto: total,
+        concepto: concepto,
+        metodoPagoId: metodoId,
+        referencia: rec.lote_codigo
+    };
+    
+    let nuevaDeuda = null;
+    if (esCredito) {
+        nuevaDeuda = {
+            id: 'deuda-' + Date.now(),
+            recepcionId: rec.id,
+            lote_codigo: rec.lote_codigo,
+            ganadero_id: rec.ganadero_id,
+            ganadero_nombre: rec.ganadero_nombre,
+            monto_total: total,
+            monto_abonado: 0.00,
+            saldo: total,
             fecha: new Date().toISOString(),
-            tipo: 'Ingreso',
-            monto: total,
-            concepto: concepto,
-            metodoPagoId: metodoId,
-            referencia: rec.lote_codigo
+            estado: 'Pendiente'
         };
-        
-        cajaActiva.movimientos.push(nuevoMov);
-        
+    }
+    
+    try {
+        await apiPost('/api/cobros', {
+            recepcionId,
+            metodoId,
+            total,
+            obs,
+            esCredito,
+            nuevaDeuda,
+            nuevoMov
+        });
+        await loadServerData();
+        closeModal('cobrar');
         if (esCredito) {
-            rec.estadoCobro = 'A Crédito';
-            
-            // Registrar la deuda
-            const nuevaDeuda = {
-                id: 'deuda-' + Date.now(),
-                recepcionId: rec.id,
-                lote_codigo: rec.lote_codigo,
-                ganadero_id: rec.ganadero_id,
-                ganadero_nombre: rec.ganadero_nombre,
-                monto_total: total,
-                monto_abonado: 0.00,
-                saldo: total,
-                fecha: new Date().toISOString(),
-                estado: 'Pendiente'
-            };
-            deudas.push(nuevaDeuda);
-            localStorage.setItem('deudas', JSON.stringify(deudas));
             showToast(`Servicio del lote ${rec.lote_codigo} registrado al crédito con éxito.`, 'success');
         } else {
-            rec.estadoCobro = 'Cobrado';
             showToast(`Servicio del lote ${rec.lote_codigo} cobrado con éxito.`, 'success');
         }
-        
-        rec.cobroMovimientoId = nuevoMov.id;
-        
-        localStorage.setItem('cajas', JSON.stringify(cajas));
-        localStorage.setItem('recepciones', JSON.stringify(recepciones));
-        
-        closeModal('cobrar');
-        renderAll();
+    } catch (err) {
+        showToast(err.message, 'error');
     }
 }
 
@@ -2271,7 +2120,7 @@ function cancelarEdicionTrabajador() {
     }
 }
 
-function saveTrabajador(event) {
+async function saveTrabajador(event) {
     event.preventDefault();
     const nombre = document.getElementById('trabajador-nombre').value.trim();
     const rol = document.getElementById('trabajador-rol').value;
@@ -2293,33 +2142,28 @@ function saveTrabajador(event) {
         return;
     }
 
-    if (editingTrabajadorId !== null) {
-        // Editar
-        const idx = trabajadores.findIndex(t => t.id === editingTrabajadorId);
-        if (idx !== -1) {
-            trabajadores[idx].nombre = nombre;
-            trabajadores[idx].rol = rol;
-            trabajadores[idx].whatsapp = whatsapp;
-            localStorage.setItem('trabajadores', JSON.stringify(trabajadores));
+    try {
+        if (editingTrabajadorId !== null) {
+            // Editar
+            await apiPut('/api/trabajadores/' + editingTrabajadorId, { nombre, rol, whatsapp, activo: true });
             showToast('Datos del trabajador actualizados.', 'success');
-            closeModal('trabajador');
+        } else {
+            // Crear
+            const nuevo = {
+                id: 't-' + Date.now(),
+                nombre,
+                rol,
+                whatsapp,
+                activo: true
+            };
+            await apiPost('/api/trabajadores', nuevo);
+            showToast('Trabajador registrado exitosamente.', 'success');
         }
-    } else {
-        // Crear
-        const nuevo = {
-            id: 't-' + Date.now(),
-            nombre,
-            rol,
-            whatsapp,
-            activo: true
-        };
-        trabajadores.push(nuevo);
-        localStorage.setItem('trabajadores', JSON.stringify(trabajadores));
-        showToast('Trabajador registrado exitosamente.', 'success');
+        await loadServerData();
         closeModal('trabajador');
+    } catch (err) {
+        showToast(err.message, 'error');
     }
-
-    renderAll();
 }
 
 function editTrabajador(id) {
@@ -2359,14 +2203,17 @@ async function deleteTrabajador(id) {
     if (!trab) return;
 
     // Verificar si tiene cajas registradas
-    const tieneCajas = cajas.some(c => c.trabajadorId === id);
+    const tieneCajas = cajas.some(c => c.encargadoId === id || c.encargado_id === id);
     if (tieneCajas) {
         const desactivar = await customConfirm(`No se puede eliminar físicamente a "${trab.nombre}" porque cuenta con turnos de caja registrados.\n¿Desea desactivar su cuenta para que no figure en nuevas aperturas de caja?`);
         if (desactivar) {
-            trab.activo = false;
-            localStorage.setItem('trabajadores', JSON.stringify(trabajadores));
-            showToast('Trabajador desactivado correctamente.', 'success');
-            renderAll();
+            try {
+                await apiPut('/api/trabajadores/' + id, { nombre: trab.nombre, rol: trab.rol, whatsapp: trab.whatsapp, activo: false });
+                await loadServerData();
+                showToast('Trabajador desactivado correctamente.', 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
         }
         return;
     }
@@ -2376,10 +2223,13 @@ async function deleteTrabajador(id) {
         if (editingTrabajadorId === id) {
             cancelarEdicionTrabajador();
         }
-        trabajadores = trabajadores.filter(t => t.id !== id);
-        localStorage.setItem('trabajadores', JSON.stringify(trabajadores));
-        showToast('Trabajador eliminado correctamente.', 'success');
-        renderAll();
+        try {
+            await apiDelete('/api/trabajadores/' + id);
+            await loadServerData();
+            showToast('Trabajador eliminado correctamente.', 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
     }
 }
 
@@ -2453,7 +2303,7 @@ function calcularDiferenciaArqueo() {
     }
 }
 
-function procesarCierreConArqueo(event) {
+async function procesarCierreConArqueo(event) {
     event.preventDefault();
     const cajaActiva = cajas.find(c => c.estado === 'Abierta');
     if (!cajaActiva) return;
@@ -2472,17 +2322,20 @@ function procesarCierreConArqueo(event) {
     
     const diferenciaCalculada = realVal - saldoTeoricoFisico;
 
-    cajaActiva.estado = 'Cerrada';
-    cajaActiva.fechaCierre = new Date().toISOString();
-    cajaActiva.montoCierre = saldoTeoricoFisico;
-    cajaActiva.montoReal = realVal;
-    cajaActiva.diferencia = diferenciaCalculada;
-    cajaActiva.observacionArqueo = obs;
-
-    localStorage.setItem('cajas', JSON.stringify(cajas));
-    showToast('Caja cerrada con éxito. Turno liquidado con arqueo.', 'success');
-    closeModal('arqueo');
-    renderAll();
+    try {
+        await apiPut(`/api/cajas/${cajaActiva.id}/cerrar`, {
+            saldoFisicoReal: realVal,
+            diferencia: diferenciaCalculada,
+            estado: 'Cerrada',
+            fechaCierre: new Date().toISOString(),
+            observaciones: obs
+        });
+        await loadServerData();
+        showToast('Caja cerrada con éxito. Turno liquidado con arqueo.', 'success');
+        closeModal('arqueo');
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
 }
 
 function selectMovTipoOption(value, text, event) {
@@ -2611,7 +2464,7 @@ function cancelarEdicionTipoPago() {
     }
 }
 
-function saveTipoPago(event) {
+async function saveTipoPago(event) {
     event.preventDefault();
     const nombre = document.getElementById('tipo-pago-nombre').value.trim();
     const activoVal = document.getElementById('tipo-pago-estado').value === 'Activo';
@@ -2621,31 +2474,26 @@ function saveTipoPago(event) {
         return;
     }
     
-    if (editingTipoPagoId !== null) {
-        // Modo Edición
-        const idx = tiposPago.findIndex(tp => tp.id === editingTipoPagoId);
-        if (idx !== -1) {
-            tiposPago[idx].nombre = nombre;
-            tiposPago[idx].activo = activoVal;
-            
-            localStorage.setItem('tiposPago', JSON.stringify(tiposPago));
+    try {
+        if (editingTipoPagoId !== null) {
+            // Modo Edición
+            await apiPut('/api/tipos-pago/' + editingTipoPagoId, { nombre, activo: activoVal });
             showToast('Tipo de pago actualizado correctamente.', 'success');
-            closeModal('tipo-pago');
+        } else {
+            // Modo Nuevo
+            const nuevoTipo = {
+                id: 'tp-' + Date.now(),
+                nombre: nombre,
+                activo: activoVal
+            };
+            await apiPost('/api/tipos-pago', nuevoTipo);
+            showToast('Tipo de pago registrado correctamente.', 'success');
         }
-    } else {
-        // Modo Nuevo
-        const nuevoTipo = {
-            id: 'tp-' + Date.now(),
-            nombre: nombre,
-            activo: activoVal
-        };
-        tiposPago.push(nuevoTipo);
-        localStorage.setItem('tiposPago', JSON.stringify(tiposPago));
-        showToast('Tipo de pago registrado correctamente.', 'success');
+        await loadServerData();
         closeModal('tipo-pago');
+    } catch (err) {
+        showToast(err.message, 'error');
     }
-    
-    renderAll();
 }
 
 function editTipoPago(id) {
@@ -2715,15 +2563,18 @@ function deleteTipoPago(id) {
         return;
     }
     
-    customConfirm(`¿Está seguro de eliminar el tipo de pago "${tp.nombre}"? Esta acción no se puede deshacer.`).then(confirmado => {
+    customConfirm(`¿Está seguro de eliminar el tipo de pago "${tp.nombre}"? Esta acción no se puede deshacer.`).then(async (confirmado) => {
         if (confirmado) {
             if (editingTipoPagoId === id) {
                 cancelarEdicionTipoPago();
             }
-            tiposPago = tiposPago.filter(item => item.id !== id);
-            localStorage.setItem('tiposPago', JSON.stringify(tiposPago));
-            renderAll();
-            showToast('Tipo de pago eliminado correctamente.', 'success');
+            try {
+                await apiDelete('/api/tipos-pago/' + id);
+                await loadServerData();
+                showToast('Tipo de pago eliminado correctamente.', 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
         }
     });
 }
@@ -3048,7 +2899,7 @@ function selectAbonoMetodoOption(value, text, event) {
     }
 }
 
-function registrarAbonoDeuda(event) {
+async function registrarAbonoDeuda(event) {
     event.preventDefault();
     const ganaderoId = document.getElementById('abono-ganadero-id').value;
     const deudaEspecificaId = document.getElementById('abono-deuda-especifica-id') ? document.getElementById('abono-deuda-especifica-id').value : '';
@@ -3082,8 +2933,15 @@ function registrarAbonoDeuda(event) {
     const detallesAbono = [];
     const lotesAfectados = [];
     
+    const deudasActualizadas = [];
+    const recepcionesActualizadas = [];
+    
+    // Clonar arrays locales para trabajar con copias seguras
+    const deudasClonadas = JSON.parse(JSON.stringify(deudas));
+    const recepcionesClonadas = JSON.parse(JSON.stringify(recepciones));
+
     if (deudaEspecificaId) {
-        const deuda = deudas.find(d => d.id === deudaEspecificaId);
+        const deuda = deudasClonadas.find(d => d.id === deudaEspecificaId);
         if (deuda) {
             const montoAmortizar = Math.min(deuda.saldo, restante);
             deuda.monto_abonado += montoAmortizar;
@@ -3091,17 +2949,21 @@ function registrarAbonoDeuda(event) {
             if (deuda.saldo < 0.01) {
                 deuda.saldo = 0;
                 deuda.estado = 'Cancelado';
-                const rec = recepciones.find(r => r.id === deuda.recepcionId || r.lote_codigo === deuda.lote_codigo);
-                if (rec) rec.estadoCobro = 'Cobrado';
+                const rec = recepcionesClonadas.find(r => r.id === deuda.recepcionId || r.lote_codigo === deuda.lote_codigo);
+                if (rec) {
+                    rec.estadoCobro = 'Cobrado';
+                    recepcionesActualizadas.push(rec);
+                }
             } else {
                 deuda.estado = 'Parcial';
             }
             restante -= montoAmortizar;
             detallesAbono.push({ deudaId: deuda.id, monto: montoAmortizar });
             lotesAfectados.push(deuda.lote_codigo);
+            deudasActualizadas.push(deuda);
         }
     } else {
-        const deudasPendientes = deudas
+        const deudasPendientes = deudasClonadas
             .filter(d => d.ganadero_id === ganaderoId && d.saldo > 0)
             .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
             
@@ -3116,8 +2978,11 @@ function registrarAbonoDeuda(event) {
             if (deuda.saldo < 0.01) {
                 deuda.saldo = 0;
                 deuda.estado = 'Cancelado';
-                const rec = recepciones.find(r => r.id === deuda.recepcionId || r.lote_codigo === deuda.lote_codigo);
-                if (rec) rec.estadoCobro = 'Cobrado';
+                const rec = recepcionesClonadas.find(r => r.id === deuda.recepcionId || r.lote_codigo === deuda.lote_codigo);
+                if (rec) {
+                    rec.estadoCobro = 'Cobrado';
+                    recepcionesActualizadas.push(rec);
+                }
             } else {
                 deuda.estado = 'Parcial';
             }
@@ -3125,6 +2990,7 @@ function registrarAbonoDeuda(event) {
             restante -= montoAmortizar;
             detallesAbono.push({ deudaId: deuda.id, monto: montoAmortizar });
             lotesAfectados.push(deuda.lote_codigo);
+            deudasActualizadas.push(deuda);
         }
     }
     
@@ -3141,8 +3007,6 @@ function registrarAbonoDeuda(event) {
         referencia: refLotes
     };
     
-    cajaActiva.movimientos.push(nuevoMov);
-    
     const nuevoAbono = {
         id: 'abono-' + Date.now(),
         ganadero_id: ganaderoId,
@@ -3154,28 +3018,31 @@ function registrarAbonoDeuda(event) {
         observaciones: obs,
         detalles: detallesAbono
     };
-    abonos.push(nuevoAbono);
     
-    localStorage.setItem('deudas', JSON.stringify(deudas));
-    localStorage.setItem('abonos', JSON.stringify(abonos));
-    localStorage.setItem('cajas', JSON.stringify(cajas));
-    localStorage.setItem('recepciones', JSON.stringify(recepciones));
-    
-    showToast(`Abono de S/. ${montoAbono.toFixed(2)} registrado con éxito.`, 'success');
-    closeModal('abono');
-    
-    if (selectedGanaderoDeudaId) {
-        renderDetalleDeudas();
-    } else {
-        renderCuentasCobrar();
+    try {
+        await apiPost('/api/abonos', {
+            nuevoAbono,
+            nuevoMov,
+            deudasActualizadas,
+            recepcionesActualizadas
+        });
+        await loadServerData();
+        showToast(`Abono de S/. ${montoAbono.toFixed(2)} registrado con éxito.`, 'success');
+        closeModal('abono');
+        
+        if (selectedGanaderoDeudaId) {
+            renderDetalleDeudas();
+        } else {
+            renderCuentasCobrar();
+        }
+    } catch (err) {
+        showToast(err.message, 'error');
     }
-    renderAll();
 }
 
 // Cargar la aplicación al iniciar la ventana
-window.onload = () => {
-    initDataPrueba();
-    renderAll();
+window.onload = async () => {
+    await loadServerData();
     setupCodigoAutogenerado();
     setupValidacionDocumento();
 };
