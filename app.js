@@ -7,10 +7,12 @@ let especies = JSON.parse(localStorage.getItem('especies')) || [];
 let metodosPago = JSON.parse(localStorage.getItem('metodosPago')) || [];
 let cajas = JSON.parse(localStorage.getItem('cajas')) || [];
 let trabajadores = JSON.parse(localStorage.getItem('trabajadores')) || [];
+let roles = JSON.parse(localStorage.getItem('roles')) || [];
 let editingGanaderoId = null; // Estado de edición global
 let editingEspecieId = null; // Estado de edición de especie global
 let editingPagoId = null; // Estado de edición de pago global
 let editingTrabajadorId = null; // Estado de edición de trabajador global
+let editingRolId = null; // Estado de edición de cargo / rol global
 
 
 // ==========================================
@@ -178,6 +180,16 @@ function customConfirm(mensaje) {
 
 // Inicialización de datos de prueba si el almacén local está vacío
 function initDataPrueba() {
+    if (roles.length === 0) {
+        roles = [
+            { id: 'rol-1', nombre: 'Cajero', activo: true },
+            { id: 'rol-2', nombre: 'Operador', activo: true },
+            { id: 'rol-3', nombre: 'Supervisor', activo: true },
+            { id: 'rol-4', nombre: 'Administrador', activo: true }
+        ];
+        localStorage.setItem('roles', JSON.stringify(roles));
+    }
+
     if (trabajadores.length === 0) {
         trabajadores = [
             { id: 't-1', nombre: 'Juan Pérez Prado', rol: 'Cajero', whatsapp: '+51 987654321', activo: true },
@@ -305,9 +317,11 @@ function switchTab(tabName) {
         cancelarEdicionTrabajador();
     }
 
-    // Si salimos de configuraciones, cancelamos la edición de especies activa
-    if (tabName !== 'configuraciones' && editingEspecieId !== null) {
-        cancelarEdicionEspecie();
+    // Si salimos de configuraciones, cancelamos las ediciones activas por seguridad
+    if (tabName !== 'configuraciones') {
+        if (editingEspecieId !== null) cancelarEdicionEspecie();
+        if (editingPagoId !== null) cancelarEdicionPago();
+        if (editingRolId !== null) cancelarEdicionRol();
     }
 
     // Cerrar sidebar en móviles tras cambiar de pestaña
@@ -986,6 +1000,12 @@ function renderAll() {
             }
         });
     }
+
+    // 13. Tabla de Cargos y Roles (Configuración)
+    renderRoles();
+    
+    // 14. Dropdown de Cargos y Roles en el Formulario de Trabajadores
+    poblarSelectorTrabajadorRol();
 }
 
 // Generar un código único de 2 letras a partir de una razón social
@@ -1441,6 +1461,262 @@ async function deletePago(id) {
         renderAll();
         showToast('Método de pago eliminado correctamente.', 'success');
     }
+}
+
+// ==========================================
+// GESTIÓN DEL CATÁLOGO DE CARGOS Y ROLES
+// ==========================================
+
+function iniciarNuevoRol() {
+    cancelarEdicionRol();
+    openModal('rol');
+}
+
+function cancelarEdicionRol() {
+    editingRolId = null;
+    
+    const form = document.getElementById('form-rol');
+    if (form) form.reset();
+    
+    // Reset custom select de estado
+    const inputEstado = document.getElementById('rol-estado');
+    if (inputEstado) inputEstado.value = 'Activo';
+    const txtEstado = document.getElementById('custom-select-rol-estado-text');
+    if (txtEstado) txtEstado.innerText = 'Activo';
+    document.querySelectorAll('#custom-select-rol-estado-options .custom-select-option').forEach(el => {
+        if (el.getAttribute('data-value') === 'Activo') {
+            el.classList.add('selected');
+        } else {
+            el.classList.remove('selected');
+        }
+    });
+    
+    const modalTitle = document.getElementById('modal-rol-title');
+    if (modalTitle) {
+        modalTitle.innerHTML = `
+            <i class="fa-solid fa-circle-plus" style="color: var(--color-client);"></i>
+            Registrar Cargo / Rol
+        `;
+    }
+    
+    const submitText = document.getElementById('text-submit-rol');
+    if (submitText) {
+        submitText.innerText = 'Registrar Cargo';
+    }
+}
+
+function selectRolEstadoOption(value, text, event) {
+    if (event) event.stopPropagation();
+    const inputHidden = document.getElementById('rol-estado');
+    const triggerText = document.getElementById('custom-select-rol-estado-text');
+    const container = document.getElementById('custom-select-rol-estado-container');
+    const options = document.querySelectorAll('#custom-select-rol-estado-options .custom-select-option');
+    
+    if (inputHidden && triggerText && container) {
+        inputHidden.value = value;
+        triggerText.innerText = text;
+        
+        options.forEach(opt => {
+            if (opt.getAttribute('data-value') === value) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        container.classList.remove('active');
+    }
+}
+
+function saveRol(event) {
+    event.preventDefault();
+    const nombre = document.getElementById('rol-nombre').value.trim();
+    const estado = document.getElementById('rol-estado').value;
+    const activo = estado === 'Activo';
+    
+    if (nombre.length === 0) {
+        showToast('El nombre del cargo no puede estar vacío.', 'error');
+        return;
+    }
+    
+    // Validar duplicado
+    const duplicado = roles.some(r => r.nombre.toLowerCase() === nombre.toLowerCase() && r.id !== editingRolId);
+    if (duplicado) {
+        showToast('Ya existe un cargo con ese nombre.', 'error');
+        return;
+    }
+    
+    if (editingRolId) {
+        // Editar
+        const idx = roles.findIndex(r => r.id === editingRolId);
+        if (idx !== -1) {
+            // Validar si pasa de Activo a Inactivo y está en uso
+            if (!activo && roles[idx].activo) {
+                const enUso = trabajadores.some(t => t.rol.toLowerCase() === roles[idx].nombre.toLowerCase());
+                if (enUso) {
+                    showToast('No se puede desactivar este cargo porque está asignado a trabajadores activos.', 'error');
+                    return;
+                }
+            }
+            // Si cambia el nombre, actualizar en cascada en los trabajadores
+            const nombreAnterior = roles[idx].nombre;
+            if (nombreAnterior.toLowerCase() !== nombre.toLowerCase()) {
+                trabajadores.forEach(t => {
+                    if (t.role && t.role.toLowerCase() === nombreAnterior.toLowerCase()) {
+                        t.role = nombre;
+                    }
+                    if (t.rol && t.rol.toLowerCase() === nombreAnterior.toLowerCase()) {
+                        t.rol = nombre;
+                    }
+                });
+                localStorage.setItem('trabajadores', JSON.stringify(trabajadores));
+            }
+            
+            roles[idx].nombre = nombre;
+            roles[idx].activo = activo;
+            showToast('Cargo actualizado con éxito.', 'success');
+        }
+    } else {
+        // Crear
+        const nuevoRol = {
+            id: 'rol-' + Date.now(),
+            nombre: nombre,
+            activo: activo
+        };
+        roles.push(nuevoRol);
+        showToast('Cargo registrado con éxito.', 'success');
+    }
+    
+    localStorage.setItem('roles', JSON.stringify(roles));
+    cancelarEdicionRol();
+    closeModal('rol');
+    renderAll();
+}
+
+function editRol(id) {
+    const rol = roles.find(r => r.id === id);
+    if (!rol) return;
+    
+    editingRolId = id;
+    document.getElementById('rol-nombre').value = rol.nombre;
+    
+    // Set custom select estado
+    const estadoVal = rol.activo ? 'Activo' : 'Inactivo';
+    selectRolEstadoOption(estadoVal, estadoVal);
+    
+    const modalTitle = document.getElementById('modal-rol-title');
+    if (modalTitle) {
+        modalTitle.innerHTML = `
+            <i class="fa-solid fa-pen-to-square" style="color: var(--color-client);"></i>
+            Editar Cargo / Rol
+        `;
+    }
+    
+    const submitText = document.getElementById('text-submit-rol');
+    if (submitText) {
+        submitText.innerText = 'Guardar Cambios';
+    }
+    
+    openModal('rol');
+}
+
+async function deleteRol(id) {
+    const rol = roles.find(r => r.id === id);
+    if (!rol) return;
+    
+    // Validar integridad referencial con trabajadores
+    const enUso = trabajadores.some(t => t.rol.toLowerCase() === rol.nombre.toLowerCase());
+    if (enUso) {
+        showToast('No se puede eliminar este cargo porque está asignado a trabajadores. Considere inhabilitarlo.', 'error');
+        return;
+    }
+    
+    const confirmado = await customConfirm(`¿Está seguro de eliminar el cargo "${rol.nombre}"? Esta acción no se puede deshacer.`);
+    if (confirmado) {
+        if (editingRolId === id) {
+            cancelarEdicionRol();
+        }
+        roles = roles.filter(r => r.id !== id);
+        localStorage.setItem('roles', JSON.stringify(roles));
+        renderAll();
+        showToast('Cargo eliminado correctamente.', 'success');
+    }
+}
+
+function renderRoles() {
+    const tbody = document.getElementById('table-roles-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    if (roles.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 24px;">
+                    No hay cargos registrados. Haga clic en "+ Nuevo Cargo" para crear uno.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    roles.forEach(r => {
+        const tr = document.createElement('tr');
+        
+        const badgeClass = r.activo ? 'badge-success' : 'badge-danger';
+        const badgeText = r.activo ? 'Activo' : 'Inactivo';
+        
+        tr.innerHTML = `
+            <td><strong>${r.nombre}</strong></td>
+            <td>
+                <span class="badge ${badgeClass}">${badgeText}</span>
+            </td>
+            <td>
+                <div class="actions-wrapper">
+                    <button class="btn-action btn-action-edit" onclick="editRol('${r.id}')" title="Editar Cargo">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button class="btn-action btn-action-delete" onclick="deleteRol('${r.id}')" title="Eliminar Cargo">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function poblarSelectorTrabajadorRol() {
+    const container = document.getElementById('custom-select-trabajador-rol-options');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    // Filtrar solo los roles activos
+    const rolesActivos = roles.filter(r => r.activo);
+    
+    if (rolesActivos.length === 0) {
+        container.innerHTML = `
+            <div class="custom-select-option disabled" style="color: var(--text-secondary); pointer-events: none; font-style: italic;">
+                No hay cargos activos disponibles
+            </div>
+        `;
+        return;
+    }
+    
+    rolesActivos.forEach(r => {
+        const divOpt = document.createElement('div');
+        divOpt.className = 'custom-select-option';
+        divOpt.setAttribute('data-value', r.nombre);
+        divOpt.innerText = r.nombre;
+        
+        const selectedVal = document.getElementById('trabajador-rol').value;
+        if (selectedVal === r.nombre) {
+            divOpt.classList.add('selected');
+        }
+        
+        divOpt.onclick = (event) => selectTrabajadorRolOption(r.nombre, r.nombre, event);
+        container.appendChild(divOpt);
+    });
 }
 
 // ==========================================

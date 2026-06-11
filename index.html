@@ -286,6 +286,12 @@
                                     <span>Métodos de Pago</span>
                                 </a>
                             </li>
+                            <li>
+                                <a class="config-nav-item" onclick="switchConfigSubTab('roles')">
+                                    <i class="fa-solid fa-user-tag"></i>
+                                    <span>Cargo / Rol</span>
+                                </a>
+                            </li>
                         </ul>
                     </aside>
                     
@@ -351,6 +357,37 @@
                                             </tr>
                                         </thead>
                                         <tbody id="table-pagos-body">
+                                            <!-- Cargado dinámicamente -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SUB-SECCIÓN: CARGOS / ROLES -->
+                        <div id="config-subtab-roles" class="config-subtab-section">
+                            <div class="table-container" style="border-radius: 12px; padding: 20px;">
+                                <div class="table-header-row" style="margin-bottom: 16px;">
+                                    <h3 class="card-title" style="margin-bottom: 0; font-size: 16px;">
+                                        <i class="fa-solid fa-user-tag" style="color: var(--color-client);"></i>
+                                        Catálogo de Cargos y Roles de Personal
+                                    </h3>
+                                    
+                                    <button class="btn-primary" onclick="iniciarNuevoRol()" style="width: auto; padding: 8px 16px; font-size: 13px; white-space: nowrap; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);">
+                                        <i class="fa-solid fa-plus"></i> Nuevo Cargo
+                                    </button>
+                                </div>
+                                
+                                <div class="table-responsive-wrapper">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Nombre del Cargo</th>
+                                                <th>Estado</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="table-roles-body">
                                             <!-- Cargado dinámicamente -->
                                         </tbody>
                                     </table>
@@ -821,6 +858,48 @@
         </div>
     </div>
 
+    <!-- Modal: Registro/Edición de Cargo / Rol -->
+    <div id="modal-rol" class="form-modal-overlay">
+        <div class="form-modal-card">
+            <button class="btn-modal-close" onclick="closeModal('rol')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <h2 class="card-title" id="modal-rol-title">
+                <i class="fa-solid fa-circle-plus" style="color: var(--color-client);"></i>
+                Registrar Cargo / Rol
+            </h2>
+            
+            <form id="form-rol" onsubmit="saveRol(event)">
+                <div class="form-group">
+                    <label class="form-label">Nombre del Cargo</label>
+                    <input type="text" id="rol-nombre" class="form-control" placeholder="Ej. Asistente de Pesaje" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Estado del Cargo</label>
+                    <div class="custom-select-container" id="custom-select-rol-estado-container">
+                        <input type="hidden" id="rol-estado" value="Activo" required>
+                        <div class="custom-select-trigger" onclick="toggleCustomSelect('rol-estado', event)">
+                            <span id="custom-select-rol-estado-text">Activo</span>
+                            <i class="fa-solid fa-chevron-down arrow"></i>
+                        </div>
+                        <div class="custom-select-options" id="custom-select-rol-estado-options">
+                            <div class="custom-select-option selected" data-value="Activo" onclick="selectRolEstadoOption('Activo', 'Activo', event)">Activo</div>
+                            <div class="custom-select-option" data-value="Inactivo" onclick="selectRolEstadoOption('Inactivo', 'Inactivo', event)">Inactivo</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-form-actions">
+                    <button type="submit" id="btn-guardar-rol" class="btn-primary btn-flex" style="margin-top: 0; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 15px rgba(234, 88, 12, 0.25);">
+                        <i class="fa-solid fa-check"></i> <span id="text-submit-rol">Registrar Cargo</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal 5: Cobrar Servicio de Recepción -->
     <div id="modal-cobrar" class="form-modal-overlay">
         <div class="form-modal-card">
@@ -920,10 +999,7 @@
                             <i class="fa-solid fa-chevron-down arrow"></i>
                         </div>
                         <div class="custom-select-options" id="custom-select-trabajador-rol-options">
-                            <div class="custom-select-option" data-value="Cajero" onclick="selectTrabajadorRolOption('Cajero', 'Cajero(a)', event)">Cajero(a)</div>
-                            <div class="custom-select-option" data-value="Operador" onclick="selectTrabajadorRolOption('Operador', 'Operador de Turno', event)">Operador de Turno</div>
-                            <div class="custom-select-option" data-value="Supervisor" onclick="selectTrabajadorRolOption('Supervisor', 'Supervisor de Planta', event)">Supervisor de Planta</div>
-                            <div class="custom-select-option" data-value="Administrador" onclick="selectTrabajadorRolOption('Administrador', 'Administrador', event)">Administrador</div>
+                            <!-- Cargado dinámicamente desde JavaScript -->
                         </div>
                     </div>
                 </div>
