@@ -44,6 +44,12 @@
                         </a>
                     </li>
                     <li>
+                        <a class="nav-item" onclick="switchTab('caja')">
+                            <i class="fa-solid fa-cash-register"></i>
+                            <span>Caja General</span>
+                        </a>
+                    </li>
+                    <li>
                         <a class="nav-item" onclick="switchTab('configuraciones')">
                             <i class="fa-solid fa-sliders"></i>
                             <span>Configuraciones</span>
@@ -187,6 +193,7 @@
                                     <th>Cabezas</th>
                                     <th>N° Guía SENASA</th>
                                     <th>Fecha y Hora</th>
+                                    <th>Cobro</th>
                                     <th>Estado</th>
                                 </tr>
                             </thead>
@@ -290,6 +297,166 @@
                             </div>
                         </div>
 
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- SECCIÓN 4: CAJA GENERAL -->
+            <section id="tab-caja" class="content-section">
+                
+                <!-- ESTADO: CAJA CERRADA (Apertura de Caja) -->
+                <div id="caja-estado-cerrada" class="caja-view-panel active">
+                    <div class="dashboard-grid" style="grid-template-columns: 420px 1fr; gap: 32px;">
+                        <!-- Formulario de Apertura -->
+                        <div class="card" style="padding: 32px;">
+                            <h3 class="card-title" style="color: var(--color-ops); font-size: 20px;">
+                                <i class="fa-solid fa-lock" style="color: var(--color-ops);"></i>
+                                Apertura de Caja General
+                            </h3>
+                            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.5;">
+                                Para iniciar el registro de transacciones, cobros y pesajes de hoy, debe aperturar el turno de caja estableciendo un saldo inicial en efectivo.
+                            </p>
+                            
+                            <form id="form-apertura-caja" onsubmit="aperturarCaja(event)">
+                                <div class="form-group">
+                                    <label class="form-label">Monto de Apertura (S/.)</label>
+                                    <input type="number" id="caja-monto-apertura" class="form-control" placeholder="Ej. 150.00" min="0" step="0.10" value="0.00" required>
+                                </div>
+                                <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: 0 4px 15px rgba(5, 150, 105, 0.25);">
+                                    <i class="fa-solid fa-lock-open"></i> Aperturar Caja
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <!-- Panel Informativo -->
+                        <div class="card" style="display: flex; flex-direction: column; justify-content: center; padding: 32px;">
+                            <h4 style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px;">
+                                Control de Caja y Liquidación Diaria
+                            </h4>
+                            <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+                                La caja general registra todos los ingresos financieros por concepto de faenamiento y servicios de pesaje del camal. Una vez abierta, el operador del sistema podrá registrar cobros y gastos menores de forma centralizada.
+                            </p>
+                            <div style="display: flex; gap: 16px;">
+                                <span style="font-size: 13px; color: var(--text-secondary);"><i class="fa-solid fa-shield-halved" style="color: var(--color-ops); margin-right: 6px;"></i>Trazabilidad Completa</span>
+                                <span style="font-size: 13px; color: var(--text-secondary);"><i class="fa-solid fa-file-invoice-dollar" style="color: var(--color-ops); margin-right: 6px;"></i>Balances sin descuadres</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ESTADO: CAJA ABIERTA (Resumen, Movimientos, Cierre) -->
+                <div id="caja-estado-abierta" class="caja-view-panel">
+                    <!-- Grid de Métricas Financieras -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Monto Apertura</div>
+                            <div class="stat-value" id="caja-val-apertura" style="color: #64748b;">S/. 0.00</div>
+                        </div>
+                        <div class="stat-card" style="border-left: 4px solid var(--color-ops);">
+                            <div class="stat-label" style="color: var(--color-ops);">Ingresos del Turno</div>
+                            <div class="stat-value" id="caja-val-ingresos" style="color: var(--color-ops);">S/. 0.00</div>
+                        </div>
+                        <div class="stat-card" style="border-left: 4px solid #ef4444;">
+                            <div class="stat-label" style="color: #ef4444;">Egresos del Turno</div>
+                            <div class="stat-value" id="caja-val-egresos" style="color: #ef4444;">S/. 0.00</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, var(--bg-card), #f0fdf4);">
+                            <div class="stat-label">Saldo Actual en Caja</div>
+                            <div class="stat-value" id="caja-val-saldo" style="font-size: 34px; color: #047857;">S/. 0.00</div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid" style="grid-template-columns: 380px 1fr; gap: 32px;">
+                        <!-- Columna Izquierda: Acciones Rápidas (Egreso/Ingreso Extra) y Botón Cierre -->
+                        <div style="display: flex; flex-direction: column; gap: 24px;">
+                            <!-- Registrar Movimiento Extra -->
+                            <div class="card">
+                                <h4 class="card-title" style="font-size: 15px;">
+                                    <i class="fa-solid fa-circle-dollar-to-slot" style="color: var(--color-client);"></i>
+                                    Movimiento Extraordinario
+                                </h4>
+                                <form id="form-movimiento-extra" onsubmit="registrarMovimientoExtra(event)">
+                                    <div class="form-group">
+                                        <label class="form-label">Tipo de Movimiento</label>
+                                        <select id="mov-tipo" class="form-control" required>
+                                            <option value="Egreso">Egreso (Gasto / Salida)</option>
+                                            <option value="Ingreso">Ingreso (Entrada Extra)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Monto (S/.)</label>
+                                        <input type="number" id="mov-monto" class="form-control" placeholder="Ej. 25.00" min="0.10" step="0.10" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Concepto / Motivo</label>
+                                        <input type="text" id="mov-concepto" class="form-control" placeholder="Ej. Artículos de limpieza" required>
+                                    </div>
+                                    <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);">
+                                        <i class="fa-solid fa-plus"></i> Registrar Movimiento
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Botón de Cerrar Caja -->
+                            <button onclick="cerrarCaja()" class="btn-primary" style="padding: 16px; background: #ef4444; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25);">
+                                <i class="fa-solid fa-lock"></i> Cerrar Turno de Caja
+                            </button>
+                        </div>
+
+                        <!-- Columna Derecha: Movimientos del Turno Activo -->
+                        <div class="table-container">
+                            <div class="table-header-row">
+                                <h3 class="card-title" style="margin-bottom: 0;">
+                                    <i class="fa-solid fa-list-check" style="color: var(--color-admin);"></i>
+                                    Movimientos de la Caja Activa
+                                </h3>
+                            </div>
+                            <div class="table-responsive-wrapper">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Hora</th>
+                                            <th>Concepto / Referencia</th>
+                                            <th>Método</th>
+                                            <th>Tipo</th>
+                                            <th>Monto</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-movimientos-body">
+                                        <!-- Cargado dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN HISTORIAL DE CAJAS CERRADAS (Siempre visible debajo) -->
+                <div class="table-container" style="margin-top: 40px;">
+                    <div class="table-header-row">
+                        <h3 class="card-title" style="margin-bottom: 0; font-size: 16px;">
+                            <i class="fa-solid fa-clock-rotate-left" style="color: var(--text-secondary);"></i>
+                            Historial de Cajas Cerradas (Liquidaciones Anteriores)
+                        </h3>
+                    </div>
+                    <div class="table-responsive-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Apertura</th>
+                                    <th>Cierre</th>
+                                    <th>Monto Inicial</th>
+                                    <th>Ingresos</th>
+                                    <th>Egresos</th>
+                                    <th>Monto Final</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-historial-cajas-body">
+                                <!-- Cargado dinámicamente -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -514,6 +681,78 @@
                 <div class="modal-form-actions">
                     <button type="submit" id="btn-guardar-pago" class="btn-primary btn-flex" style="margin-top: 0; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 15px rgba(234, 88, 12, 0.25);">
                         <i class="fa-solid fa-check"></i> <span id="text-submit-pago">Registrar Método</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 5: Cobrar Servicio de Recepción -->
+    <div id="modal-cobrar" class="form-modal-overlay">
+        <div class="form-modal-card">
+            <button class="btn-modal-close" onclick="closeModal('cobrar')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <h2 class="card-title" id="modal-cobrar-title" style="color: var(--color-ops);">
+                <i class="fa-solid fa-file-invoice-dollar" style="color: var(--color-ops);"></i>
+                Cobrar Servicio de Faenamiento
+            </h2>
+            
+            <form id="form-cobrar" onsubmit="procesarCobro(event)">
+                <input type="hidden" id="cobrar-recepcion-id">
+                
+                <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: var(--text-secondary);">
+                        <span>Lote:</span>
+                        <strong id="cobrar-txt-lote" style="color: var(--text-primary);">--</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: var(--text-secondary);">
+                        <span>Ganadero:</span>
+                        <strong id="cobrar-txt-ganadero" style="color: var(--text-primary);">--</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: var(--text-secondary);">
+                        <span>Especie:</span>
+                        <strong id="cobrar-txt-especie" style="color: var(--text-primary);">--</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
+                        <span>Cantidad Cabezas:</span>
+                        <strong id="cobrar-txt-cabezas" style="color: var(--text-primary);">0</strong>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Tarifa por Cabeza (S/.)</label>
+                    <input type="number" id="cobrar-tarifa-cabeza" class="form-control" placeholder="Ej. 15.00" min="0" step="0.50" oninput="calcularTotalCobro()" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Monto Total a Cobrar (S/.)</label>
+                    <input type="number" id="cobrar-monto-total" class="form-control" placeholder="0.00" min="0" step="0.10" readonly style="background: #e2e8f0; font-weight: 700; color: #0f172a;">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Método de Pago</label>
+                    <div class="custom-select-container" id="custom-select-cobro-pago-container">
+                        <input type="hidden" id="cobrar-pago-metodo" required>
+                        <div class="custom-select-trigger" onclick="toggleCustomSelect('cobro-pago', event)">
+                            <span id="custom-select-cobro-pago-text">Elige un método de pago...</span>
+                            <i class="fa-solid fa-chevron-down arrow"></i>
+                        </div>
+                        <div class="custom-select-options" id="custom-select-cobro-pago-options">
+                            <!-- Métodos cargados dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Observaciones / Operación (Opcional)</label>
+                    <input type="text" id="cobrar-observaciones" class="form-control" placeholder="Ej. Trans. N° 4589254">
+                </div>
+                
+                <div class="modal-form-actions">
+                    <button type="submit" id="btn-guardar-cobro" class="btn-primary btn-flex" style="margin-top: 0; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: 0 4px 15px rgba(5, 150, 105, 0.25);">
+                        <i class="fa-solid fa-check"></i> <span>Confirmar Cobro</span>
                     </button>
                 </div>
             </form>

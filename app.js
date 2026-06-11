@@ -5,6 +5,7 @@ let ganaderos = JSON.parse(localStorage.getItem('ganaderos')) || [];
 let recepciones = JSON.parse(localStorage.getItem('recepciones')) || [];
 let especies = JSON.parse(localStorage.getItem('especies')) || [];
 let metodosPago = JSON.parse(localStorage.getItem('metodosPago')) || [];
+let cajas = JSON.parse(localStorage.getItem('cajas')) || [];
 let editingGanaderoId = null; // Estado de edición global
 let editingEspecieId = null; // Estado de edición de especie global
 let editingPagoId = null; // Estado de edición de pago global
@@ -38,6 +39,20 @@ function closeModal(tipo) {
         // Si cerramos el modal de pago, restablecer estado
         if (tipo === 'pago') {
             cancelarEdicionPago();
+        }
+        
+        // Si cerramos el modal de cobrar, limpiar campos
+        if (tipo === 'cobrar') {
+            const form = document.getElementById('form-cobrar');
+            if (form) form.reset();
+            
+            const inputMetodo = document.getElementById('cobrar-pago-metodo');
+            if (inputMetodo) inputMetodo.value = '';
+            
+            const txtMetodo = document.getElementById('custom-select-cobro-pago-text');
+            if (txtMetodo) txtMetodo.innerText = 'Elige un método de pago...';
+            
+            document.querySelectorAll('#custom-select-cobro-pago-options .custom-select-option').forEach(el => el.classList.remove('selected'));
         }
     }
 }
@@ -188,7 +203,8 @@ function initDataPrueba() {
                 guia_transito: 'GT-0012485',
                 fecha: ayer.toISOString(),
                 observaciones: 'Porcinos ingresados en óptimas condiciones corporales.',
-                estado: 'Pendiente Inspección'
+                estado: 'Pendiente Inspección',
+                estadoCobro: 'Pendiente'
             },
             {
                 id: 'r-2',
@@ -200,7 +216,8 @@ function initDataPrueba() {
                 guia_transito: 'GT-0012590',
                 fecha: hoy.toISOString(),
                 observaciones: 'Vacunos sin signos clínicos de enfermedades infectocontagiosas.',
-                estado: 'Pendiente Inspección'
+                estado: 'Pendiente Inspección',
+                estadoCobro: 'Pendiente'
             }
         ];
         localStorage.setItem('recepciones', JSON.stringify(recepciones));
@@ -235,6 +252,8 @@ function switchTab(tabName) {
         titleText = 'Gestión de Ganaderos';
     } else if (tabName === 'configuraciones') {
         titleText = 'Configuración del Sistema';
+    } else if (tabName === 'caja') {
+        titleText = 'Caja General y Control de Cobros';
     }
     document.getElementById('header-title-text').innerText = titleText;
 
@@ -474,7 +493,8 @@ function saveIngreso(event) {
         guia_transito: guia,
         fecha: new Date().toISOString(),
         observaciones: observaciones || 'Sin observaciones adicionales.',
-        estado: 'Pendiente Inspección'
+        estado: 'Pendiente Inspección',
+        estadoCobro: 'Pendiente'
     };
 
     recepciones.push(nuevoIngreso);
@@ -625,6 +645,20 @@ function renderAll() {
             especieLabel = `${especieObj.icono} ${especieObj.nombre}`;
         }
 
+        let cobroCell = '';
+        if (r.estadoCobro === 'Cobrado') {
+            cobroCell = `<span class="badge badge-success" style="background: rgba(5, 150, 105, 0.08); color: var(--color-ops); border: 1px solid rgba(5, 150, 105, 0.15);"><i class="fa-solid fa-circle-check"></i> Cobrado</span>`;
+        } else {
+            cobroCell = `
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="badge badge-pending" style="padding: 2px 6px; font-size: 10px;">Pendiente</span>
+                    <button onclick="iniciarCobro('${r.id}')" class="btn-primary" style="width: auto; padding: 4px 8px; font-size: 11px; margin-top: 0; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: none;">
+                        <i class="fa-solid fa-file-invoice-dollar"></i> Cobrar
+                    </button>
+                </div>
+            `;
+        }
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><span class="lote-tag" style="border-color: var(--color-client); color: #ea580c; background: rgba(234, 88, 12, 0.05);">${r.lote_codigo}</span></td>
@@ -633,6 +667,7 @@ function renderAll() {
             <td style="font-weight: 600;">${r.cantidad}</td>
             <td>${r.guia_transito}</td>
             <td style="font-size: 12px; color: var(--text-secondary);">${fechaLegible}</td>
+            <td>${cobroCell}</td>
             <td><span class="badge badge-pending">${r.estado}</span></td>
         `;
         tbodyRecepciones.appendChild(tr);
@@ -698,6 +733,126 @@ function renderAll() {
         });
     }
 
+    // 7. Dropdown de Métodos de Pago para Cobros (Modal Cobrar)
+    const customOptionsCobroPago = document.getElementById('custom-select-cobro-pago-options');
+    if (customOptionsCobroPago) {
+        customOptionsCobroPago.innerHTML = '';
+        metodosPago.forEach(m => {
+            if (m.activo) {
+                const divOpt = document.createElement('div');
+                divOpt.className = 'custom-select-option';
+                divOpt.innerText = `${m.nombre} (${m.tipo})`;
+                divOpt.setAttribute('data-value', m.id);
+                // Comprobar si es el seleccionado actual
+                const selectedVal = document.getElementById('cobrar-pago-metodo').value;
+                if (selectedVal === m.id) {
+                    divOpt.classList.add('selected');
+                }
+                divOpt.onclick = (event) => selectCobroPagoOption(m.id, `${m.nombre} (${m.tipo})`, event);
+                customOptionsCobroPago.appendChild(divOpt);
+            }
+        });
+    }
+
+    // 8. Vistas condicionales y Balances de Caja General
+    const cajaActiva = cajas.find(c => c.estado === 'Abierta');
+    const panelCerrada = document.getElementById('caja-estado-cerrada');
+    const panelAbierta = document.getElementById('caja-estado-abierta');
+    
+    if (cajaActiva) {
+        if (panelCerrada) panelCerrada.classList.remove('active');
+        if (panelAbierta) panelAbierta.classList.add('active');
+        
+        // Calcular métricas
+        const ingresos = cajaActiva.movimientos.filter(m => m.tipo === 'Ingreso').reduce((acc, curr) => acc + curr.monto, 0);
+        const egresos = cajaActiva.movimientos.filter(m => m.tipo === 'Egreso').reduce((acc, curr) => acc + curr.monto, 0);
+        const saldoActual = cajaActiva.montoApertura + ingresos - egresos;
+        
+        // Pintar métricas
+        const valApertura = document.getElementById('caja-val-apertura');
+        const valIngresos = document.getElementById('caja-val-ingresos');
+        const valEgresos = document.getElementById('caja-val-egresos');
+        const valSaldo = document.getElementById('caja-val-saldo');
+        
+        if (valApertura) valApertura.innerText = `S/. ${cajaActiva.montoApertura.toFixed(2)}`;
+        if (valIngresos) valIngresos.innerText = `S/. ${ingresos.toFixed(2)}`;
+        if (valEgresos) valEgresos.innerText = `S/. ${egresos.toFixed(2)}`;
+        if (valSaldo) valSaldo.innerText = `S/. ${saldoActual.toFixed(2)}`;
+        
+        // Poblar movimientos del turno activo
+        const tbodyMovs = document.getElementById('table-movimientos-body');
+        if (tbodyMovs) {
+            tbodyMovs.innerHTML = '';
+            
+            if (cajaActiva.movimientos.length === 0) {
+                tbodyMovs.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 16px;">No hay movimientos en este turno.</td></tr>`;
+            } else {
+                const movsOrdenados = [...cajaActiva.movimientos].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                movsOrdenados.forEach(m => {
+                    const horaLegible = new Date(m.fecha).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    const metodoObj = metodosPago.find(mp => mp.id === m.metodoPagoId);
+                    const metodoNombre = metodoObj ? metodoObj.nombre : (m.metodoPagoId === 'mp-1' ? 'Efectivo Caja Chica' : 'Otro');
+                    
+                    let badgeTipo = '';
+                    let montoEstilo = '';
+                    if (m.tipo === 'Ingreso') {
+                        badgeTipo = `<span class="badge badge-success" style="background: rgba(5, 150, 105, 0.08); color: var(--color-ops); border: 1px solid rgba(5, 150, 105, 0.15);"><i class="fa-solid fa-arrow-down-long"></i> Ingreso</span>`;
+                        montoEstilo = `color: var(--color-ops); font-weight: 600;`;
+                    } else {
+                        badgeTipo = `<span class="badge" style="background: rgba(239, 68, 68, 0.08); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.15);"><i class="fa-solid fa-arrow-up-long"></i> Egreso</span>`;
+                        montoEstilo = `color: #ef4444; font-weight: 600;`;
+                    }
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="font-size: 12px; color: var(--text-secondary);">${horaLegible}</td>
+                        <td>
+                            <strong>${m.concepto}</strong>
+                            ${m.referencia && m.referencia !== 'Manual' ? `<br><small style="font-size: 10px; color: var(--text-secondary);">Ref: ${m.referencia}</small>` : ''}
+                        </td>
+                        <td><span style="font-size: 12px;">${metodoNombre}</span></td>
+                        <td>${badgeTipo}</td>
+                        <td style="${montoEstilo}">S/. ${m.monto.toFixed(2)}</td>
+                    `;
+                    tbodyMovs.appendChild(tr);
+                });
+            }
+        }
+    } else {
+        if (panelCerrada) panelCerrada.classList.add('active');
+        if (panelAbierta) panelAbierta.classList.remove('active');
+    }
+
+    // 9. Historial de Cajas Cerradas
+    const tbodyHistorialCajas = document.getElementById('table-historial-cajas-body');
+    if (tbodyHistorialCajas) {
+        tbodyHistorialCajas.innerHTML = '';
+        const cajasCerradas = cajas.filter(c => c.estado === 'Cerrada').sort((a, b) => new Date(b.fechaCierre) - new Date(a.fechaCierre));
+        
+        if (cajasCerradas.length === 0) {
+            tbodyHistorialCajas.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 16px;">No hay registros de cajas liquidadas anteriores.</td></tr>`;
+        } else {
+            cajasCerradas.forEach(c => {
+                const fechaAperturaLegible = new Date(c.fechaApertura).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const fechaCierreLegible = new Date(c.fechaCierre).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                
+                const ingresos = c.movimientos.filter(m => m.tipo === 'Ingreso').reduce((acc, curr) => acc + curr.monto, 0);
+                const egresos = c.movimientos.filter(m => m.tipo === 'Egreso').reduce((acc, curr) => acc + curr.monto, 0);
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-size: 12px; color: var(--text-secondary);">${fechaAperturaLegible}</td>
+                    <td style="font-size: 12px; color: var(--text-secondary);">${fechaCierreLegible}</td>
+                    <td style="font-weight: 500;">S/. ${c.montoApertura.toFixed(2)}</td>
+                    <td style="color: var(--color-ops);">S/. ${ingresos.toFixed(2)}</td>
+                    <td style="color: #ef4444;">S/. ${egresos.toFixed(2)}</td>
+                    <td style="font-weight: 700; color: var(--color-admin);">S/. ${c.montoCierre.toFixed(2)}</td>
+                    <td><span class="badge badge-success" style="background: rgba(5, 150, 105, 0.08); color: var(--color-ops); border: 1px solid rgba(5, 150, 105, 0.15);"><i class="fa-solid fa-circle-check"></i> Liquidada</span></td>
+                `;
+                tbodyHistorialCajas.appendChild(tr);
+            });
+        }
+    }
 }
 
 // Generar un código único de 2 letras a partir de una razón social
@@ -1133,6 +1288,202 @@ async function deletePago(id) {
         localStorage.setItem('metodosPago', JSON.stringify(metodosPago));
         renderAll();
         showToast('Método de pago eliminado correctamente.', 'success');
+    }
+}
+
+// ==========================================
+// GESTIÓN DE CAJA GENERAL Y COBROS
+// ==========================================
+
+function aperturarCaja(event) {
+    event.preventDefault();
+    const monto = parseFloat(document.getElementById('caja-monto-apertura').value);
+    if (isNaN(monto) || monto < 0) {
+        showToast('Monto de apertura no válido.', 'error');
+        return;
+    }
+    
+    const nuevaCaja = {
+        id: 'caja-' + Date.now(),
+        fechaApertura: new Date().toISOString(),
+        fechaCierre: null,
+        montoApertura: monto,
+        montoCierre: null,
+        estado: 'Abierta',
+        movimientos: []
+    };
+    
+    cajas.push(nuevaCaja);
+    localStorage.setItem('cajas', JSON.stringify(cajas));
+    showToast('Caja general aperturada con éxito.', 'success');
+    document.getElementById('form-apertura-caja').reset();
+    renderAll();
+}
+
+async function cerrarCaja() {
+    const cajaActiva = cajas.find(c => c.estado === 'Abierta');
+    if (!cajaActiva) return;
+    
+    const ingresos = cajaActiva.movimientos.filter(m => m.tipo === 'Ingreso').reduce((acc, curr) => acc + curr.monto, 0);
+    const egresos = cajaActiva.movimientos.filter(m => m.tipo === 'Egreso').reduce((acc, curr) => acc + curr.monto, 0);
+    const saldoCalculado = cajaActiva.montoApertura + ingresos - egresos;
+    
+    const confirmado = await customConfirm(`¿Está seguro de cerrar el turno de caja general?\nBalance final: S/. ${saldoCalculado.toFixed(2)}\n(Apertura: S/. ${cajaActiva.montoApertura.toFixed(2)}, Ingresos: S/. ${ingresos.toFixed(2)}, Egresos: S/. ${egresos.toFixed(2)})`);
+    if (confirmado) {
+        cajaActiva.estado = 'Cerrada';
+        cajaActiva.fechaCierre = new Date().toISOString();
+        cajaActiva.montoCierre = saldoCalculado;
+        
+        localStorage.setItem('cajas', JSON.stringify(cajas));
+        showToast('Caja cerrada con éxito. Turno liquidado.', 'success');
+        renderAll();
+    }
+}
+
+function registrarMovimientoExtra(event) {
+    event.preventDefault();
+    const cajaActiva = cajas.find(c => c.estado === 'Abierta');
+    if (!cajaActiva) {
+        showToast('Debe aperturar la caja antes de registrar movimientos.', 'error');
+        return;
+    }
+    
+    const tipo = document.getElementById('mov-tipo').value;
+    const monto = parseFloat(document.getElementById('mov-monto').value);
+    const concepto = document.getElementById('mov-concepto').value.trim();
+    
+    if (isNaN(monto) || monto <= 0) {
+        showToast('Monto del movimiento no válido.', 'error');
+        return;
+    }
+    
+    const nuevoMov = {
+        id: 'mov-' + Date.now(),
+        fecha: new Date().toISOString(),
+        tipo: tipo,
+        monto: monto,
+        concepto: concepto,
+        metodoPagoId: 'mp-1', // Efectivo Caja Chica por defecto
+        referencia: 'Manual'
+    };
+    
+    cajaActiva.movimientos.push(nuevoMov);
+    localStorage.setItem('cajas', JSON.stringify(cajas));
+    showToast('Movimiento extraordinario registrado con éxito.', 'success');
+    document.getElementById('form-movimiento-extra').reset();
+    renderAll();
+}
+
+function iniciarCobro(recepcionId) {
+    const cajaActiva = cajas.find(c => c.estado === 'Abierta');
+    if (!cajaActiva) {
+        showToast('Debe aperturar la caja general antes de poder procesar cobros.', 'error');
+        return;
+    }
+    
+    const r = recepciones.find(rec => rec.id === recepcionId);
+    if (!r) return;
+    
+    document.getElementById('cobrar-recepcion-id').value = r.id;
+    document.getElementById('cobrar-txt-lote').innerText = r.lote_codigo;
+    document.getElementById('cobrar-txt-ganadero').innerText = r.ganadero_nombre;
+    
+    const especieObj = especies.find(e => e.codigo === r.especie);
+    const especieNombre = especieObj ? especieObj.nombre : r.especie;
+    document.getElementById('cobrar-txt-especie').innerText = especieNombre;
+    document.getElementById('cobrar-txt-cabezas').innerText = r.cantidad;
+    
+    // Tarifas sugeridas
+    let tarifaSugerida = 15.00;
+    if (r.especie === 'VA') tarifaSugerida = 25.00;
+    else if (r.especie === 'PO') tarifaSugerida = 15.00;
+    else if (r.especie === 'OV' || r.especie === 'CA') tarifaSugerida = 10.00;
+    
+    document.getElementById('cobrar-tarifa-cabeza').value = tarifaSugerida;
+    
+    // Reset inputs
+    document.getElementById('cobrar-pago-metodo').value = '';
+    document.getElementById('custom-select-cobro-pago-text').innerText = 'Elige un método de pago...';
+    document.querySelectorAll('#custom-select-cobro-pago-options .custom-select-option').forEach(el => el.classList.remove('selected'));
+    document.getElementById('cobrar-observaciones').value = '';
+    
+    calcularTotalCobro();
+    openModal('cobrar');
+}
+
+function calcularTotalCobro() {
+    const cabezas = parseInt(document.getElementById('cobrar-txt-cabezas').innerText);
+    const tarifa = parseFloat(document.getElementById('cobrar-tarifa-cabeza').value);
+    const total = cabezas * (isNaN(tarifa) ? 0 : tarifa);
+    document.getElementById('cobrar-monto-total').value = total.toFixed(2);
+}
+
+function selectCobroPagoOption(metodoId, texto, event) {
+    if (event) event.stopPropagation();
+    const inputHidden = document.getElementById('cobrar-pago-metodo');
+    const triggerText = document.getElementById('custom-select-cobro-pago-text');
+    const container = document.getElementById('custom-select-cobro-pago-container');
+    const options = document.querySelectorAll('#custom-select-cobro-pago-options .custom-select-option');
+    
+    if (inputHidden && triggerText && container) {
+        inputHidden.value = metodoId;
+        triggerText.innerText = texto;
+        
+        options.forEach(opt => {
+            if (opt.getAttribute('data-value') === metodoId) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        container.classList.remove('active');
+    }
+}
+
+function procesarCobro(event) {
+    event.preventDefault();
+    const cajaActiva = cajas.find(c => c.estado === 'Abierta');
+    if (!cajaActiva) {
+        showToast('La caja general se encuentra cerrada. Abra la caja antes de cobrar.', 'error');
+        return;
+    }
+    
+    const recepcionId = document.getElementById('cobrar-recepcion-id').value;
+    const metodoId = document.getElementById('cobrar-pago-metodo').value;
+    const total = parseFloat(document.getElementById('cobrar-monto-total').value);
+    const obs = document.getElementById('cobrar-observaciones').value.trim();
+    
+    if (!metodoId) {
+        showToast('Debe seleccionar un método de pago.', 'error');
+        return;
+    }
+    
+    const rIdx = recepciones.findIndex(rec => rec.id === recepcionId);
+    if (rIdx !== -1) {
+        const rec = recepciones[rIdx];
+        const concepto = `Cobro Faenamiento ${rec.lote_codigo} (${rec.cantidad} cab.) - ${rec.ganadero_nombre}`;
+        
+        const nuevoMov = {
+            id: 'mov-' + Date.now(),
+            fecha: new Date().toISOString(),
+            tipo: 'Ingreso',
+            monto: total,
+            concepto: concepto,
+            metodoPagoId: metodoId,
+            referencia: rec.lote_codigo
+        };
+        
+        cajaActiva.movimientos.push(nuevoMov);
+        
+        rec.estadoCobro = 'Cobrado';
+        rec.cobroMovimientoId = nuevoMov.id;
+        
+        localStorage.setItem('cajas', JSON.stringify(cajas));
+        localStorage.setItem('recepciones', JSON.stringify(recepciones));
+        
+        showToast(`Servicio del lote ${rec.lote_codigo} cobrado con éxito.`, 'success');
+        closeModal('cobrar');
+        renderAll();
     }
 }
 

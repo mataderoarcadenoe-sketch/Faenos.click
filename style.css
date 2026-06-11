@@ -290,6 +290,15 @@ body {
     animation: fadeIn 0.35s ease-out;
 }
 
+.caja-view-panel {
+    display: none;
+}
+
+.caja-view-panel.active {
+    display: block;
+    animation: fadeIn 0.35s ease-out;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
