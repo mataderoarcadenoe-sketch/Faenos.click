@@ -134,6 +134,9 @@
                         <button id="header-action-trabajadores" class="btn-header-action btn-primary" onclick="iniciarNuevoTrabajador()" style="display: none;"><i class="fa-solid fa-plus"></i> Nuevo Trabajador</button>
                         <button id="header-action-recepcion" class="btn-header-action btn-primary" onclick="iniciarNuevoIngreso()" style="display: none; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);"><i class="fa-solid fa-plus"></i> Nuevo Lote</button>
                         
+                        <!-- Acciones de Caja -->
+                        <button id="header-action-caja-egreso" class="btn-header-action btn-primary" onclick="iniciarNuevoMovimiento()" style="display: none; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);"><i class="fa-solid fa-plus"></i> Registrar Egreso</button>
+
                         <!-- Acciones de Configuración -->
                         <button id="header-action-config-animales" class="btn-header-action btn-primary" onclick="iniciarNuevaEspecie()" style="display: none; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);"><i class="fa-solid fa-plus"></i> Nueva Especie</button>
                         <button id="header-action-config-pagos" class="btn-header-action btn-primary" onclick="iniciarNuevoPago()" style="display: none; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);"><i class="fa-solid fa-plus"></i> Nuevo Método</button>
@@ -544,42 +547,6 @@
                                                 <i class="fa-solid fa-lock"></i> Cerrar Turno de Caja
                                             </button>
                                         </div>
-
-                                        <!-- Tarjeta 2: Registrar Movimiento Extra -->
-                                        <div class="card" style="padding: 20px;">
-                                            <h4 class="card-title" style="font-size: 14px; margin-bottom: 12px;">
-                                                <i class="fa-solid fa-circle-dollar-to-slot" style="color: var(--color-client);"></i>
-                                                Movimiento Extraordinario
-                                            </h4>
-                                            <form id="form-movimiento-extra" onsubmit="registrarMovimientoExtra(event)">
-                                                <div class="form-group" style="margin-bottom: 10px;">
-                                                    <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Tipo de Movimiento</label>
-                                                    <div class="custom-select-container" id="custom-select-mov-tipo-container">
-                                                        <input type="hidden" id="mov-tipo" value="Egreso" required>
-                                                        <div class="custom-select-trigger" onclick="toggleCustomSelect('mov-tipo', event)" style="padding: 8px 12px; font-size: 13px; height: 36px; display: flex; justify-content: space-between; align-items: center;">
-                                                            <span id="custom-select-mov-tipo-text">Egreso (Gasto / Salida)</span>
-                                                            <i class="fa-solid fa-chevron-down arrow"></i>
-                                                        </div>
-                                                        <div class="custom-select-options" id="custom-select-mov-tipo-options">
-                                                            <div class="custom-select-option selected" data-value="Egreso" onclick="selectMovTipoOption('Egreso', 'Egreso (Gasto / Salida)', event)">Egreso (Gasto / Salida)</div>
-                                                            <div class="custom-select-option" data-value="Ingreso" onclick="selectMovTipoOption('Ingreso', 'Ingreso (Entrada Extra)', event)">Ingreso (Entrada Extra)</div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="form-group" style="margin-bottom: 10px;">
-                                                    <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Monto (S/.)</label>
-                                                    <input type="number" id="mov-monto" class="form-control" style="padding: 8px 12px; font-size: 13px; height: 36px;" placeholder="Ej. 25.00" min="0.10" step="0.10" required>
-                                                </div>
-                                                <div class="form-group" style="margin-bottom: 14px;">
-                                                    <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Concepto / Motivo</label>
-                                                    <input type="text" id="mov-concepto" class="form-control" style="padding: 8px 12px; font-size: 13px; height: 36px;" placeholder="Ej. Artículos de limpieza" required>
-                                                </div>
-                                                <button type="submit" class="btn-primary" style="margin-top: 0; padding: 10px; font-size: 13px; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 10px rgba(234, 88, 12, 0.15); width: 100%;">
-                                                    <i class="fa-solid fa-plus"></i> Registrar Movimiento
-                                                </button>
-                                            </form>
-                                        </div>
-
                                     </div>
 
                                     <!-- Columna Derecha: Movimientos del Turno Activo -->
@@ -1268,6 +1235,50 @@
         </div>
     </div>
 
+    <!-- Modal: Movimiento Extraordinario (Ingreso / Egreso) -->
+    <div id="modal-movimiento" class="form-modal-overlay">
+        <div class="form-modal-card" style="max-width: 400px;">
+            <button class="btn-modal-close" onclick="closeModal('movimiento')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <h2 class="card-title">
+                <i class="fa-solid fa-circle-dollar-to-slot" style="color: var(--color-client);"></i>
+                Movimiento Extraordinario
+            </h2>
+            
+            <form id="form-movimiento-extra" onsubmit="registrarMovimientoExtra(event)">
+                <div class="form-group">
+                    <label class="form-label">Tipo de Movimiento</label>
+                    <div class="custom-select-container" id="custom-select-mov-tipo-container">
+                        <input type="hidden" id="mov-tipo" value="Egreso" required>
+                        <div class="custom-select-trigger" onclick="toggleCustomSelect('mov-tipo', event)">
+                            <span id="custom-select-mov-tipo-text">Egreso (Gasto / Salida)</span>
+                            <i class="fa-solid fa-chevron-down arrow"></i>
+                        </div>
+                        <div class="custom-select-options" id="custom-select-mov-tipo-options">
+                            <div class="custom-select-option selected" data-value="Egreso" onclick="selectMovTipoOption('Egreso', 'Egreso (Gasto / Salida)', event)">Egreso (Gasto / Salida)</div>
+                            <div class="custom-select-option" data-value="Ingreso" onclick="selectMovTipoOption('Ingreso', 'Ingreso (Entrada Extra)', event)">Ingreso (Entrada Extra)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Monto (S/.)</label>
+                    <input type="number" id="mov-monto" class="form-control" placeholder="Ej. 25.00" min="0.10" step="0.10" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Concepto / Motivo</label>
+                    <input type="text" id="mov-concepto" class="form-control" placeholder="Ej. Artículos de limpieza" required>
+                </div>
+                <div class="modal-form-actions">
+                    <button type="submit" class="btn-primary btn-flex" style="margin-top: 0; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 15px rgba(234, 88, 12, 0.25);">
+                        <i class="fa-solid fa-check"></i> Registrar Movimiento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Contenedor de Notificaciones Flotantes (Toasts) -->
     <div id="toast-container"></div>
 
@@ -1287,6 +1298,6 @@
     </div>
 
     <!-- Archivo JS Vainilla -->
-    <script src="app.js?v=2.0.7"></script>
+    <script src="app.js?v=2.0.8"></script>
 </body>
 </html>

@@ -418,6 +418,8 @@ function switchCajaSubTab(subTabName) {
             item.classList.add('active');
         }
     });
+    
+    actualizarBotonEgresoHeader();
 }
 
 // Preview del Lote Juliano en tiempo real en el formulario de recepción
@@ -1059,6 +1061,9 @@ function renderAll() {
     if (selectedGanaderoDeudaId) {
         renderDetalleDeudas();
     }
+
+    // 18. Actualizar visibilidad del botón de egreso en el header
+    actualizarBotonEgresoHeader();
 }
 
 // Generar un código único de 2 letras a partir de una razón social
@@ -1861,8 +1866,35 @@ async function registrarMovimientoExtra(event) {
         showToast('Movimiento extraordinario registrado con éxito.', 'success');
         document.getElementById('form-movimiento-extra').reset();
         selectMovTipoOption('Egreso', 'Egreso (Gasto / Salida)');
+        closeModal('movimiento');
     } catch (err) {
         showToast(err.message, 'error');
+    }
+}
+
+function iniciarNuevoMovimiento() {
+    const form = document.getElementById('form-movimiento-extra');
+    if (form) form.reset();
+    selectMovTipoOption('Egreso', 'Egreso (Gasto / Salida)');
+    openModal('movimiento');
+}
+
+function actualizarBotonEgresoHeader() {
+    const btn = document.getElementById('header-action-caja-egreso');
+    if (!btn) return;
+    
+    const activeSection = document.querySelector('.content-section.active');
+    const isCajaTab = activeSection && activeSection.id === 'tab-caja';
+    
+    const activeSubtabItem = document.querySelector('.caja-nav-item.active');
+    const isTurnoSubtab = activeSubtabItem ? activeSubtabItem.getAttribute('onclick').includes('turno') : true;
+    
+    const cajaActiva = cajas.find(c => c.estado === 'Abierta');
+    
+    if (isCajaTab && isTurnoSubtab && cajaActiva) {
+        btn.style.display = 'flex';
+    } else {
+        btn.style.display = 'none';
     }
 }
 
