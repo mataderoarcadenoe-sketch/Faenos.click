@@ -843,7 +843,8 @@
                                                 </span>
                                             </div>
                                             
-                                            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                                            <!-- Detalles de saldos (ocultos por defecto) -->
+                                            <div id="caja-resumen-detalles" style="display: none; flex-direction: column; gap: 10px; margin-bottom: 20px; animation: fadeIn 0.3s ease-out;">
                                                 <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
                                                     <span>Monto Apertura (Efectivo):</span>
                                                     <span id="caja-val-apertura" style="font-weight: 500; color: var(--text-primary);">S/. 0.00</span>
@@ -867,7 +868,7 @@
                                                 </div>
                                             </div>
                                             
-                                            <button onclick="cerrarCaja()" class="btn-primary" style="margin-top: 0; padding: 12px; background: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15); font-size: 13px; width: 100%;">
+                                            <button id="btn-cerrar-caja-control" onclick="solicitarCierreCaja()" class="btn-primary" style="margin-top: 0; padding: 12px; background: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15); font-size: 13px; width: 100%;">
                                                 <i class="fa-solid fa-lock"></i> Cerrar Turno de Caja
                                             </button>
                                         </div>

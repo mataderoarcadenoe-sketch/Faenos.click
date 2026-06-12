@@ -20,6 +20,7 @@ let controlCloro = [];
 let registrosHigiene = [];
 let visitas = [];
 let capacitaciones = [];
+let cajaDetallesRevelados = false;
 
 let editingGanaderoId = null; // Estado de edición global
 let editingEspecieId = null; // Estado de edición de especie global
@@ -109,6 +110,8 @@ function closeModal(tipo) {
                 statusBox.innerText = 'Ingrese el monto físico para calcular el cuadre';
                 statusBox.className = '';
             }
+            cajaDetallesRevelados = false;
+            renderAll();
         }
         
         // Si cerramos el modal de cobrar, limpiar campos
@@ -1038,6 +1041,26 @@ function renderAll() {
         if (valOtrosIngresos) valOtrosIngresos.innerText = `+ S/. ${ingresosOtros.toFixed(2)}`;
         if (valSaldo) valSaldo.innerText = `S/. ${saldoFisicoTeorico.toFixed(2)}`;
         
+        // Actualizar visibilidad del desglose y botón de cerrar caja según cajaDetallesRevelados
+        const detallesDiv = document.getElementById('caja-resumen-detalles');
+        const btnCerrarCaja = document.getElementById('btn-cerrar-caja-control');
+        
+        if (detallesDiv && btnCerrarCaja) {
+            if (cajaDetallesRevelados) {
+                detallesDiv.style.display = 'flex';
+                btnCerrarCaja.innerHTML = '<i class="fa-solid fa-calculator"></i> Realizar Arqueo y Liquidar';
+                btnCerrarCaja.style.background = 'linear-gradient(135deg, #ea580c, #ff782b)';
+                btnCerrarCaja.style.boxShadow = '0 4px 12px rgba(234, 88, 12, 0.15)';
+                btnCerrarCaja.onclick = cerrarCaja;
+            } else {
+                detallesDiv.style.display = 'none';
+                btnCerrarCaja.innerHTML = '<i class="fa-solid fa-lock"></i> Cerrar Turno de Caja';
+                btnCerrarCaja.style.background = '#ef4444';
+                btnCerrarCaja.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.15)';
+                btnCerrarCaja.onclick = solicitarCierreCaja;
+            }
+        }
+        
         // Poblar movimientos del turno activo
         const tbodyMovs = document.getElementById('table-movimientos-body');
         if (tbodyMovs) {
@@ -1947,6 +1970,7 @@ async function aperturarCaja(event) {
     
     try {
         await apiPost('/api/cajas', nuevaCaja);
+        cajaDetallesRevelados = false;
         await loadServerData();
         showToast('Caja general aperturada con éxito.', 'success');
         
@@ -1958,6 +1982,11 @@ async function aperturarCaja(event) {
     } catch (err) {
         showToast(err.message, 'error');
     }
+}
+
+function solicitarCierreCaja() {
+    cajaDetallesRevelados = true;
+    renderAll();
 }
 
 function cerrarCaja() {
@@ -2591,6 +2620,7 @@ async function procesarCierreConArqueo(event) {
             fechaCierre: new Date().toISOString(),
             observaciones: obs
         });
+        cajaDetallesRevelados = false;
         await loadServerData();
         showToast('Caja cerrada con éxito. Turno liquidado con arqueo.', 'success');
         closeModal('arqueo');
