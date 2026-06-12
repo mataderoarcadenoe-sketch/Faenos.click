@@ -717,9 +717,10 @@ async function saveIngreso(event) {
     const especie = document.getElementById('recepcion-especie').value;
     const cantidad = parseInt(document.getElementById('recepcion-cantidad').value);
     const guia = document.getElementById('recepcion-guia').value.trim();
+    const establo = document.getElementById('recepcion-establo').value.trim();
     const observaciones = document.getElementById('recepcion-observaciones').value.trim();
 
-    if (!ganaderoId || !especie || !cantidad || !guia) {
+    if (!ganaderoId || !especie || !cantidad || !guia || !establo) {
         showToast('Por favor, complete todos los campos obligatorios.', 'error');
         return;
     }
@@ -741,6 +742,7 @@ async function saveIngreso(event) {
         especie: especie,
         cantidad: cantidad,
         guia_transito: guia,
+        registro_establo: establo,
         fecha: new Date().toISOString(),
         observaciones: observaciones || 'Sin observaciones adicionales.',
         estado: 'Pendiente Inspección',
@@ -924,6 +926,7 @@ function renderAll() {
             <td>${especieLabel}</td>
             <td style="font-weight: 600;">${r.cantidad}</td>
             <td>${r.guia_transito}</td>
+            <td><span class="badge" style="background: #f1f5f9; color: var(--text-secondary); border: 1px solid #e2e8f0; font-family: monospace; font-size: 11px;">${r.registro_establo || 'N/A'}</span></td>
             <td style="font-size: 12px; color: var(--text-secondary);">${fechaLegible}</td>
             <td>${cobroCell}</td>
             <td><span class="badge badge-pending">${r.estado}</span></td>

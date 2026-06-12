@@ -103,9 +103,11 @@ async function initDb() {
                 fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 observaciones TEXT,
                 estado VARCHAR(100) DEFAULT 'Pendiente Inspección',
-                estado_cobro VARCHAR(100) DEFAULT 'Pendiente'
+                estado_cobro VARCHAR(100) DEFAULT 'Pendiente',
+                registro_establo VARCHAR(150)
             )
         `);
+        await client.query(`ALTER TABLE recepciones ADD COLUMN IF NOT EXISTS registro_establo VARCHAR(150)`);
 
         // 8. Cajas
         await client.query(`
@@ -391,7 +393,6 @@ async function initDb() {
             ayer.setDate(hoy.getDate() - 1);
             const haceDosDias = new Date();
             haceDosDias.setDate(haceDosDias.getDate() - 2);
-            
             // Función auxiliar para día juliano
             const getJulian = (d) => {
                 const start = new Date(d.getFullYear(), 0, 0);
@@ -402,11 +403,11 @@ async function initDb() {
             };
 
             await client.query(`
-                INSERT INTO recepciones (id, lote_codigo, ganadero_id, ganadero_nombre, especie, cantidad, guia_transito, fecha, observaciones, estado, estado_cobro) VALUES
-                ('r-ex-1', 'LBVA159', 'g-2', 'Fundo Las Brisas', 'VA', 15, 'GT-0012100', $1, 'Vacunos de ingreso anterior para registro de deuda histórica.', 'Inspeccionado', 'Al Crédito'),
-                ('r-ex-2', 'LBPO160', 'g-2', 'Fundo Las Brisas', 'PO', 12, 'GT-0012101', $1, 'Porcinos de ingreso anterior para registro de deuda histórica.', 'Inspeccionado', 'Al Crédito'),
-                ('r-1', $2, 'g-1', 'Agroindustria Atlántica S.A.C.', 'PO', 45, 'GT-0012485', $3, 'Porcinos ingresados en óptimas condiciones corporales.', 'Pendiente Inspección', 'Pendiente'),
-                ('r-2', $4, 'g-2', 'Fundo Las Brisas', 'VA', 12, 'GT-0012590', $5, 'Vacunos sin signos clínicos de enfermedades infectocontagiosas.', 'Pendiente Inspección', 'Pendiente')
+                INSERT INTO recepciones (id, lote_codigo, ganadero_id, ganadero_nombre, especie, cantidad, guia_transito, fecha, observaciones, estado, estado_cobro, registro_establo) VALUES
+                ('r-ex-1', 'LBVA159', 'g-2', 'Fundo Las Brisas', 'VA', 15, 'GT-0012100', $1, 'Vacunos de ingreso anterior para registro de deuda histórica.', 'Inspeccionado', 'Al Crédito', 'EST-PE-10294'),
+                ('r-ex-2', 'LBPO160', 'g-2', 'Fundo Las Brisas', 'PO', 12, 'GT-0012101', $1, 'Porcinos de ingreso anterior para registro de deuda histórica.', 'Inspeccionado', 'Al Crédito', 'EST-PE-10294'),
+                ('r-1', $2, 'g-1', 'Agroindustria Atlántica S.A.C.', 'PO', 45, 'GT-0012485', $3, 'Porcinos ingresados en óptimas condiciones corporales.', 'Pendiente Inspección', 'Pendiente', 'EST-PE-09432'),
+                ('r-2', $4, 'g-2', 'Fundo Las Brisas', 'VA', 12, 'GT-0012590', $5, 'Vacunos sin signos clínicos de enfermedades infectocontagiosas.', 'Pendiente Inspección', 'Pendiente', 'EST-PE-10294')
             `, [
                 haceDosDias,
                 'AAPO' + getJulian(ayer), ayer,
@@ -997,11 +998,11 @@ app.delete('/api/tipos-pago/:id', async (req, res) => {
 
 // --- RECEPCIONES ---
 app.post('/api/recepciones', async (req, res) => {
-    const { id, lote_codigo, ganadero_id, ganadero_nombre, especie, cantidad, guia_transito, fecha, observaciones, estado, estadoCobro } = req.body;
+    const { id, lote_codigo, ganadero_id, ganadero_nombre, especie, cantidad, guia_transito, fecha, observaciones, estado, estadoCobro, registro_establo } = req.body;
     try {
         await pool.query(
-            'INSERT INTO recepciones (id, lote_codigo, ganadero_id, ganadero_nombre, especie, cantidad, guia_transito, fecha, observaciones, estado, estado_cobro) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
-            [id, lote_codigo, ganadero_id, ganadero_nombre, especie, cantidad, guia_transito, fecha, observaciones, estado, estadoCobro]
+            'INSERT INTO recepciones (id, lote_codigo, ganadero_id, ganadero_nombre, especie, cantidad, guia_transito, fecha, observaciones, estado, estado_cobro, registro_establo) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
+            [id, lote_codigo, ganadero_id, ganadero_nombre, especie, cantidad, guia_transito, fecha, observaciones, estado, estadoCobro, registro_establo]
         );
         res.status(201).json({ success: true });
     } catch (e) {
