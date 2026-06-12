@@ -108,6 +108,17 @@ async function initDb() {
             )
         `);
         await client.query(`ALTER TABLE recepciones ADD COLUMN IF NOT EXISTS registro_establo VARCHAR(150)`);
+        await client.query(`
+            UPDATE recepciones 
+            SET registro_establo = CASE 
+                WHEN lote_codigo = 'LBVA159' THEN 'EST-PE-10294'
+                WHEN lote_codigo = 'LBPO160' THEN 'EST-PE-10294'
+                WHEN lote_codigo = 'AAPO161' THEN 'EST-PE-09432'
+                WHEN lote_codigo = 'LBVA162' THEN 'EST-PE-10294'
+                ELSE registro_establo
+            END
+            WHERE registro_establo IS NULL
+        `);
 
         // 8. Cajas
         await client.query(`
