@@ -674,6 +674,7 @@ app.get('/api/data', async (req, res) => {
                 especie: r.especie,
                 cantidad: r.cantidad,
                 guia_transito: r.guia_transito,
+                registro_establo: r.registro_establo,
                 fecha: r.fecha,
                 observaciones: r.observaciones,
                 estado: r.estado,
