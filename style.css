@@ -277,6 +277,84 @@ body {
     transition: color 0.2s ease;
 }
 
+/* Submenús del Sidebar (Pestañas secundarias) */
+.sidebar nav ul li.has-submenu {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.submenu-arrow {
+    margin-left: auto;
+    font-size: 10px;
+    color: inherit;
+    transition: transform 0.3s ease;
+    opacity: 0.7;
+    display: none; /* Ocultar en estado contraído */
+}
+
+.sidebar.expanded .submenu-arrow {
+    display: block;
+}
+
+.submenu {
+    list-style: none;
+    padding-left: 32px; /* Indentación alineada con el texto principal */
+    margin-top: 6px;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: all 0.3s ease;
+}
+
+.sidebar:not(.expanded) .submenu {
+    display: none !important;
+}
+
+.submenu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #475569;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.submenu-item i {
+    font-size: 10px;
+    width: 14px;
+    text-align: center;
+    color: #94a3b8;
+    transition: color 0.2s ease;
+}
+
+.submenu-item:hover {
+    color: #ea580c;
+    background: rgba(234, 88, 12, 0.05);
+}
+
+.submenu-item:hover i {
+    color: #ea580c;
+}
+
+.submenu-item.active {
+    color: #ea580c;
+    font-weight: 700;
+    background: rgba(234, 88, 12, 0.08);
+}
+
+.submenu-item.active i {
+    color: #ea580c;
+}
+
 /* Pie de Página del Sidebar */
 .sidebar-footer {
     margin-top: auto;

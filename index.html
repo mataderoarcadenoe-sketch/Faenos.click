@@ -48,11 +48,16 @@
                             <span>Ingreso de Ganado</span>
                         </a>
                     </li>
-                    <li>
+                    <li class="has-submenu">
                         <a class="nav-item" onclick="switchTab('caja')">
                             <i class="fa-solid fa-cash-register"></i>
                             <span>Caja General</span>
+                            <i class="fa-solid fa-chevron-down submenu-arrow"></i>
                         </a>
+                        <ul class="submenu">
+                            <li><a class="submenu-item caja-nav-item active" onclick="switchTab('caja'); switchCajaSubTab('turno'); event.stopPropagation();"><i class="fa-solid fa-wallet"></i> <span>Turno Activo</span></a></li>
+                            <li><a class="submenu-item caja-nav-item" onclick="switchTab('caja'); switchCajaSubTab('historial'); event.stopPropagation();"><i class="fa-solid fa-clock-rotate-left"></i> <span>Historial</span></a></li>
+                        </ul>
                     </li>
                     <li>
                         <a class="nav-item" onclick="switchTab('cuentas-cobrar')">
@@ -60,11 +65,18 @@
                             <span>Cuentas por Cobrar</span>
                         </a>
                     </li>
-                    <li>
+                    <li class="has-submenu">
                         <a class="nav-item" onclick="switchTab('configuraciones')">
                             <i class="fa-solid fa-sliders"></i>
                             <span>Configuraciones</span>
+                            <i class="fa-solid fa-chevron-down submenu-arrow"></i>
                         </a>
+                        <ul class="submenu">
+                            <li><a class="submenu-item config-nav-item active" onclick="switchTab('configuraciones'); switchConfigSubTab('animales'); event.stopPropagation();"><i class="fa-solid fa-cow"></i> <span>Especies</span></a></li>
+                            <li><a class="submenu-item config-nav-item" onclick="switchTab('configuraciones'); switchConfigSubTab('pagos'); event.stopPropagation();"><i class="fa-solid fa-credit-card"></i> <span>Métodos de Pago</span></a></li>
+                            <li><a class="submenu-item config-nav-item" onclick="switchTab('configuraciones'); switchConfigSubTab('roles'); event.stopPropagation();"><i class="fa-solid fa-user-tag"></i> <span>Cargo / Rol</span></a></li>
+                            <li><a class="submenu-item config-nav-item" onclick="switchTab('configuraciones'); switchConfigSubTab('tipos-pago'); event.stopPropagation();"><i class="fa-solid fa-money-check-dollar"></i> <span>Tipos de Pago</span></a></li>
+                        </ul>
                     </li>
                 </ul>
             </nav>
