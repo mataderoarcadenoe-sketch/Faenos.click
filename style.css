@@ -290,11 +290,11 @@ body {
     color: inherit;
     transition: transform 0.3s ease;
     opacity: 0.7;
-    display: none; /* Ocultar en estado contraído */
+    display: none !important; /* Ocultar en estado contraído */
 }
 
 .sidebar.expanded .submenu-arrow {
-    display: block;
+    display: block !important;
 }
 
 .submenu {
