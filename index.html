@@ -6,7 +6,7 @@
     <title>Dashboard Administrador - Faenos.click</title>
     <!-- Font Awesome para Iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=2.0.8">
+    <link rel="stylesheet" href="style.css?v=2.1.0">
     <!-- Favicon Dinámico (Emoji) para evitar error 404 -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐄</text></svg>">
 </head>
@@ -70,6 +70,17 @@
                             <i class="fa-solid fa-receipt"></i>
                             <span>Cuentas por Cobrar</span>
                         </a>
+                    </li>
+                    <li class="has-submenu">
+                        <a class="nav-item" onclick="switchTab('calidad')">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <span>Calidad (HACCP)</span>
+                            <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li><a class="submenu-item calidad-nav-item active" onclick="switchTab('calidad'); switchCalidadSubTab('camaras'); event.stopPropagation();"><span>Cámaras Frías</span></a></li>
+                            <li><a class="submenu-item calidad-nav-item" onclick="switchTab('calidad'); switchCalidadSubTab('no-conformes'); event.stopPropagation();"><span>No Conformidades</span></a></li>
+                        </ul>
                     </li>
                     <li class="has-submenu">
                         <a class="nav-item" onclick="switchTab('configuraciones')">
@@ -435,6 +446,68 @@
                         </div>
                     </div>
                 </div>
+            </section>
+
+            <!-- SECCIÓN 2C: CONTROL DE CALIDAD (HACCP) -->
+            <section id="tab-calidad" class="content-section">
+                
+                <!-- Subpestaña 1: Cámaras Frigoríficas -->
+                <div id="calidad-subtab-camaras" class="calidad-subtab-section active">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 class="card-title" style="margin-bottom: 0; font-size: 16px;">
+                            <i class="fa-solid fa-temperature-half" style="color: var(--color-client); margin-right: 8px;"></i>
+                            Monitoreo Continuo de Cámaras Frigoríficas (PCC N° 1)
+                        </h3>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn-secondary" onclick="openModal('lectura-temp')" style="padding: 8px 14px; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-plus"></i> Registrar Temp Manual
+                            </button>
+                            <button class="btn-primary" onclick="iniciarNuevaCamara()" style="padding: 8px 14px; font-size: 12px; display: flex; align-items: center; gap: 6px; background: linear-gradient(135deg, var(--color-client), #ea580c);">
+                                <i class="fa-solid fa-plus"></i> Nueva Cámara
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Grid de Cámaras Frías -->
+                    <div class="dashboard-grid" id="camaras-grid" style="grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px;">
+                        <!-- Tarjetas de cámaras cargadas dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Subpestaña 2: Productos No Conformes -->
+                <div id="calidad-subtab-no-conformes" class="calidad-subtab-section">
+                    <div class="table-container" style="margin-bottom: 0; display: flex; flex-direction: column;">
+                        <div class="table-header-row" style="padding: 16px 24px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                            <h3 class="card-title" style="margin-bottom: 0; font-size: 14px;">
+                                <i class="fa-solid fa-triangle-exclamation" style="color: #ef4444; margin-right: 8px;"></i>
+                                Registro de Productos No Conformes (Formatos PNC-001)
+                            </h3>
+                            <button class="btn-primary" onclick="iniciarNuevoPnc()" style="padding: 8px 14px; font-size: 12px; display: flex; align-items: center; gap: 6px; background: #ef4444;">
+                                <i class="fa-solid fa-plus"></i> Registrar No Conformidad
+                            </button>
+                        </div>
+                        <div class="table-responsive-wrapper" style="flex: 1; min-height: 400px;">
+                            <table id="table-pnc">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha Detección</th>
+                                        <th>Lote Afectado</th>
+                                        <th>Origen / Fase</th>
+                                        <th>Detalles de Desviación</th>
+                                        <th>Acción Correctiva Aplicada</th>
+                                        <th>Responsable</th>
+                                        <th>Estado</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-pnc-body">
+                                    <!-- Cargado dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
             </section>
 
             <!-- SECCIÓN 3: CONFIGURACIONES -->
@@ -1426,6 +1499,141 @@
         </div>
     </div>
 
+    <!-- MODAL REGISTRO/EDICIÓN CÁMARA FRÍA -->
+    <div class="form-modal-overlay" id="modal-camara">
+        <div class="form-modal-card" style="max-width: 450px;">
+            <div class="form-modal-header">
+                <h3 id="modal-camara-title">Nueva Cámara Frigorífica</h3>
+                <button class="btn-close-modal" onclick="closeModal('camara')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-camara" onsubmit="saveCamara(event)">
+                <div class="form-group">
+                    <label class="form-label">Nombre de la Cámara</label>
+                    <input type="text" id="camara-nombre" class="form-control" placeholder="Ej. Cámara de Vacunos 02" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Temperatura Mín (°C)</label>
+                        <input type="number" id="camara-temp-min" class="form-control" value="0.00" step="0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Temperatura Máx (°C)</label>
+                        <input type="number" id="camara-temp-max" class="form-control" value="5.00" step="0.1" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Estado de Cámara</label>
+                    <div class="custom-select-container" id="custom-select-camara-estado-container">
+                        <input type="hidden" id="camara-estado" value="Activo" required>
+                        <div class="custom-select-trigger" onclick="toggleCustomSelect('camara-estado', event)">
+                            <span id="custom-select-camara-estado-text">Activo</span>
+                            <i class="fa-solid fa-chevron-down arrow"></i>
+                        </div>
+                        <div class="custom-select-options" id="custom-select-camara-estado-options">
+                            <div class="custom-select-option selected" data-value="Activo" onclick="selectCamaraEstadoOption('Activo', 'Activo', event)">Activo</div>
+                            <div class="custom-select-option" data-value="Mantenimiento" onclick="selectCamaraEstadoOption('Mantenimiento', 'Mantenimiento', event)">Mantenimiento</div>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 24px; width: 100%; background: linear-gradient(135deg, var(--color-client), #ea580c);">
+                    <span id="btn-text-camara">Registrar Cámara</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL REGISTRO TEMPERATURA MANUAL -->
+    <div class="form-modal-overlay" id="modal-lectura-temp">
+        <div class="form-modal-card" style="max-width: 400px;">
+            <div class="form-modal-header">
+                <h3>Registrar Lectura Manual</h3>
+                <button class="btn-close-modal" onclick="closeModal('lectura-temp')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-lectura-temp" onsubmit="saveLecturaTemp(event)">
+                <div class="form-group">
+                    <label class="form-label">Cámara Frigorífica</label>
+                    <div class="custom-select-container" id="custom-select-lectura-camara-container">
+                        <input type="hidden" id="lectura-camara-id" required>
+                        <div class="custom-select-trigger" onclick="toggleCustomSelect('lectura-camara', event)">
+                            <span id="custom-select-lectura-camara-text">Selecciona una cámara...</span>
+                            <i class="fa-solid fa-chevron-down arrow"></i>
+                        </div>
+                        <div class="custom-select-options" id="custom-select-lectura-camara-options">
+                            <!-- Poblado dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Temperatura Registrada (°C)</label>
+                    <input type="number" id="lectura-temperatura" class="form-control" placeholder="Ej. 2.5" step="0.01" min="-20" max="40" required>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 24px; width: 100%; background: linear-gradient(135deg, var(--color-client), #ea580c);">
+                    Registrar Lectura
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL REGISTRO/EDICIÓN DE NO CONFORMIDAD -->
+    <div class="form-modal-overlay" id="modal-pnc">
+        <div class="form-modal-card" style="max-width: 500px;">
+            <div class="form-modal-header">
+                <h3 id="modal-pnc-title">Registrar Producto No Conforme</h3>
+                <button class="btn-close-modal" onclick="closeModal('pnc')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-pnc" onsubmit="savePnc(event)">
+                <div class="form-group">
+                    <label class="form-label">Lote Afectado</label>
+                    <div class="custom-select-container" id="custom-select-pnc-lote-container">
+                        <input type="hidden" id="pnc-lote-codigo" required>
+                        <div class="custom-select-trigger" onclick="toggleCustomSelect('pnc-lote', event)">
+                            <span id="custom-select-pnc-lote-text">Selecciona un lote...</span>
+                            <i class="fa-solid fa-chevron-down arrow"></i>
+                        </div>
+                        <div class="custom-select-options" id="custom-select-pnc-lote-options">
+                            <!-- Poblado dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Origen / Fase de la Desviación</label>
+                    <input type="text" id="pnc-origen" class="form-control" placeholder="Ej. Inspección Post-Mortem / Cámara Fría 01" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Detalles de la Desviación</label>
+                    <textarea id="pnc-detalles" class="form-control" rows="3" placeholder="Describa los detalles del incidente sanitario..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Acción Correctiva Inmediata</label>
+                    <textarea id="pnc-accion" class="form-control" rows="2" placeholder="Fórmula correctiva tomada al instante..."></textarea>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Responsable (Firma)</label>
+                        <input type="text" id="pnc-responsable" class="form-control" placeholder="Dr. Alfonso Cárdenas" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Estado de Cierre</label>
+                        <div class="custom-select-container" id="custom-select-pnc-estado-container">
+                            <input type="hidden" id="pnc-estado" value="Abierto" required>
+                            <div class="custom-select-trigger" onclick="toggleCustomSelect('pnc-estado', event)">
+                                <span id="custom-select-pnc-estado-text">Abierto</span>
+                                <i class="fa-solid fa-chevron-down arrow"></i>
+                            </div>
+                            <div class="custom-select-options" id="custom-select-pnc-estado-options">
+                                <div class="custom-select-option selected" data-value="Abierto" onclick="selectPncEstadoOption('Abierto', 'Abierto', event)">Abierto</div>
+                                <div class="custom-select-option" data-value="Cerrado" onclick="selectPncEstadoOption('Cerrado', 'Cerrado', event)">Cerrado</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 24px; width: 100%; background: #ef4444;">
+                    <span id="btn-text-pnc">Registrar No Conformidad</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Contenedor de Notificaciones Flotantes (Toasts) -->
     <div id="toast-container"></div>
 
@@ -1445,6 +1653,6 @@
     </div>
 
     <!-- Archivo JS Vainilla -->
-    <script src="app.js?v=2.0.8"></script>
+    <script src="app.js?v=2.1.0"></script>
 </body>
 </html>

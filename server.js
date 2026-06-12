@@ -188,6 +188,42 @@ async function initDb() {
             )
         `);
 
+        // 14. Cámaras Frigoríficas (Monitoreo HACCP)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS camaras_frigorificas (
+                id VARCHAR(50) PRIMARY KEY,
+                nombre VARCHAR(100) NOT NULL,
+                temperatura_min NUMERIC(6, 2) DEFAULT 0.00,
+                temperatura_max NUMERIC(6, 2) DEFAULT 5.00,
+                estado VARCHAR(20) DEFAULT 'Activo'
+            )
+        `);
+
+        // 15. Monitoreo de Temperatura Continuo (HACCP PCC N°1)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS temperatura_monitoreo (
+                id VARCHAR(50) PRIMARY KEY,
+                camara_id VARCHAR(50) REFERENCES camaras_frigorificas(id) ON DELETE CASCADE,
+                temperatura NUMERIC(6, 2) NOT NULL,
+                fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                desviacion BOOLEAN DEFAULT FALSE
+            )
+        `);
+
+        // 16. Productos No Conformes (PNC-001)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS productos_no_conformes (
+                id VARCHAR(50) PRIMARY KEY,
+                origen VARCHAR(100) NOT NULL,
+                detalles TEXT NOT NULL,
+                lote_codigo VARCHAR(50) NOT NULL,
+                accion_correctiva TEXT,
+                fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                responsable VARCHAR(100) NOT NULL,
+                estado VARCHAR(20) DEFAULT 'Abierto'
+            )
+        `);
+
         // POBLAR DATOS DE PRUEBA SI LAS TABLAS ESTÁN VACÍAS
         
         // Roles
@@ -328,6 +364,37 @@ async function initDb() {
             `);
         }
 
+        // Cámaras Frigoríficas
+        const rCamaras = await client.query('SELECT COUNT(*) FROM camaras_frigorificas');
+        if (parseInt(rCamaras.rows[0].count) === 0) {
+            await client.query(`
+                INSERT INTO camaras_frigorificas (id, nombre, temperatura_min, temperatura_max, estado) VALUES 
+                ('c-1', 'Cámara de Vacunos 01', 0.00, 5.00, 'Activo'),
+                ('c-2', 'Cámara de Porcinos 01', 0.00, 5.00, 'Activo')
+            `);
+        }
+
+        // Monitoreo de Temperatura
+        const rTemps = await client.query('SELECT COUNT(*) FROM temperatura_monitoreo');
+        if (parseInt(rTemps.rows[0].count) === 0) {
+            await client.query(`
+                INSERT INTO temperatura_monitoreo (id, camara_id, temperatura, desviacion) VALUES 
+                ('t-temp-1', 'c-1', 2.30, false),
+                ('t-temp-2', 'c-1', 2.10, false),
+                ('t-temp-3', 'c-2', 3.40, false),
+                ('t-temp-4', 'c-2', 3.60, false)
+            `);
+        }
+
+        // Productos No Conformes
+        const rPncs = await client.query('SELECT COUNT(*) FROM productos_no_conformes');
+        if (parseInt(rPncs.rows[0].count) === 0) {
+            await client.query(`
+                INSERT INTO productos_no_conformes (id, origen, detalles, lote_codigo, accion_correctiva, responsable, estado) VALUES 
+                ('pnc-1', 'Inspección Post-Mortem', 'Se detectó parásito Hepática en vísceras de vacuno durante el canalizado.', 'LBVA159', 'Decomiso inmediato y destrucción de las vísceras afectadas.', 'Dr. Alfonso Cárdenas', 'Cerrado')
+            `);
+        }
+
         await client.query('COMMIT');
         console.log('Base de datos inicializada y migrada correctamente.');
     } catch (e) {
@@ -402,6 +469,10 @@ app.get('/api/data', async (req, res) => {
 
         const pesajes = await pool.query('SELECT id, recepcion_id as "recepcionId", correlativo_orejera as "correlativoOrejera", CAST(peso_pie_kg AS double precision) as "pesoPieKg", creado_el as "creadoEl" FROM pesajes_animales ORDER BY creado_el DESC');
 
+        const camaras = await pool.query('SELECT id, nombre, CAST(temperatura_min AS double precision) as "temperaturaMin", CAST(temperatura_max AS double precision) as "temperaturaMax", estado FROM camaras_frigorificas ORDER BY nombre');
+        const temperaturas = await pool.query('SELECT id, camara_id as "camaraId", CAST(temperatura AS double precision) as temperatura, fecha, desviacion FROM temperatura_monitoreo ORDER BY fecha DESC LIMIT 50');
+        const productosNoConformes = await pool.query('SELECT id, origen, detalles, lote_codigo as "loteCodigo", accion_correctiva as "accionCorrectiva", fecha, responsable, estado FROM productos_no_conformes ORDER BY fecha DESC');
+
         res.json({
             roles: roles.rows,
             trabajadores: trabajadores.rows,
@@ -431,7 +502,10 @@ app.get('/api/data', async (req, res) => {
             cajas,
             deudas: deudas.rows,
             abonos,
-            pesajes: pesajes.rows
+            pesajes: pesajes.rows,
+            camaras: camaras.rows,
+            temperaturas: temperaturas.rows,
+            productosNoConformes: productosNoConformes.rows
         });
     } catch (e) {
         console.error('Error al recuperar datos:', e);
@@ -945,6 +1019,104 @@ app.delete('/api/pesajes/:id', async (req, res) => {
     const { id } = req.params;
     try {
         await pool.query('DELETE FROM pesajes_animales WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+
+// --- CÁMARAS FRIGORÍFICAS ---
+app.post('/api/camaras', async (req, res) => {
+    const { id, nombre, temperatura_min, temperatura_max, estado } = req.body;
+    try {
+        await pool.query(
+            'INSERT INTO camaras_frigorificas (id, nombre, temperatura_min, temperatura_max, estado) VALUES ($1, $2, $3, $4, $5)',
+            [id, nombre, temperatura_min, temperatura_max, estado]
+        );
+        res.status(201).json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.put('/api/camaras/:id', async (req, res) => {
+    const { id } = req.params;
+    const { nombre, temperatura_min, temperatura_max, estado } = req.body;
+    try {
+        await pool.query(
+            'UPDATE camaras_frigorificas SET nombre = $1, temperatura_min = $2, temperatura_max = $3, estado = $4 WHERE id = $5',
+            [nombre, temperatura_min, temperatura_max, estado, id]
+        );
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.delete('/api/camaras/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM camaras_frigorificas WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- MONITOREO DE TEMPERATURA ---
+app.post('/api/temperatura-monitoreo', async (req, res) => {
+    const { id, camara_id, temperatura, desviacion } = req.body;
+    try {
+        await pool.query(
+            'INSERT INTO temperatura_monitoreo (id, camara_id, temperatura, desviacion) VALUES ($1, $2, $3, $4)',
+            [id, camara_id, temperatura, desviacion]
+        );
+        res.status(201).json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- PRODUCTOS NO CONFORMES (PNC) ---
+app.post('/api/productos-no-conformes', async (req, res) => {
+    const { id, origen, detalles, lote_codigo, accion_correctiva, responsable, estado } = req.body;
+    try {
+        await pool.query(
+            'INSERT INTO productos_no_conformes (id, origen, detalles, lote_codigo, accion_correctiva, responsable, estado) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+            [id, origen, detalles, lote_codigo, accion_correctiva, responsable, estado]
+        );
+        res.status(201).json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.put('/api/productos-no-conformes/:id', async (req, res) => {
+    const { id } = req.params;
+    const { origen, detalles, lote_codigo, accion_correctiva, responsable, estado } = req.body;
+    try {
+        await pool.query(
+            'UPDATE productos_no_conformes SET origen = $1, detalles = $2, lote_codigo = $3, accion_correctiva = $4, responsable = $5, estado = $6 WHERE id = $7',
+            [origen, detalles, lote_codigo, accion_correctiva, responsable, estado, id]
+        );
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.delete('/api/productos-no-conformes/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM productos_no_conformes WHERE id = $1', [id]);
         res.json({ success: true });
     } catch (e) {
         console.error(e);

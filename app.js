@@ -12,6 +12,9 @@ let tiposPago = [];
 let deudas = [];
 let abonos = [];
 let pesajes = [];
+let camaras = [];
+let temperaturas = [];
+let productosNoConformes = [];
 let editingGanaderoId = null; // Estado de edición global
 let editingEspecieId = null; // Estado de edición de especie global
 let editingPagoId = null; // Estado de edición de pago global
@@ -19,6 +22,8 @@ let editingTrabajadorId = null; // Estado de edición de trabajador global
 let editingRolId = null; // Estado de edición de cargo / rol global
 let editingTipoPagoId = null; // Estado de edición de tipo de pago global
 let editingPesajeId = null; // Estado de edición de pesaje global
+let editingCamaraId = null; // Estado de edición de cámara global
+let editingPncId = null; // Estado de edición de no conformidad global
 
 
 // ==========================================
@@ -236,6 +241,9 @@ async function loadServerData() {
         deudas = data.deudas;
         abonos = data.abonos;
         pesajes = data.pesajes || [];
+        camaras = data.camaras || [];
+        temperaturas = data.temperaturas || [];
+        productosNoConformes = data.productosNoConformes || [];
         renderAll();
     } catch (err) {
         showToast('Error al conectar con el servidor de base de datos.', 'error');
@@ -326,6 +334,11 @@ function switchTab(tabName) {
         titleText = 'Control de Pesaje en Manga';
         iconClass = 'fa-weight-scale';
         cancelarEdicionPesaje();
+    } else if (tabName === 'calidad') {
+        titleText = 'Aseguramiento de Calidad (HACCP)';
+        iconClass = 'fa-shield-halved';
+        cancelarEdicionCamara();
+        cancelarEdicionPnc();
     }
     
     // Actualizar título e icono en el header superior
@@ -340,6 +353,14 @@ function switchTab(tabName) {
         const subTabActiva = document.querySelector('.caja-nav-item.active');
         if (!subTabActiva) {
             switchCajaSubTab('turno');
+        }
+    }
+
+    // Inicializar subpestaña de calidad por defecto al entrar
+    if (tabName === 'calidad') {
+        const subTabActiva = document.querySelector('.calidad-nav-item.active');
+        if (!subTabActiva) {
+            switchCalidadSubTab('camaras');
         }
     }
 
@@ -1074,6 +1095,9 @@ function renderAll() {
 
     // 19. Módulo de Pesaje en Manga de Recepción
     renderPesajes();
+
+    // 20. Módulo de Calidad e Inocuidad (HACCP)
+    renderCalidad();
 }
 
 // Generar un código único de 2 letras a partir de una razón social
@@ -3211,6 +3235,7 @@ window.onload = async () => {
     setupCodigoAutogenerado();
     setupValidacionDocumento();
     setupSidebarInteractivo();
+    iniciarSimulacionIot();
 };
 
 // Configurar interactividad del Sidebar Colapsable
@@ -3540,5 +3565,623 @@ function renderPesajes() {
             });
         }
     }
+    }
+}
+
+// ==========================================
+// MÓDULO DE ASEGURAMIENTO DE CALIDAD (HACCP)
+// ==========================================
+
+function switchCalidadSubTab(subTabName) {
+    document.querySelectorAll('.calidad-subtab-section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.calidad-nav-item').forEach(el => el.classList.remove('active'));
+    
+    const targetSection = document.getElementById(`calidad-subtab-${subTabName}`);
+    if (targetSection) targetSection.classList.add('active');
+    
+    document.querySelectorAll('.calidad-nav-item').forEach(item => {
+        if (item.getAttribute('onclick').includes(subTabName)) {
+            item.classList.add('active');
+        }
+    });
+    
+    renderCalidad();
+}
+
+function renderCalidad() {
+    renderCamaras();
+    renderPnc();
+}
+
+// --- CÁMARAS FRIGORÍFICAS ---
+
+function renderCamaras() {
+    const grid = document.getElementById('camaras-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    if (camaras.length === 0) {
+        grid.innerHTML = `
+            <div class="card" style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--text-secondary);">
+                <i class="fa-solid fa-temperature-half" style="font-size: 48px; color: var(--border-color); margin-bottom: 16px; display: block;"></i>
+                No se han registrado cámaras frigoríficas todavía.
+            </div>
+        `;
+        return;
+    }
+
+    camaras.forEach(c => {
+        const lecturasCamara = temperaturas
+            .filter(t => t.camaraId === c.id)
+            .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+        const tempActual = lecturasCamara.length > 0 ? parseFloat(lecturasCamara[0].temperatura) : null;
+        
+        let safeClass = 'maint';
+        let statusText = 'Sin Lecturas';
+        let bulbClass = 'maint';
+        let mercClass = 'maint';
+
+        if (c.estado === 'Mantenimiento') {
+            statusText = 'Mantenimiento';
+            safeClass = 'maint';
+            bulbClass = 'maint';
+            mercClass = 'maint';
+        } else if (tempActual !== null) {
+            const tempMin = parseFloat(c.temperaturaMin);
+            const tempMax = parseFloat(c.temperaturaMax);
+            const esSegura = tempActual >= tempMin && tempActual <= tempMax;
+            
+            safeClass = esSegura ? 'safe' : 'danger';
+            statusText = esSegura ? 'Óptimo' : 'Alerta PCC';
+            bulbClass = esSegura ? 'safe' : 'danger';
+            mercClass = esSegura ? 'safe' : 'danger';
+        }
+
+        const minEscala = -5;
+        const maxEscala = 20;
+        let mercuryHeight = 0;
+        if (tempActual !== null) {
+            const tempClamped = Math.max(minEscala, Math.min(tempActual, maxEscala));
+            mercuryHeight = Math.round(((tempClamped - minEscala) / (maxEscala - minEscala)) * 100);
+        }
+
+        const card = document.createElement('div');
+        card.className = 'camara-card';
+        
+        let historyHTML = '';
+        if (lecturasCamara.length > 0) {
+            const ultimas5 = lecturasCamara.slice(0, 5);
+            historyHTML = ultimas5.map(l => {
+                const date = new Date(l.fecha).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+                const isDesviado = l.desviacion;
+                return `
+                    <div class="camara-history-item">
+                        <span>Hora: ${date}</span>
+                        <span class="camara-history-temp ${isDesviado ? 'danger' : ''}">${parseFloat(l.temperatura).toFixed(2)} °C</span>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            historyHTML = `<div style="font-size: 11px; color: var(--text-secondary); text-align: center;">No hay lecturas registradas.</div>`;
+        }
+
+        card.innerHTML = `
+            <div class="camara-header">
+                <h4 class="camara-title" style="margin: 0; font-size: 15px; font-weight: 700;">${c.nombre}</h4>
+                <div class="camara-limits" style="font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">Rango seguro: ${parseFloat(c.temperaturaMin).toFixed(1)}°C a ${parseFloat(c.temperaturaMax).toFixed(1)}°C</div>
+                <span class="camara-status-badge ${safeClass}">${statusText}</span>
+                <div class="camara-temp-digital-wrapper">
+                    <span class="camara-temp-digital ${safeClass}">${tempActual !== null ? tempActual.toFixed(2) + ' °C' : '--'}</span>
+                </div>
+                
+                <div style="margin-top: 14px; display: flex; gap: 8px;">
+                    <button onclick="editCamara('${c.id}')" style="background: none; border: none; color: var(--color-admin); cursor: pointer; font-size: 14px;" title="Editar">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button onclick="deleteCamara('${c.id}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px;" title="Eliminar">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="thermometer-container">
+                <div class="thermometer-tube">
+                    <div class="thermometer-mercury ${mercClass}" style="height: ${mercuryHeight}%;"></div>
+                </div>
+                <div class="thermometer-bulb ${bulbClass}"></div>
+            </div>
+            <div class="camara-history">
+                <h5 class="camara-history-title">Lecturas Recientes</h5>
+                <div class="camara-history-list">
+                    ${historyHTML}
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+
+    poblarSelectorLecturaCamara();
+}
+
+function poblarSelectorLecturaCamara() {
+    const customOptions = document.getElementById('custom-select-lectura-camara-options');
+    if (customOptions) {
+        customOptions.innerHTML = '';
+        const activas = camaras.filter(c => c.estado === 'Activo');
+        if (activas.length === 0) {
+            customOptions.innerHTML = '<div style="padding: 10px; text-align: center; color: var(--text-secondary); font-size: 13px;">No hay cámaras activas</div>';
+        } else {
+            activas.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'custom-select-option';
+                div.innerText = c.nombre;
+                div.setAttribute('data-value', c.id);
+                div.onclick = (event) => selectLecturaCamaraOption(c.id, c.nombre, event);
+                customOptions.appendChild(div);
+            });
+        }
+    }
+}
+
+function selectLecturaCamaraOption(id, texto, event) {
+    if (event) event.stopPropagation();
+    const inputHidden = document.getElementById('lectura-camara-id');
+    const triggerText = document.getElementById('custom-select-lectura-camara-text');
+    const container = document.getElementById('custom-select-lectura-camara-container');
+    const options = document.querySelectorAll('#custom-select-lectura-camara-options .custom-select-option');
+
+    if (inputHidden && triggerText && container) {
+        inputHidden.value = id;
+        triggerText.innerText = texto;
+        
+        options.forEach(opt => {
+            if (opt.getAttribute('data-value') === id) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        
+        container.classList.remove('active');
+    }
+}
+
+function selectCamaraEstadoOption(value, texto, event) {
+    if (event) event.stopPropagation();
+    const inputHidden = document.getElementById('camara-estado');
+    const triggerText = document.getElementById('custom-select-camara-estado-text');
+    const container = document.getElementById('custom-select-camara-estado-container');
+    const options = document.querySelectorAll('#custom-select-camara-estado-options .custom-select-option');
+
+    if (inputHidden && triggerText && container) {
+        inputHidden.value = value;
+        triggerText.innerText = texto;
+        
+        options.forEach(opt => {
+            if (opt.getAttribute('data-value') === value) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        
+        container.classList.remove('active');
+    }
+}
+
+function iniciarNuevaCamara() {
+    cancelarEdicionCamara();
+    openModal('camara');
+}
+
+function cancelarEdicionCamara() {
+    editingCamaraId = null;
+    document.getElementById('form-camara').reset();
+    document.getElementById('modal-camara-title').innerText = 'Nueva Cámara Frigorífica';
+    document.getElementById('btn-text-camara').innerText = 'Registrar Cámara';
+    
+    document.getElementById('camara-estado').value = 'Activo';
+    document.getElementById('custom-select-camara-estado-text').innerText = 'Activo';
+    document.querySelectorAll('#custom-select-camara-estado-options .custom-select-option').forEach(el => {
+        if (el.getAttribute('data-value') === 'Activo') el.classList.add('selected');
+        else el.classList.remove('selected');
+    });
+}
+
+async function saveCamara(event) {
+    event.preventDefault();
+    const nombre = document.getElementById('camara-nombre').value.trim();
+    const tempMin = parseFloat(document.getElementById('camara-temp-min').value);
+    const tempMax = parseFloat(document.getElementById('camara-temp-max').value);
+    const estado = document.getElementById('camara-estado').value;
+
+    if (!nombre) {
+        showToast('Ingrese un nombre válido para la cámara.', 'warning');
+        return;
+    }
+
+    const payload = {
+        id: editingCamaraId || 'c-' + Date.now(),
+        nombre,
+        temperatura_min: tempMin,
+        temperatura_max: tempMax,
+        estado
+    };
+
+    try {
+        if (editingCamaraId === null) {
+            await apiPost('/api/camaras', payload);
+            showToast('Cámara frigorífica registrada correctamente.', 'success');
+        } else {
+            await apiPut(`/api/camaras/${editingCamaraId}`, payload);
+            showToast('Cámara frigorífica modificada correctamente.', 'success');
+        }
+        closeModal('camara');
+        await loadServerData();
+    } catch (err) {
+        showToast(err.message, 'error');
+        console.error(err);
+    }
+}
+
+function editCamara(id) {
+    const c = camaras.find(item => item.id === id);
+    if (!c) return;
+
+    editingCamaraId = id;
+    document.getElementById('modal-camara-title').innerText = 'Editar Parámetros de Cámara';
+    document.getElementById('btn-text-camara').innerText = 'Guardar Cambios';
+
+    document.getElementById('camara-nombre').value = c.nombre;
+    document.getElementById('camara-temp-min').value = c.temperaturaMin;
+    document.getElementById('camara-temp-max').value = c.temperaturaMax;
+    document.getElementById('camara-estado').value = c.estado;
+    document.getElementById('custom-select-camara-estado-text').innerText = c.estado;
+
+    document.querySelectorAll('#custom-select-camara-estado-options .custom-select-option').forEach(el => {
+        if (el.getAttribute('data-value') === c.estado) el.classList.add('selected');
+        else el.classList.remove('selected');
+    });
+
+    openModal('camara');
+}
+
+async function deleteCamara(id) {
+    const c = camaras.find(item => item.id === id);
+    if (!c) return;
+
+    const confirmado = await customConfirm(`¿Está seguro de eliminar la cámara frigorífica "${c.nombre}"? Esto eliminará también todas sus lecturas de temperatura.`);
+    if (confirmado) {
+        try {
+            await apiDelete(`/api/camaras/${id}`);
+            await loadServerData();
+            showToast('Cámara eliminada correctamente.', 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+            console.error(err);
+        }
+    }
+}
+
+async function saveLecturaTemp(event) {
+    event.preventDefault();
+    const camaraId = document.getElementById('lectura-camara-id').value;
+    const temperatura = parseFloat(document.getElementById('lectura-temperatura').value);
+
+    if (!camaraId) {
+        showToast('Seleccione una cámara para la lectura.', 'warning');
+        return;
+    }
+    if (isNaN(temperatura)) {
+        showToast('Ingrese una temperatura válida.', 'warning');
+        return;
+    }
+
+    const c = camaras.find(item => item.id === camaraId);
+    if (!c) return;
+
+    const desviado = temperatura < parseFloat(c.temperaturaMin) || temperatura > parseFloat(c.temperaturaMax);
+
+    const payload = {
+        id: 't-temp-' + Date.now(),
+        camara_id: camaraId,
+        temperatura,
+        desviacion: desviado
+    };
+
+    try {
+        await apiPost('/api/temperatura-monitoreo', payload);
+        closeModal('lectura-temp');
+        await loadServerData();
+
+        if (desviado) {
+            showToast(`⚠️ DESVIACIÓN HACCP: Temperatura en "${c.nombre}" fuera del rango seguro (${temperatura} °C).`, 'warning');
+        } else {
+            showToast('Lectura manual registrada con éxito.', 'success');
+        }
+    } catch (err) {
+        showToast(err.message, 'error');
+        console.error(err);
+    }
+}
+
+// --- PRODUCTOS NO CONFORMES (PNC) ---
+
+function renderPnc() {
+    const tbody = document.getElementById('table-pnc-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (productosNoConformes.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" style="text-align: center; padding: 24px; color: var(--text-secondary);">
+                    No se registran productos no conformes en el historial.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    productosNoConformes.forEach(p => {
+        const tr = document.createElement('tr');
+        const fechaFormat = p.fecha ? new Date(p.fecha).toLocaleDateString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--';
+        
+        const badgeClass = p.estado === 'Abierto' ? 'badge-cobro-pendiente' : 'badge-cobro-pagado';
+        const badgeText = p.estado === 'Abierto' ? 'Abierto' : 'Cerrado';
+        const actionBtnText = p.estado === 'Abierto' ? '<i class="fa-solid fa-check-double"></i> Cerrar' : '<i class="fa-solid fa-pen-to-square"></i>';
+        const actionBtnColor = p.estado === 'Abierto' ? 'color: #16a34a;' : 'color: var(--color-admin);';
+
+        tr.innerHTML = `
+            <td>${fechaFormat}</td>
+            <td><span class="lote-tag">${p.loteCodigo}</span></td>
+            <td><strong>${p.origen}</strong></td>
+            <td><div style="max-width: 250px; font-size: 12px; color: var(--text-secondary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${p.detalles}">${p.detalles}</div></td>
+            <td><div style="max-width: 200px; font-size: 12px; color: var(--text-secondary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${p.accionCorrectiva || 'Ninguna'}">${p.accionCorrectiva || '<em>Pendiente de acción</em>'}</div></td>
+            <td>${p.responsable}</td>
+            <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+            <td>
+                <button onclick="editPnc('${p.id}')" style="background: none; border: none; ${actionBtnColor} cursor: pointer; font-size: 15px; margin-right: 12px;" title="${p.estado === 'Abierto' ? 'Cerrar / Resolver' : 'Editar'}">
+                    ${actionBtnText}
+                </button>
+                <button onclick="deletePnc('${p.id}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 15px;" title="Eliminar">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    poblarSelectorPncLotes();
+}
+
+function poblarSelectorPncLotes() {
+    const customOptions = document.getElementById('custom-select-pnc-lote-options');
+    if (customOptions) {
+        customOptions.innerHTML = '';
+        if (recepciones.length === 0) {
+            customOptions.innerHTML = '<div style="padding: 10px; text-align: center; color: var(--text-secondary); font-size: 13px;">No hay lotes registrados</div>';
+        } else {
+            recepciones.forEach(r => {
+                const div = document.createElement('div');
+                div.className = 'custom-select-option';
+                div.innerText = `${r.lote_codigo} - ${r.ganadero_nombre}`;
+                div.setAttribute('data-value', r.lote_codigo);
+                div.onclick = (event) => selectPncLoteOption(r.lote_codigo, `${r.lote_codigo} - ${r.ganadero_nombre}`, event);
+                customOptions.appendChild(div);
+            });
+        }
+    }
+}
+
+function selectPncLoteOption(codigo, texto, event) {
+    if (event) event.stopPropagation();
+    const inputHidden = document.getElementById('pnc-lote-codigo');
+    const triggerText = document.getElementById('custom-select-pnc-lote-text');
+    const container = document.getElementById('custom-select-pnc-lote-container');
+    const options = document.querySelectorAll('#custom-select-pnc-lote-options .custom-select-option');
+
+    if (inputHidden && triggerText && container) {
+        inputHidden.value = codigo;
+        triggerText.innerText = texto;
+        
+        options.forEach(opt => {
+            if (opt.getAttribute('data-value') === codigo) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        
+        container.classList.remove('active');
+    }
+}
+
+function selectPncEstadoOption(value, texto, event) {
+    if (event) event.stopPropagation();
+    const inputHidden = document.getElementById('pnc-estado');
+    const triggerText = document.getElementById('custom-select-pnc-estado-text');
+    const container = document.getElementById('custom-select-pnc-estado-container');
+    const options = document.querySelectorAll('#custom-select-pnc-estado-options .custom-select-option');
+
+    if (inputHidden && triggerText && container) {
+        inputHidden.value = value;
+        triggerText.innerText = texto;
+        
+        options.forEach(opt => {
+            if (opt.getAttribute('data-value') === value) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        
+        container.classList.remove('active');
+    }
+}
+
+function iniciarNuevoPnc() {
+    cancelarEdicionPnc();
+    openModal('pnc');
+}
+
+function cancelarEdicionPnc() {
+    editingPncId = null;
+    document.getElementById('form-pnc').reset();
+    document.getElementById('modal-pnc-title').innerText = 'Registrar Producto No Conforme';
+    document.getElementById('btn-text-pnc').innerText = 'Registrar No Conformidad';
+    
+    document.getElementById('pnc-lote-codigo').value = '';
+    document.getElementById('custom-select-pnc-lote-text').innerText = 'Selecciona un lote...';
+    document.querySelectorAll('#custom-select-pnc-lote-options .custom-select-option').forEach(el => el.classList.remove('selected'));
+
+    document.getElementById('pnc-estado').value = 'Abierto';
+    document.getElementById('custom-select-pnc-estado-text').innerText = 'Abierto';
+    document.querySelectorAll('#custom-select-pnc-estado-options .custom-select-option').forEach(el => {
+        if (el.getAttribute('data-value') === 'Abierto') el.classList.add('selected');
+        else el.classList.remove('selected');
+    });
+}
+
+async function savePnc(event) {
+    event.preventDefault();
+    const loteCodigo = document.getElementById('pnc-lote-codigo').value;
+    const origen = document.getElementById('pnc-origen').value.trim();
+    const detalles = document.getElementById('pnc-detalles').value.trim();
+    const accion = document.getElementById('pnc-accion').value.trim();
+    const responsable = document.getElementById('pnc-responsable').value.trim();
+    const estado = document.getElementById('pnc-estado').value;
+
+    if (!loteCodigo) {
+        showToast('Seleccione el lote afectado.', 'warning');
+        return;
+    }
+    if (!origen) {
+        showToast('Ingrese la fase de origen de la desviación.', 'warning');
+        return;
+    }
+    if (!detalles) {
+        showToast('Ingrese los detalles de la desviación sanitaria.', 'warning');
+        return;
+    }
+    if (!responsable) {
+        showToast('Debe ingresar un responsable de firma.', 'warning');
+        return;
+    }
+
+    const payload = {
+        id: editingPncId || 'pnc-' + Date.now(),
+        lote_codigo: loteCodigo,
+        origen,
+        detalles,
+        accion_correctiva: accion || 'Acción correctiva pendiente.',
+        responsable,
+        estado
+    };
+
+    try {
+        if (editingPncId === null) {
+            await apiPost('/api/productos-no-conformes', payload);
+            showToast('Producto No Conforme registrado correctamente.', 'success');
+        } else {
+            await apiPut(`/api/productos-no-conformes/${editingPncId}`, payload);
+            showToast('Producto No Conforme modificado correctamente.', 'success');
+        }
+        closeModal('pnc');
+        await loadServerData();
+    } catch (err) {
+        showToast(err.message, 'error');
+        console.error(err);
+    }
+}
+
+function editPnc(id) {
+    const p = productosNoConformes.find(item => item.id === id);
+    if (!p) return;
+
+    editingPncId = id;
+    document.getElementById('modal-pnc-title').innerText = 'Cerrar / Modificar No Conformidad';
+    document.getElementById('btn-text-pnc').innerText = 'Guardar Cambios';
+
+    document.getElementById('pnc-lote-codigo').value = p.loteCodigo;
+    document.getElementById('custom-select-pnc-lote-text').innerText = p.loteCodigo;
+    document.querySelectorAll('#custom-select-pnc-lote-options .custom-select-option').forEach(el => {
+        if (el.getAttribute('data-value') === p.loteCodigo) el.classList.add('selected');
+        else el.classList.remove('selected');
+    });
+
+    document.getElementById('pnc-origen').value = p.origen;
+    document.getElementById('pnc-detalles').value = p.detalles;
+    document.getElementById('pnc-accion').value = p.accionCorrectiva || '';
+    document.getElementById('pnc-responsable').value = p.responsable;
+    
+    document.getElementById('pnc-estado').value = p.estado;
+    document.getElementById('custom-select-pnc-estado-text').innerText = p.estado;
+    document.querySelectorAll('#custom-select-pnc-estado-options .custom-select-option').forEach(el => {
+        if (el.getAttribute('data-value') === p.estado) el.classList.add('selected');
+        else el.classList.remove('selected');
+    });
+
+    openModal('pnc');
+}
+
+async function deletePnc(id) {
+    const p = productosNoConformes.find(item => item.id === id);
+    if (!p) return;
+
+    const confirmado = await customConfirm(`¿Está seguro de eliminar el registro de no conformidad del lote "${p.loteCodigo}"?`);
+    if (confirmado) {
+        try {
+            await apiDelete(`/api/productos-no-conformes/${id}`);
+            await loadServerData();
+            showToast('No conformidad eliminada correctamente.', 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+            console.error(err);
+        }
+    }
+}
+
+// --- SIMULACIÓN IOT DE TEMPERATURAS EN VIVO (HACCP) ---
+let iotSimulacionInterval = null;
+
+function iniciarSimulacionIot() {
+    if (iotSimulacionInterval) clearInterval(iotSimulacionInterval);
+    
+    iotSimulacionInterval = setInterval(() => {
+        const activeTab = document.querySelector('.content-section.active');
+        if (!activeTab || activeTab.id !== 'tab-calidad') return;
+
+        camaras.forEach(c => {
+            if (c.estado === 'Mantenimiento') return;
+            
+            const lecturas = temperaturas.filter(t => t.camaraId === c.id);
+            if (lecturas.length === 0) return;
+
+            const variacion = (Math.random() * 0.3 - 0.15);
+            let tempActual = parseFloat(lecturas[0].temperatura) + variacion;
+
+            if (Math.random() < 0.02) {
+                tempActual = parseFloat(c.temperaturaMax) + 1.20; 
+            } else {
+                if (tempActual > 6) tempActual -= 0.8;
+                if (tempActual < -2) tempActual += 0.8;
+            }
+
+            lecturas[0].temperatura = tempActual;
+            
+            const tempMin = parseFloat(c.temperaturaMin);
+            const tempMax = parseFloat(c.temperaturaMax);
+            const esDesviado = tempActual < tempMin || tempActual > tempMax;
+            
+            lecturas[0].desviacion = esDesviado;
+
+            if (esDesviado) {
+                showToast(`⚠️ LÍMITE CRÍTICO EXCEDIDO: Cámara "${c.nombre}" a ${tempActual.toFixed(2)} °C.`, 'warning');
+            }
+        });
+
+        renderCamaras();
+    }, 5000);
 }
 
