@@ -1354,13 +1354,7 @@ tr:hover td {
 }
 
 .config-sidebar {
-    width: 240px;
-    flex-shrink: 0;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: none;
+    display: none !important;
 }
 
 .config-nav-menu {
