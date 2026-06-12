@@ -297,19 +297,25 @@ body {
     display: block !important;
 }
 
+/* Rotar flecha en el submenú activo */
+.sidebar.expanded li.active-li .submenu-arrow {
+    transform: rotate(180deg);
+}
+
 .submenu {
     list-style: none;
     padding-left: 32px; /* Indentación alineada con el texto principal */
     margin-top: 6px;
     margin-bottom: 8px;
-    display: flex;
+    display: none !important; /* Colapsado por defecto */
     flex-direction: column;
     gap: 4px;
     transition: all 0.3s ease;
 }
 
-.sidebar:not(.expanded) .submenu {
-    display: none !important;
+/* Desplegar submenú solo cuando el menú está expandido y el apartado está activo */
+.sidebar.expanded li.active-li .submenu {
+    display: flex !important;
 }
 
 .submenu-item {
