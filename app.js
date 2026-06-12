@@ -15,6 +15,12 @@ let pesajes = [];
 let camaras = [];
 let temperaturas = [];
 let productosNoConformes = [];
+let despachos = [];
+let controlCloro = [];
+let registrosHigiene = [];
+let visitas = [];
+let capacitaciones = [];
+
 let editingGanaderoId = null; // Estado de edición global
 let editingEspecieId = null; // Estado de edición de especie global
 let editingPagoId = null; // Estado de edición de pago global
@@ -24,6 +30,11 @@ let editingTipoPagoId = null; // Estado de edición de tipo de pago global
 let editingPesajeId = null; // Estado de edición de pesaje global
 let editingCamaraId = null; // Estado de edición de cámara global
 let editingPncId = null; // Estado de edición de no conformidad global
+let editingDespachoId = null;
+let editingCloroId = null;
+let editingHigieneId = null;
+let editingVisitaId = null;
+let editingCapacitacionId = null;
 
 
 // ==========================================
@@ -60,6 +71,33 @@ function closeModal(tipo) {
         // Si cerramos el modal de trabajador, restablecer estado
         if (tipo === 'trabajador') {
             cancelarEdicionTrabajador();
+        }
+
+        // Modales de la Fase 15
+        if (tipo === 'despacho') {
+            cancelarEdicionDespacho();
+            const form = document.getElementById('form-despacho');
+            if (form) form.reset();
+        }
+        if (tipo === 'cloro') {
+            cancelarEdicionCloro();
+            const form = document.getElementById('form-cloro');
+            if (form) form.reset();
+        }
+        if (tipo === 'higiene') {
+            cancelarEdicionHigiene();
+            const form = document.getElementById('form-higiene');
+            if (form) form.reset();
+        }
+        if (tipo === 'visita') {
+            cancelarEdicionVisita();
+            const form = document.getElementById('form-visita');
+            if (form) form.reset();
+        }
+        if (tipo === 'capacitacion') {
+            cancelarEdicionCapacitacion();
+            const form = document.getElementById('form-capacitacion');
+            if (form) form.reset();
         }
         
         // Si cerramos el modal de arqueo, limpiar campos y estilos
@@ -244,6 +282,11 @@ async function loadServerData() {
         camaras = data.camaras || [];
         temperaturas = data.temperaturas || [];
         productosNoConformes = data.productosNoConformes || [];
+        despachos = data.despachos || [];
+        controlCloro = data.controlCloro || [];
+        registrosHigiene = data.registrosHigiene || [];
+        visitas = data.visitas || [];
+        capacitaciones = data.capacitaciones || [];
         renderAll();
     } catch (err) {
         showToast('Error al conectar con el servidor de base de datos.', 'error');
@@ -339,6 +382,33 @@ function switchTab(tabName) {
         iconClass = 'fa-shield-halved';
         cancelarEdicionCamara();
         cancelarEdicionPnc();
+        
+        // Controlar botones de cloro/higiene
+        const activeSubtabItem = document.querySelector('.calidad-nav-item.active');
+        if (activeSubtabItem) {
+            const onclickText = activeSubtabItem.getAttribute('onclick');
+            if (onclickText.includes('cloro')) {
+                document.getElementById('header-action-cloro').style.display = 'flex';
+            } else if (onclickText.includes('higiene-poes')) {
+                document.getElementById('header-action-higiene').style.display = 'flex';
+            }
+        }
+    } else if (tabName === 'despachos') {
+        titleText = 'Despacho y Salida de Producto';
+        iconClass = 'fa-dolly';
+        const activeSubtabItem = document.querySelector('.despachos-nav-item.active');
+        if (!activeSubtabItem || activeSubtabItem.getAttribute('onclick').includes('salidas')) {
+            document.getElementById('header-action-despacho').style.display = 'flex';
+        }
+    } else if (tabName === 'visitas') {
+        titleText = 'Seguridad, Bioseguridad y BPM';
+        iconClass = 'fa-user-shield';
+        const activeSubtabItem = document.querySelector('.visitas-nav-item.active');
+        if (activeSubtabItem && activeSubtabItem.getAttribute('onclick').includes('capacitaciones')) {
+            document.getElementById('header-action-capacitacion').style.display = 'flex';
+        } else {
+            document.getElementById('header-action-visita').style.display = 'flex';
+        }
     }
     
     // Actualizar título e icono en el header superior
@@ -364,6 +434,34 @@ function switchTab(tabName) {
         }
     }
 
+    if (tabName === 'despachos') {
+        const subTabActiva = document.querySelector('.despachos-nav-item.active');
+        if (!subTabActiva) {
+            switchDespachosSubTab('salidas');
+        } else {
+            const onclickText = subTabActiva.getAttribute('onclick') || '';
+            if (onclickText.includes('transportes')) {
+                switchDespachosSubTab('transportes');
+            } else {
+                switchDespachosSubTab('salidas');
+            }
+        }
+    }
+
+    if (tabName === 'visitas') {
+        const subTabActiva = document.querySelector('.visitas-nav-item.active');
+        if (!subTabActiva) {
+            switchVisitasSubTab('control-visitas');
+        } else {
+            const onclickText = subTabActiva.getAttribute('onclick') || '';
+            if (onclickText.includes('capacitaciones')) {
+                switchVisitasSubTab('capacitaciones');
+            } else {
+                switchVisitasSubTab('control-visitas');
+            }
+        }
+    }
+
     // Si salimos de ganaderos, cancelamos la edición activa por seguridad
     if (tabName !== 'ganaderos' && editingGanaderoId !== null) {
         cancelarEdicion();
@@ -372,6 +470,23 @@ function switchTab(tabName) {
     // Si salimos de trabajadores, cancelamos la edición activa por seguridad
     if (tabName !== 'trabajadores' && editingTrabajadorId !== null) {
         cancelarEdicionTrabajador();
+    }
+
+    // Si salimos de despachos, cancelamos edición
+    if (tabName !== 'despachos') {
+        cancelarEdicionDespacho();
+    }
+
+    // Si salimos de visitas, cancelamos edición
+    if (tabName !== 'visitas') {
+        cancelarEdicionVisita();
+        cancelarEdicionCapacitacion();
+    }
+
+    // Si salimos de calidad, cancelamos cloro e higiene
+    if (tabName !== 'calidad') {
+        cancelarEdicionCloro();
+        cancelarEdicionHigiene();
     }
 
     // Si salimos de configuraciones, cancelamos las ediciones activas por seguridad
@@ -1098,6 +1213,11 @@ function renderAll() {
 
     // 20. Módulo de Calidad e Inocuidad (HACCP)
     renderCalidad();
+
+    // 21. Módulos Fase 15 (Despacho, Visitas, Capacitaciones)
+    renderDespachos();
+    renderVisitas();
+    renderCapacitaciones();
 }
 
 // Generar un código único de 2 letras a partir de una razón social
@@ -3590,6 +3710,8 @@ function switchCalidadSubTab(subTabName) {
 function renderCalidad() {
     renderCamaras();
     renderPnc();
+    renderCloro();
+    renderHigiene();
 }
 
 // --- CÁMARAS FRIGORÍFICAS ---
@@ -4182,5 +4304,1148 @@ function iniciarSimulacionIot() {
 
         renderCamaras();
     }, 5000);
+}
+
+
+// ==========================================
+// FASE 15: CONTROL DE DESPACHOS, CALIDAD Y ACCESOS
+// ==========================================
+
+// --- SUBPESTAÑAS DE DESPACHO Y SEGURIDAD ---
+
+function switchDespachosSubTab(subTabName) {
+    document.querySelectorAll('.despachos-subtab-section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.despachos-nav-item').forEach(el => el.classList.remove('active'));
+    
+    const targetSection = document.getElementById(`despachos-subtab-${subTabName}`);
+    if (targetSection) targetSection.classList.add('active');
+    
+    document.querySelectorAll('.despachos-nav-item').forEach(item => {
+        const onclickText = item.getAttribute('onclick') || '';
+        if (onclickText.includes(subTabName)) {
+            item.classList.add('active');
+        }
+    });
+
+    // Controlar botones de acción en el header
+    document.querySelectorAll('.btn-header-action').forEach(btn => btn.style.display = 'none');
+    if (subTabName === 'salidas') {
+        document.getElementById('header-action-despacho').style.display = 'flex';
+    }
+}
+
+function switchVisitasSubTab(subTabName) {
+    document.querySelectorAll('.visitas-subtab-section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.visitas-nav-item').forEach(el => el.classList.remove('active'));
+    
+    const targetSection = document.getElementById(`visitas-subtab-${subTabName}`);
+    if (targetSection) targetSection.classList.add('active');
+    
+    document.querySelectorAll('.visitas-nav-item').forEach(item => {
+        const onclickText = item.getAttribute('onclick') || '';
+        if (onclickText.includes(subTabName)) {
+            item.classList.add('active');
+        }
+    });
+
+    // Controlar botones de acción en el header
+    document.querySelectorAll('.btn-header-action').forEach(btn => btn.style.display = 'none');
+    if (subTabName === 'control-visitas') {
+        document.getElementById('header-action-visita').style.display = 'flex';
+    } else if (subTabName === 'capacitaciones') {
+        document.getElementById('header-action-capacitacion').style.display = 'flex';
+    }
+    
+    if (subTabName === 'capacitaciones') {
+        poblarAsistentesCheckList();
+    }
+}
+
+// --- RENDERIZADO DE VISTAS Y TABLAS ---
+
+function renderDespachos() {
+    // 1. Tabla de Despachos (Kardex)
+    const tbodyDespachos = document.getElementById('table-despachos-body');
+    if (tbodyDespachos) {
+        tbodyDespachos.innerHTML = '';
+        if (despachos.length === 0) {
+            tbodyDespachos.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 16px;">No se registran despachos realizados.</td></tr>`;
+        } else {
+            despachos.forEach(d => {
+                const isTempCritical = parseFloat(d.temperaturaCarne) > 7.0;
+                const tempBadge = isTempCritical 
+                    ? `<span class="badge-alerta-pcc" title="Excede límite crítico (7.0 °C)"><i class="fa-solid fa-triangle-exclamation"></i> ${parseFloat(d.temperaturaCarne).toFixed(1)} °C</span>` 
+                    : `<span class="badge-conforme">${parseFloat(d.temperaturaCarne).toFixed(1)} °C</span>`;
+                
+                const fechaFormat = new Date(d.fecha).toLocaleString('es-PE', { 
+                    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false 
+                });
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${fechaFormat}</td>
+                    <td><strong>${d.loteCodigo}</strong></td>
+                    <td>${d.cliente}</td>
+                    <td><span class="lote-tag">${d.guiaRemision}</span></td>
+                    <td><strong>${d.cantidadCarcasas}</strong></td>
+                    <td>${parseFloat(d.pesoTotal).toFixed(2)} kg</td>
+                    <td>${tempBadge}</td>
+                    <td>${d.responsable}</td>
+                    <td>
+                        <button onclick="editDespacho('${d.id}')" style="background: none; border: none; color: var(--color-admin); cursor: pointer; font-size: 15px; margin-right: 12px;" title="Editar">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button onclick="deleteDespacho('${d.id}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 15px;" title="Eliminar">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                tbodyDespachos.appendChild(tr);
+            });
+        }
+    }
+
+    // 2. Tabla de Transportes y Furgones
+    const tbodyTransportes = document.getElementById('table-transportes-body');
+    if (tbodyTransportes) {
+        tbodyTransportes.innerHTML = '';
+        const despachosConTransporte = despachos.filter(d => d.transporte);
+        if (despachosConTransporte.length === 0) {
+            tbodyTransportes.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 16px;">No se registran transportes de despachos correspondientes.</td></tr>`;
+        } else {
+            despachosConTransporte.forEach(d => {
+                const t = d.transporte;
+                const hygieneBadge = t.higieneFurgon === 'Conforme' 
+                    ? `<span class="badge-conforme">Conforme</span>` 
+                    : `<span class="badge-alerta-pcc">No Conforme</span>`;
+                
+                const hermBadge = t.hermeticidad 
+                    ? `<span class="badge-conforme">Hermético</span>` 
+                    : `<span class="badge-alerta-pcc">Fuga / No Hermético</span>`;
+                
+                const tempBadge = parseFloat(t.temperaturaFurgon) > 7.0 
+                    ? `<span class="badge-alerta-pcc"><i class="fa-solid fa-temperature-arrow-up"></i> ${parseFloat(t.temperaturaFurgon).toFixed(1)} °C</span>` 
+                    : `<span class="badge-conforme">${parseFloat(t.temperaturaFurgon).toFixed(1)} °C</span>`;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>Lote ${d.loteCodigo}</strong><br><small style="color: var(--text-secondary)">Guía: ${d.guiaRemision}</small></td>
+                    <td><span class="lote-tag" style="background: #f1f5f9; color: var(--text-primary); border: 1px solid var(--border-color);">${t.placaVehiculo}</span></td>
+                    <td><strong>${t.conductor}</strong><br><small style="color: var(--text-secondary)">Lic. ${t.licencia}</small></td>
+                    <td>${hygieneBadge}</td>
+                    <td>${tempBadge}</td>
+                    <td>${hermBadge}</td>
+                    <td><small style="color: var(--text-secondary);">${t.observaciones || '--'}</small></td>
+                `;
+                tbodyTransportes.appendChild(tr);
+            });
+        }
+    }
+}
+
+function renderCloro() {
+    const tbodyCloro = document.getElementById('table-cloro-body');
+    if (!tbodyCloro) return;
+    tbodyCloro.innerHTML = '';
+    
+    if (controlCloro.length === 0) {
+        tbodyCloro.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-secondary); padding: 16px;">No hay mediciones de cloro registradas.</td></tr>`;
+    } else {
+        controlCloro.forEach(c => {
+            const isDesviado = c.desviacion;
+            const estadoBadge = isDesviado 
+                ? `<span class="badge-alerta-pcc" style="font-size: 11px;"><i class="fa-solid fa-triangle-exclamation"></i> Desviación</span>` 
+                : `<span class="badge-conforme" style="font-size: 11px;">Conforme (LMR)</span>`;
+            
+            const residualVal = parseFloat(c.cloroResidual);
+            const residualBadge = isDesviado 
+                ? `<strong class="danger" style="color: #ef4444;">${residualVal.toFixed(2)} ppm</strong>` 
+                : `<strong class="success" style="color: #10b981;">${residualVal.toFixed(2)} ppm</strong>`;
+            
+            const fechaLegible = new Date(c.fecha).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${fechaLegible}</td>
+                <td>${c.hora.substring(0, 5)}</td>
+                <td><strong>${c.puntoMuestreo}</strong></td>
+                <td>${residualBadge}</td>
+                <td>${estadoBadge}</td>
+                <td><small>${c.observaciones || '--'}</small></td>
+                <td>${c.responsable}</td>
+                <td>
+                    <button onclick="editCloro('${c.id}')" style="background: none; border: none; color: var(--color-admin); cursor: pointer; font-size: 14px; margin-right: 8px;" title="Editar">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button onclick="deleteCloro('${c.id}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px;" title="Eliminar">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </td>
+            `;
+            tbodyCloro.appendChild(tr);
+        });
+    }
+}
+
+function renderHigiene() {
+    const tbodyHigiene = document.getElementById('table-higiene-body');
+    if (!tbodyHigiene) return;
+    tbodyHigiene.innerHTML = '';
+    
+    if (registrosHigiene.length === 0) {
+        tbodyHigiene.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 16px;">No hay bitácoras de higiene POES registradas.</td></tr>`;
+    } else {
+        registrosHigiene.forEach(h => {
+            const isNoConforme = h.limpiezaEstado === 'No Conforme';
+            const estadoBadge = isNoConforme 
+                ? `<span class="badge-alerta-pcc" style="font-size: 11px;"><i class="fa-solid fa-soap"></i> Sucio / No Conforme</span>` 
+                : `<span class="badge-conforme" style="font-size: 11px;">Limpio / Conforme</span>`;
+            
+            const fechaFormat = new Date(h.fecha).toLocaleString('es-PE', { 
+                day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false 
+            });
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${fechaFormat}</td>
+                <td><span class="lote-tag" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">${h.tipoItem}</span></td>
+                <td><strong>${h.nombreItem}</strong><br><small style="color: var(--text-secondary);">${h.observaciones || ''}</small></td>
+                <td>${h.frecuencia}</td>
+                <td>${estadoBadge}</td>
+                <td>${h.desinfectante}</td>
+                <td><strong>${h.concentracionPpm} ppm</strong></td>
+                <td>${h.responsable}</td>
+                <td>
+                    <button onclick="editHigiene('${h.id}')" style="background: none; border: none; color: var(--color-admin); cursor: pointer; font-size: 14px; margin-right: 8px;" title="Editar">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button onclick="deleteHigiene('${h.id}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px;" title="Eliminar">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </td>
+            `;
+            tbodyHigiene.appendChild(tr);
+        });
+    }
+}
+
+function renderVisitas() {
+    const tbodyVisitas = document.getElementById('table-visitas-body');
+    if (!tbodyVisitas) return;
+    tbodyVisitas.innerHTML = '';
+    
+    if (visitas.length === 0) {
+        tbodyVisitas.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 16px;">No se registran visitas a la planta hoy.</td></tr>`;
+    } else {
+        visitas.forEach(v => {
+            const hasSintomas = v.sintomasSalud;
+            const saludBadge = hasSintomas 
+                ? `<span class="badge-alerta-pcc" style="font-size: 11px;"><i class="fa-solid fa-biohazard"></i> Sintomatología (Alerta)</span>` 
+                : `<span class="badge-conforme" style="font-size: 11px;">Salud Conforme</span>`;
+            
+            const fechaFormat = new Date(v.fecha + 'T00:00:00').toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${fechaFormat}</td>
+                <td><strong>${v.visitanteNombre}</strong></td>
+                <td>DNI: ${v.visitanteDni}<br><small style="color: var(--text-secondary)">${v.institucion}</small></td>
+                <td><span class="lote-tag" style="background: #f0fdf4; color: #166534;">${v.horaIngreso.substring(0, 5)}</span></td>
+                <td>${v.horaSalida ? `<span class="lote-tag" style="background: #fef2f2; color: #991b1b;">${v.horaSalida.substring(0, 5)}</span>` : '<span style="color: #ea580c; font-style: italic;">En Planta</span>'}</td>
+                <td>${saludBadge}</td>
+                <td><small>${v.eppEntregado}</small></td>
+                <td>${v.responsable}</td>
+                <td>
+                    <button onclick="editVisita('${v.id}')" style="background: none; border: none; color: var(--color-admin); cursor: pointer; font-size: 14px; margin-right: 8px;" title="Editar / Salida">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button onclick="deleteVisita('${v.id}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px;" title="Eliminar">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </td>
+            `;
+            tbodyVisitas.appendChild(tr);
+        });
+    }
+}
+
+function renderCapacitaciones() {
+    const tbodyCapacitaciones = document.getElementById('table-capacitaciones-body');
+    if (!tbodyCapacitaciones) return;
+    tbodyCapacitaciones.innerHTML = '';
+    
+    if (capacitaciones.length === 0) {
+        tbodyCapacitaciones.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 16px;">No se registran capacitaciones realizadas.</td></tr>`;
+    } else {
+        capacitaciones.forEach(c => {
+            const cantAsistentes = c.asistentesIds ? c.asistentesIds.split(',').filter(x => x.length > 0).length : 0;
+            const fechaLegible = new Date(c.fecha + 'T00:00:00').toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${fechaLegible}</td>
+                <td><strong>${c.tema}</strong><br><small style="color: var(--text-secondary);">${c.observaciones || ''}</small></td>
+                <td>${c.ponente}</td>
+                <td>${parseFloat(c.duracionHoras).toFixed(1)} hrs</td>
+                <td><span class="lote-tag" style="background: #fdf2f8; color: #9d174d; border: 1px solid #fbcfe8; font-weight: bold;">${cantAsistentes} Asistentes</span></td>
+                <td>
+                    <button onclick="editCapacitacion('${c.id}')" style="background: none; border: none; color: var(--color-admin); cursor: pointer; font-size: 14px; margin-right: 8px;" title="Editar">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button onclick="deleteCapacitacion('${c.id}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px;" title="Eliminar">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </td>
+            `;
+            tbodyCapacitaciones.appendChild(tr);
+        });
+    }
+}
+
+// --- POBLADO DE SELECTORES DINÁMICOS Y CHECKLISTS ---
+
+function poblarAsistentesCheckList(asistentesIdsSeleccionados = []) {
+    const list = document.getElementById('capacitacion-asistentes-check-list');
+    if (!list) return;
+    list.innerHTML = '';
+    
+    if (trabajadores.length === 0) {
+        list.innerHTML = `<div style="font-size: 11px; color: var(--text-secondary); text-align: center; padding: 10px; width: 100%;">No hay trabajadores registrados en la base de datos.</div>`;
+        return;
+    }
+    
+    trabajadores.forEach(t => {
+        const div = document.createElement('div');
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.gap = '8px';
+        div.style.fontSize = '12px';
+        div.style.padding = '2px 0';
+        
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.value = t.id;
+        chk.id = `chk-asistente-${t.id}`;
+        chk.className = 'chk-asistente-item';
+        
+        if (asistentesIdsSeleccionados.includes(t.id)) {
+            chk.checked = true;
+        }
+        
+        const lbl = document.createElement('label');
+        lbl.htmlFor = `chk-asistente-${t.id}`;
+        lbl.innerText = `${t.nombre} (${t.cargo})`;
+        lbl.style.cursor = 'pointer';
+        lbl.style.flex = '1';
+        
+        div.appendChild(chk);
+        div.appendChild(lbl);
+        list.appendChild(div);
+    });
+}
+
+function poblarLotesDespachoDropdown(loteCodigoSeleccionado = '') {
+    const optionsLote = document.getElementById('custom-select-despacho-lote-options');
+    if (!optionsLote) return;
+    optionsLote.innerHTML = '';
+    
+    if (recepciones.length === 0) {
+        optionsLote.innerHTML = `<div style="font-size: 11px; color: var(--text-secondary); padding: 8px; text-align: center;">No hay lotes disponibles</div>`;
+        return;
+    }
+
+    recepciones.forEach(r => {
+        const stock = calcularStockDisponible(r.lote_codigo);
+        // Mostrar todos los lotes para permitir edición, pero indicando stock actual disponible
+        const div = document.createElement('div');
+        div.className = 'custom-select-option';
+        div.innerText = `${r.lote_codigo} - ${r.ganadero_nombre} (Stock: ${stock} Carc.)`;
+        div.setAttribute('data-value', r.lote_codigo);
+        
+        if (loteCodigoSeleccionado === r.lote_codigo) {
+            div.classList.add('selected');
+        }
+        
+        div.onclick = (e) => {
+            selectDespachoLoteOption(r.lote_codigo, `${r.lote_codigo} - ${r.ganadero_nombre}`, stock, e);
+        };
+        optionsLote.appendChild(div);
+    });
+}
+
+// --- VALIDACIÓN DE STOCK ---
+
+function calcularStockDisponible(loteCodigo) {
+    const recepcion = recepciones.find(r => r.lote_codigo === loteCodigo);
+    if (!recepcion) return 0;
+    
+    // Si hay pesajes individuales registrados, el total de carcasas es ese conteo.
+    // De lo contrario es la cantidad declarada en la recepción inicial
+    const pesajesLote = pesajes.filter(p => p.recepcionId === recepcion.id).length;
+    const totalCarcasas = pesajesLote > 0 ? pesajesLote : recepcion.cantidad;
+    
+    // Calcular lo ya despachado de este lote (excluyendo el despacho actual si está en edición)
+    const despachado = despachos
+        .filter(d => d.loteCodigo === loteCodigo && d.id !== editingDespachoId)
+        .reduce((sum, d) => sum + parseInt(d.cantidadCarcasas), 0);
+        
+    return Math.max(0, totalCarcasas - despachado);
+}
+
+function actualizarCantidadMaximaCarcasas() {
+    const loteCodigo = document.getElementById('despacho-lote-codigo').value;
+    const stock = calcularStockDisponible(loteCodigo);
+    const inputCant = document.getElementById('despacho-cantidad');
+    if (inputCant) {
+        inputCant.max = stock;
+        inputCant.placeholder = `Máx. ${stock} carcasas`;
+    }
+}
+
+// --- SELECTORES PERSONALIZADOS (CUSTOM SELECT HANDLERS) ---
+
+function selectDespachoLoteOption(loteCodigo, texto, stock, event) {
+    if (event) event.stopPropagation();
+    const input = document.getElementById('despacho-lote-codigo');
+    const trigger = document.getElementById('custom-select-despacho-lote-text');
+    const container = document.getElementById('custom-select-despacho-lote-container');
+    const lblStock = document.getElementById('lbl-max-carcasas-stock');
+    
+    if (input && trigger && container) {
+        input.value = loteCodigo;
+        trigger.innerText = texto;
+        container.classList.remove('active');
+        if (lblStock) {
+            lblStock.innerText = `Stock físico disponible para despacho: ${stock} carcasas`;
+        }
+        
+        document.querySelectorAll('#custom-select-despacho-lote-options .custom-select-option').forEach(el => {
+            if (el.getAttribute('data-value') === loteCodigo) {
+                el.classList.add('selected');
+            } else {
+                el.classList.remove('selected');
+            }
+        });
+        
+        actualizarCantidadMaximaCarcasas();
+        
+        // Disparar evento change manualmente para validación nativa
+        const eventChange = new Event('change');
+        input.dispatchEvent(eventChange);
+    }
+}
+
+function selectDespachoHigieneOption(val, text, event) {
+    if (event) event.stopPropagation();
+    const input = document.getElementById('despacho-higiene');
+    const trigger = document.getElementById('custom-select-despacho-higiene-text');
+    const container = document.getElementById('custom-select-despacho-higiene-container');
+    if (input && trigger && container) {
+        input.value = val;
+        trigger.innerText = text;
+        container.classList.remove('active');
+        
+        document.querySelectorAll('#custom-select-despacho-higiene-options .custom-select-option').forEach(el => {
+            if (el.getAttribute('data-value') === val) el.classList.add('selected');
+            else el.classList.remove('selected');
+        });
+    }
+}
+
+function selectDespachoHermeticidadOption(val, text, event) {
+    if (event) event.stopPropagation();
+    const input = document.getElementById('despacho-hermeticidad');
+    const trigger = document.getElementById('custom-select-despacho-hermeticidad-text');
+    const container = document.getElementById('custom-select-despacho-hermeticidad-container');
+    if (input && trigger && container) {
+        input.value = val;
+        trigger.innerText = text;
+        container.classList.remove('active');
+        
+        document.querySelectorAll('#custom-select-despacho-hermeticidad-options .custom-select-option').forEach(el => {
+            if (el.getAttribute('data-value') === val) el.classList.add('selected');
+            else el.classList.remove('selected');
+        });
+    }
+}
+
+function selectHigieneTipoOption(val, text, event) {
+    if (event) event.stopPropagation();
+    const input = document.getElementById('higiene-tipo');
+    const trigger = document.getElementById('custom-select-higiene-tipo-text');
+    const container = document.getElementById('custom-select-higiene-tipo-container');
+    if (input && trigger && container) {
+        input.value = val;
+        trigger.innerText = text;
+        container.classList.remove('active');
+        
+        document.querySelectorAll('#custom-select-higiene-tipo-options .custom-select-option').forEach(el => {
+            if (el.getAttribute('data-value') === val) el.classList.add('selected');
+            else el.classList.remove('selected');
+        });
+    }
+}
+
+function selectHigieneFrecuenciaOption(val, text, event) {
+    if (event) event.stopPropagation();
+    const input = document.getElementById('higiene-frecuencia');
+    const trigger = document.getElementById('custom-select-higiene-frecuencia-text');
+    const container = document.getElementById('custom-select-higiene-frecuencia-container');
+    if (input && trigger && container) {
+        input.value = val;
+        trigger.innerText = text;
+        container.classList.remove('active');
+        
+        document.querySelectorAll('#custom-select-higiene-frecuencia-options .custom-select-option').forEach(el => {
+            if (el.getAttribute('data-value') === val) el.classList.add('selected');
+            else el.classList.remove('selected');
+        });
+    }
+}
+
+function selectHigieneEstadoOption(val, text, event) {
+    if (event) event.stopPropagation();
+    const input = document.getElementById('higiene-estado');
+    const trigger = document.getElementById('custom-select-higiene-estado-text');
+    const container = document.getElementById('custom-select-higiene-estado-container');
+    if (input && trigger && container) {
+        input.value = val;
+        trigger.innerText = text;
+        container.classList.remove('active');
+        
+        document.querySelectorAll('#custom-select-higiene-estado-options .custom-select-option').forEach(el => {
+            if (el.getAttribute('data-value') === val) el.classList.add('selected');
+            else el.classList.remove('selected');
+        });
+    }
+}
+
+function selectVisitaSintomasOption(val, text, event) {
+    if (event) event.stopPropagation();
+    const input = document.getElementById('visita-sintomas');
+    const trigger = document.getElementById('custom-select-visita-sintomas-text');
+    const container = document.getElementById('custom-select-visita-sintomas-container');
+    if (input && trigger && container) {
+        input.value = val;
+        trigger.innerText = text;
+        container.classList.remove('active');
+        
+        document.querySelectorAll('#custom-select-visita-sintomas-options .custom-select-option').forEach(el => {
+            if (el.getAttribute('data-value') === val) el.classList.add('selected');
+            else el.classList.remove('selected');
+        });
+    }
+}
+
+// --- OPERACIONES DE MODALES (INICIAR NUEVO) ---
+
+function iniciarNuevoDespacho() {
+    editingDespachoId = null;
+    document.getElementById('modal-despacho-title').innerText = 'Registrar Salida / Despacho de Lote';
+    document.getElementById('btn-text-despacho').innerText = 'Registrar Despacho';
+    
+    const form = document.getElementById('form-despacho');
+    if (form) form.reset();
+    
+    // Valores por defecto
+    document.getElementById('despacho-lote-codigo').value = '';
+    document.getElementById('custom-select-despacho-lote-text').innerText = 'Selecciona un lote...';
+    document.getElementById('lbl-max-carcasas-stock').innerText = '';
+    
+    selectDespachoHigieneOption('Conforme', 'Conforme');
+    selectDespachoHermeticidadOption('Sí', 'Sí');
+    
+    // Fecha y hora actual local
+    const ahora = new Date();
+    const tzOffset = ahora.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(ahora - tzOffset)).toISOString().slice(0, 16);
+    document.getElementById('despacho-fecha').value = localISOTime;
+    
+    poblarLotesDespachoDropdown();
+    openModal('despacho');
+}
+
+function iniciarNuevoCloro() {
+    editingCloroId = null;
+    document.getElementById('modal-cloro-title').innerText = 'Registrar Medición de Cloro Residual';
+    document.getElementById('btn-text-cloro').innerText = 'Registrar Cloro';
+    
+    const form = document.getElementById('form-cloro');
+    if (form) form.reset();
+    
+    const hoy = new Date();
+    const fechaISO = hoy.toISOString().split('T')[0];
+    const horaISO = hoy.toTimeString().split(' ')[0].substring(0, 5);
+    
+    document.getElementById('cloro-fecha').value = fechaISO;
+    document.getElementById('cloro-hora').value = horaISO;
+    
+    openModal('cloro');
+}
+
+function iniciarNuevoHigiene() {
+    editingHigieneId = null;
+    document.getElementById('modal-higiene-title').innerText = 'Registrar Verificación de Higiene POES';
+    document.getElementById('btn-text-higiene').innerText = 'Registrar Higiene';
+    
+    const form = document.getElementById('form-higiene');
+    if (form) form.reset();
+    
+    selectHigieneTipoOption('Equipo', 'Equipo');
+    selectHigieneFrecuenciaOption('Diaria', 'Diaria');
+    selectHigieneEstadoOption('Conforme', 'Conforme');
+    
+    const ahora = new Date();
+    const tzOffset = ahora.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(ahora - tzOffset)).toISOString().slice(0, 16);
+    document.getElementById('higiene-fecha').value = localISOTime;
+    
+    openModal('higiene');
+}
+
+function iniciarNuevaVisita() {
+    editingVisitaId = null;
+    document.getElementById('modal-visita-title').innerText = 'Registrar Ingreso de Visita';
+    document.getElementById('btn-text-visita').innerText = 'Registrar Visita';
+    
+    const form = document.getElementById('form-visita');
+    if (form) form.reset();
+    
+    const hoy = new Date();
+    const fechaISO = hoy.toISOString().split('T')[0];
+    const horaISO = hoy.toTimeString().split(' ')[0].substring(0, 5);
+    
+    document.getElementById('visita-fecha').value = fechaISO;
+    document.getElementById('visita-hora-ingreso').value = horaISO;
+    document.getElementById('visita-hora-salida').value = '';
+    
+    selectVisitaSintomasOption('No', 'No (Salud Conforme)');
+    openModal('visita');
+}
+
+function iniciarNuevaCapacitacion() {
+    editingCapacitacionId = null;
+    document.getElementById('modal-capacitacion-title').innerText = 'Registrar Capacitación de Higiene';
+    document.getElementById('btn-text-capacitacion').innerText = 'Registrar Capacitación';
+    
+    const form = document.getElementById('form-capacitacion');
+    if (form) form.reset();
+    
+    const hoy = new Date();
+    document.getElementById('capacitacion-fecha').value = hoy.toISOString().split('T')[0];
+    
+    poblarAsistentesCheckList();
+    openModal('capacitacion');
+}
+
+// --- CANCELACIONES DE FORMULARIOS ---
+
+function cancelarEdicionDespacho() {
+    editingDespachoId = null;
+    const form = document.getElementById('form-despacho');
+    if (form) form.reset();
+}
+
+function cancelarEdicionCloro() {
+    editingCloroId = null;
+    const form = document.getElementById('form-cloro');
+    if (form) form.reset();
+}
+
+function cancelarEdicionHigiene() {
+    editingHigieneId = null;
+    const form = document.getElementById('form-higiene');
+    if (form) form.reset();
+}
+
+function cancelarEdicionVisita() {
+    editingVisitaId = null;
+    const form = document.getElementById('form-visita');
+    if (form) form.reset();
+}
+
+function cancelarEdicionCapacitacion() {
+    editingCapacitacionId = null;
+    const form = document.getElementById('form-capacitacion');
+    if (form) form.reset();
+}
+
+// --- CRUD: GUARDAR Y REGISTRAR ---
+
+async function saveDespacho(e) {
+    if (e) e.preventDefault();
+    
+    const loteCodigo = document.getElementById('despacho-lote-codigo').value;
+    const cliente = document.getElementById('despacho-cliente').value;
+    const guiaRemision = document.getElementById('despacho-guia').value;
+    const cantidadCarcasas = parseInt(document.getElementById('despacho-cantidad').value);
+    const pesoTotal = parseFloat(document.getElementById('despacho-peso').value);
+    const temperaturaCarne = parseFloat(document.getElementById('despacho-temp-carne').value);
+    const observaciones = document.getElementById('despacho-obs').value;
+    const responsable = document.getElementById('despacho-responsable').value;
+    const fechaInput = document.getElementById('despacho-fecha').value;
+    
+    const placaVehiculo = document.getElementById('despacho-placa').value;
+    const conductor = document.getElementById('despacho-conductor').value;
+    const licencia = document.getElementById('despacho-licencia').value;
+    const temperaturaFurgon = parseFloat(document.getElementById('despacho-temp-furgon').value);
+    const higieneFurgon = document.getElementById('despacho-higiene').value;
+    const hermeticidad = document.getElementById('despacho-hermeticidad').value === 'Sí';
+
+    if (!loteCodigo) {
+        showToast('Por favor, selecciona un lote de origen.', 'error');
+        return;
+    }
+
+    const stock = calcularStockDisponible(loteCodigo);
+    if (cantidadCarcasas > stock) {
+        showToast(`Error: Stock insuficiente. Lote ${loteCodigo} solo posee ${stock} carcasas disponibles.`, 'error');
+        return;
+    }
+
+    // Alerta de control crítico de temperatura
+    if (temperaturaCarne > 7.0) {
+        showToast(`⚠️ LÍMITE DE TEMPERATURA EXCEDIDO: La carne de despacho está a ${temperaturaCarne.toFixed(1)} °C (> 7.0 °C).`, 'warning');
+    }
+
+    const payload = {
+        nuevoDespacho: {
+            id: editingDespachoId || 'desp-' + Date.now(),
+            fecha: new Date(fechaInput).toISOString(),
+            loteCodigo,
+            cliente,
+            guiaRemision,
+            cantidadCarcasas,
+            pesoTotal,
+            temperaturaCarne,
+            observaciones,
+            responsable
+        },
+        nuevoTransporte: {
+            id: 'trans-' + Date.now(),
+            placaVehiculo,
+            conductor,
+            licencia,
+            higieneFurgon,
+            temperaturaFurgon,
+            hermeticidad,
+            observaciones: `Registro de transporte asociado a la guía ${guiaRemision}`
+        }
+    };
+
+    try {
+        if (editingDespachoId === null) {
+            await apiPost('/api/despachos', payload);
+            showToast('Despacho y transporte de furgón registrados correctamente.', 'success');
+        } else {
+            await apiPut(`/api/despachos/${editingDespachoId}`, payload);
+            showToast('Despacho y transporte modificados correctamente.', 'success');
+        }
+        closeModal('despacho');
+        await loadServerData();
+    } catch (err) {
+        showToast(err.message, 'error');
+        console.error(err);
+    }
+}
+
+async function saveCloro(e) {
+    if (e) e.preventDefault();
+    
+    const fecha = document.getElementById('cloro-fecha').value;
+    const hora = document.getElementById('cloro-hora').value;
+    const punto_muestreo = document.getElementById('cloro-punto').value;
+    const cloro_residual = parseFloat(document.getElementById('cloro-residual').value);
+    const observaciones = document.getElementById('cloro-obs').value;
+    const responsable = document.getElementById('cloro-responsable').value;
+    
+    const desviacion = cloro_residual < 0.5 || cloro_residual > 1.5;
+    if (desviacion) {
+        showToast(`⚠️ CONTROL DE CLORO EXCEDIDO: Valor de ${cloro_residual.toFixed(2)} ppm fuera del rango seguro (0.5 a 1.5 ppm).`, 'warning');
+    }
+
+    const payload = {
+        id: editingCloroId || 'cloro-' + Date.now(),
+        fecha,
+        hora,
+        punto_muestreo,
+        cloro_residual,
+        desviacion,
+        observaciones,
+        responsable
+    };
+
+    try {
+        if (editingCloroId === null) {
+            await apiPost('/api/control-cloro', payload);
+            showToast('Medición de cloro residual registrada correctamente.', 'success');
+        } else {
+            await apiPut(`/api/control-cloro/${editingCloroId}`, payload);
+            showToast('Medición de cloro residual modificada correctamente.', 'success');
+        }
+        closeModal('cloro');
+        await loadServerData();
+    } catch (err) {
+        showToast(err.message, 'error');
+        console.error(err);
+    }
+}
+
+async function saveHigiene(e) {
+    if (e) e.preventDefault();
+    
+    const fechaInput = document.getElementById('higiene-fecha').value;
+    const tipo_item = document.getElementById('higiene-tipo').value;
+    const nombre_item = document.getElementById('higiene-nombre').value;
+    const frecuencia = document.getElementById('higiene-frecuencia').value;
+    const limpieza_estado = document.getElementById('higiene-estado').value;
+    const desinfectante = document.getElementById('higiene-quimico').value;
+    const concentracion_ppm = parseInt(document.getElementById('higiene-concentracion').value);
+    const observaciones = document.getElementById('higiene-obs').value;
+    const responsable = document.getElementById('higiene-responsable').value;
+
+    const payload = {
+        id: editingHigieneId || 'poes-' + Date.now(),
+        fecha: new Date(fechaInput).toISOString(),
+        tipo_item,
+        nombre_item,
+        frecuencia,
+        limpieza_estado,
+        desinfectante,
+        concentracion_ppm,
+        observaciones,
+        responsable
+    };
+
+    try {
+        if (editingHigieneId === null) {
+            await apiPost('/api/registro-higiene-poes', payload);
+            showToast('Registro de Higiene POES guardado correctamente.', 'success');
+        } else {
+            await apiPut(`/api/registro-higiene-poes/${editingHigieneId}`, payload);
+            showToast('Registro de Higiene POES modificado correctamente.', 'success');
+        }
+        closeModal('higiene');
+        await loadServerData();
+    } catch (err) {
+        showToast(err.message, 'error');
+        console.error(err);
+    }
+}
+
+async function saveVisita(e) {
+    if (e) e.preventDefault();
+    
+    const fecha = document.getElementById('visita-fecha').value;
+    const visitante_nombre = document.getElementById('visita-nombre').value;
+    const visitante_dni = document.getElementById('visita-dni').value;
+    const institucion = document.getElementById('visita-empresa').value;
+    const hora_ingreso = document.getElementById('visita-hora-ingreso').value;
+    const hora_caliente = document.getElementById('visita-hora-salida').value || null;
+    const sintomas_salud = document.getElementById('visita-sintomas').value === 'Sí';
+    const epp_entregado = document.getElementById('visita-epp').value;
+    const responsable = document.getElementById('visita-responsable').value;
+
+    if (sintomas_salud) {
+        showToast('⚠️ ATENCIÓN: Visitante con sintomatología. Controlar protocolo estricto de acceso.', 'warning');
+    }
+
+    const payload = {
+        id: editingVisitaId || 'visita-' + Date.now(),
+        fecha,
+        visitante_nombre,
+        visitante_dni,
+        institucion,
+        hora_ingreso,
+        hora_caliente,
+        sintomas_salud,
+        epp_enteregado: epp_entregado, // Para mapeo con backend
+        epp_entregado: epp_entregado,
+        responsable
+    };
+
+    try {
+        if (editingVisitaId === null) {
+            await apiPost('/api/visitas', payload);
+            showToast('Ingreso de visitante registrado correctamente.', 'success');
+        } else {
+            await apiPut(`/api/visitas/${editingVisitaId}`, payload);
+            showToast('Registro de visita modificado correctamente.', 'success');
+        }
+        closeModal('visita');
+        await loadServerData();
+    } catch (err) {
+        showToast(err.message, 'error');
+        console.error(err);
+    }
+}
+
+async function saveCapacitacion(e) {
+    if (e) e.preventDefault();
+    
+    const fecha = document.getElementById('capacitacion-fecha').value;
+    const tema = document.getElementById('capacitacion-tema').value;
+    const ponente = document.getElementById('capacitacion-ponente').value;
+    const duracion_horas = parseFloat(document.getElementById('capacitacion-duracion').value);
+    const observaciones = document.getElementById('capacitacion-obs').value;
+    
+    const asistentesIds = Array.from(document.querySelectorAll('.chk-asistente-item:checked')).map(el => el.value).join(',');
+    
+    if (!asistentesIds) {
+        showToast('Por favor, selecciona al menos un asistente.', 'error');
+        return;
+    }
+
+    const payload = {
+        id: editingCapacitacionId || 'capa-' + Date.now(),
+        fecha,
+        tema,
+        ponente,
+        duracion_horas,
+        asistentes_ids: asistentesIds,
+        observaciones
+    };
+
+    try {
+        if (editingCapacitacionId === null) {
+            await apiPost('/api/capacitaciones', payload);
+            showToast('Capacitación registrada correctamente.', 'success');
+        } else {
+            await apiPut(`/api/capacitaciones/${editingCapacitacionId}`, payload);
+            showToast('Capacitación modificada correctamente.', 'success');
+        }
+        closeModal('capacitacion');
+        await loadServerData();
+    } catch (err) {
+        showToast(err.message, 'error');
+        console.error(err);
+    }
+}
+
+// --- CRUD: EDICIONES ---
+
+function editDespacho(id) {
+    const d = despachos.find(item => item.id === id);
+    if (!d) return;
+    
+    editingDespachoId = id;
+    document.getElementById('modal-despacho-title').innerText = 'Modificar Salida / Despacho de Lote';
+    document.getElementById('btn-text-despacho').innerText = 'Guardar Cambios';
+
+    document.getElementById('despacho-lote-codigo').value = d.loteCodigo;
+    document.getElementById('custom-select-despacho-lote-text').innerText = d.loteCodigo;
+    
+    document.getElementById('despacho-cliente').value = d.cliente;
+    document.getElementById('despacho-guia').value = d.guiaRemision;
+    document.getElementById('despacho-cantidad').value = d.cantidadCarcasas;
+    document.getElementById('despacho-peso').value = d.pesoTotal;
+    document.getElementById('despacho-temp-carne').value = d.temperaturaCarne;
+    document.getElementById('despacho-obs').value = d.observaciones || '';
+    document.getElementById('despacho-responsable').value = d.responsable;
+    
+    const fechaISO = d.fecha ? new Date(d.fecha).toISOString().slice(0, 16) : '';
+    document.getElementById('despacho-fecha').value = fechaISO;
+
+    if (d.transporte) {
+        document.getElementById('despacho-placa').value = d.transporte.placaVehiculo;
+        document.getElementById('despacho-conductor').value = d.transporte.conductor;
+        document.getElementById('despacho-licencia').value = d.transporte.licencia;
+        document.getElementById('despacho-temp-furgon').value = d.transporte.temperaturaFurgon;
+        
+        selectDespachoHigieneOption(d.transporte.higieneFurgon, d.transporte.higieneFurgon);
+        selectDespachoHermeticidadOption(d.transporte.hermeticidad ? 'Sí' : 'No', d.transporte.hermeticidad ? 'Sí' : 'No');
+    } else {
+        document.getElementById('despacho-placa').value = '';
+        document.getElementById('despacho-conductor').value = '';
+        document.getElementById('despacho-licencia').value = '';
+        document.getElementById('despacho-temp-furgon').value = '';
+        selectDespachoHigieneOption('Conforme', 'Conforme');
+        selectDespachoHermeticidadOption('Sí', 'Sí');
+    }
+
+    poblarLotesDespachoDropdown(d.loteCodigo);
+    
+    const stock = calcularStockDisponible(d.loteCodigo);
+    document.getElementById('lbl-max-carcasas-stock').innerText = `Stock físico disponible para despacho: ${stock} carcasas`;
+
+    openModal('despacho');
+    actualizarCantidadMaximaCarcasas();
+}
+
+function editCloro(id) {
+    const c = controlCloro.find(item => item.id === id);
+    if (!c) return;
+
+    editingCloroId = id;
+    document.getElementById('modal-cloro-title').innerText = 'Modificar Medición de Cloro';
+    document.getElementById('btn-text-cloro').innerText = 'Guardar Cambios';
+
+    document.getElementById('cloro-punto').value = c.puntoMuestreo;
+    document.getElementById('cloro-residual').value = c.cloroResidual;
+    document.getElementById('cloro-obs').value = c.observaciones || '';
+    document.getElementById('cloro-responsable').value = c.responsable;
+    
+    const fechaLegible = c.fecha ? new Date(c.fecha).toISOString().split('T')[0] : '';
+    document.getElementById('cloro-fecha').value = fechaLegible;
+    document.getElementById('cloro-hora').value = c.hora.substring(0, 5);
+
+    openModal('cloro');
+}
+
+function editHigiene(id) {
+    const h = registrosHigiene.find(item => item.id === id);
+    if (!h) return;
+
+    editingHigieneId = id;
+    document.getElementById('modal-higiene-title').innerText = 'Modificar Bitácora de Higiene';
+    document.getElementById('btn-text-higiene').innerText = 'Guardar Cambios';
+
+    document.getElementById('higiene-nombre').value = h.nombreItem;
+    document.getElementById('higiene-quimico').value = h.desinfectante;
+    document.getElementById('higiene-concentracion').value = h.concentracionPpm;
+    document.getElementById('higiene-obs').value = h.observaciones || '';
+    document.getElementById('higiene-responsable').value = h.responsable;
+
+    selectHigieneTipoOption(h.tipoItem, h.tipoItem);
+    selectHigieneFrecuenciaOption(h.frecuencia, h.frecuencia);
+    selectHigieneEstadoOption(h.limpiezaEstado, h.limpiezaEstado);
+
+    const fechaISO = h.fecha ? new Date(h.fecha).toISOString().slice(0, 16) : '';
+    document.getElementById('higiene-fecha').value = fechaISO;
+
+    openModal('higiene');
+}
+
+function editVisita(id) {
+    const v = visitas.find(item => item.id === id);
+    if (!v) return;
+
+    editingVisitaId = id;
+    document.getElementById('modal-visita-title').innerText = 'Modificar / Registrar Salida de Visita';
+    document.getElementById('btn-text-visita').innerText = 'Guardar Cambios';
+
+    document.getElementById('visita-nombre').value = v.visitanteNombre;
+    document.getElementById('visita-dni').value = v.visitanteDni;
+    document.getElementById('visita-empresa').value = v.institucion;
+    document.getElementById('visita-hora-ingreso').value = v.horaIngreso.substring(0, 5);
+    document.getElementById('visita-hora-salida').value = v.horaSalida ? v.horaSalida.substring(0, 5) : '';
+    document.getElementById('visita-epp').value = v.eppEntregado;
+    document.getElementById('visita-responsable').value = v.responsable;
+
+    const fechaISO = v.fecha ? new Date(v.fecha).toISOString().split('T')[0] : '';
+    document.getElementById('visita-fecha').value = fechaISO;
+
+    selectVisitaSintomasOption(v.sintomasSalud ? 'Sí' : 'No', v.sintomasSalud ? 'Sí (Acceso Restringido)' : 'No (Salud Conforme)');
+
+    openModal('visita');
+}
+
+function editCapacitacion(id) {
+    const c = capacitaciones.find(item => item.id === id);
+    if (!c) return;
+
+    editingCapacitacionId = id;
+    document.getElementById('modal-capacitacion-title').innerText = 'Modificar Capacitación';
+    document.getElementById('btn-text-capacitacion').innerText = 'Guardar Cambios';
+
+    document.getElementById('capacitacion-tema').value = c.tema;
+    document.getElementById('capacitacion-ponente').value = c.ponente;
+    document.getElementById('capacitacion-duracion').value = c.duracionHoras;
+    document.getElementById('capacitacion-obs').value = c.observaciones || '';
+
+    const fechaISO = c.fecha ? new Date(c.fecha).toISOString().split('T')[0] : '';
+    document.getElementById('capacitacion-fecha').value = fechaISO;
+
+    const asistentesArray = c.asistentesIds ? c.asistentesIds.split(',') : [];
+    poblarAsistentesCheckList(asistentesArray);
+
+    openModal('capacitacion');
+}
+
+// --- CRUD: ELIMINACIONES ---
+
+async function deleteDespacho(id) {
+    const d = despachos.find(item => item.id === id);
+    if (!d) return;
+
+    const confirmado = await customConfirm(`¿Está seguro de eliminar el registro de despacho del lote "${d.loteCodigo}" con Guía "${d.guiaRemision}"?`);
+    if (confirmado) {
+        try {
+            await apiDelete(`/api/despachos/${id}`);
+            await loadServerData();
+            showToast('Despacho eliminado correctamente de Kardex.', 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+            console.error(err);
+        }
+    }
+}
+
+async function deleteCloro(id) {
+    const c = controlCloro.find(item => item.id === id);
+    if (!c) return;
+
+    const confirmado = await customConfirm(`¿Está seguro de eliminar la medición de cloro de "${c.puntoMuestreo}" a las ${c.hora.substring(0, 5)}?`);
+    if (confirmado) {
+        try {
+            await apiDelete(`/api/control-cloro/${id}`);
+            await loadServerData();
+            showToast('Medición de cloro residual eliminada correctamente.', 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+            console.error(err);
+        }
+    }
+}
+
+async function deleteHigiene(id) {
+    const h = registrosHigiene.find(item => item.id === id);
+    if (!h) return;
+
+    const confirmado = await customConfirm(`¿Está seguro de eliminar la verificación de higiene POES de "${h.nombreItem}"?`);
+    if (confirmado) {
+        try {
+            await apiDelete(`/api/registro-higiene-poes/${id}`);
+            await loadServerData();
+            showToast('Bitácora de Higiene POES eliminada correctamente.', 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+            console.error(err);
+        }
+    }
+}
+
+async function deleteVisita(id) {
+    const v = visitas.find(item => item.id === id);
+    if (!v) return;
+
+    const confirmado = await customConfirm(`¿Está seguro de eliminar el registro de visita de "${v.visitanteNombre}"?`);
+    if (confirmado) {
+        try {
+            await apiDelete(`/api/visitas/${id}`);
+            await loadServerData();
+            showToast('Registro de visita eliminado correctamente.', 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+            console.error(err);
+        }
+    }
+}
+
+async function deleteCapacitacion(id) {
+    const c = capacitaciones.find(item => item.id === id);
+    if (!c) return;
+
+    const confirmado = await customConfirm(`¿Está seguro de eliminar la capacitación sobre "${c.tema}" del expositor "${c.ponente}"?`);
+    if (confirmado) {
+        try {
+            await apiDelete(`/api/capacitaciones/${id}`);
+            await loadServerData();
+            showToast('Capacitación eliminada correctamente.', 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+            console.error(err);
+        }
+    }
 }
 

@@ -224,6 +224,97 @@ async function initDb() {
             )
         `);
 
+        // 17. Despacho y Salida de Producto Terminado (Kardex - CD-BPM-CPT-002 y CPT-001)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS despacho_producto (
+                id VARCHAR(50) PRIMARY KEY,
+                fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                lote_codigo VARCHAR(50) NOT NULL,
+                cliente VARCHAR(150) NOT NULL,
+                guia_remision VARCHAR(50) NOT NULL,
+                cantidad_carcasas INTEGER NOT NULL CHECK (cantidad_carcasas > 0),
+                peso_total NUMERIC(10, 2) NOT NULL CHECK (peso_total > 0.00),
+                temperatura_carne NUMERIC(6, 2) NOT NULL,
+                observaciones TEXT,
+                responsable VARCHAR(100) NOT NULL
+            )
+        `);
+
+        // 18. Control de Transporte de Despacho (CD-BPM-CPT-003)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS transporte_despacho (
+                id VARCHAR(50) PRIMARY KEY,
+                despacho_id VARCHAR(50) REFERENCES despacho_producto(id) ON DELETE CASCADE,
+                placa_vehiculo VARCHAR(20) NOT NULL,
+                conductor VARCHAR(100) NOT NULL,
+                licencia VARCHAR(50) NOT NULL,
+                higiene_furgon VARCHAR(20) DEFAULT 'Conforme',
+                temperatura_furgon NUMERIC(6, 2) NOT NULL,
+                hermeticidad BOOLEAN DEFAULT TRUE,
+                observaciones TEXT
+            )
+        `);
+
+        // 19. Control de Cloro Residual en Agua Potable (CD-POES-CA-001)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS control_cloro (
+                id VARCHAR(50) PRIMARY KEY,
+                fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                hora TIME NOT NULL,
+                punto_muestreo VARCHAR(100) NOT NULL,
+                cloro_residual NUMERIC(6, 2) NOT NULL,
+                desviacion BOOLEAN DEFAULT FALSE,
+                observaciones TEXT,
+                responsable VARCHAR(100) NOT NULL
+            )
+        `);
+
+        // 20. Registro de Higiene y Saneamiento POES (CD-POES-LDISHV-001 y LDEU-002)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS registro_higiene_poes (
+                id VARCHAR(50) PRIMARY KEY,
+                fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                tipo_item VARCHAR(30) NOT NULL,
+                nombre_item VARCHAR(100) NOT NULL,
+                frecuencia VARCHAR(20) NOT NULL,
+                limpieza_estado VARCHAR(20) DEFAULT 'Conforme',
+                desinfectante VARCHAR(50) NOT NULL,
+                concentracion_ppm INTEGER NOT NULL,
+                observaciones TEXT,
+                responsable VARCHAR(100) NOT NULL
+            )
+        `);
+
+        // 21. Registro de Control de Accesos y Visitas (CD-BPM-CP-002)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS registro_visitas (
+                id VARCHAR(50) PRIMARY KEY,
+                fecha DATE DEFAULT CURRENT_DATE,
+                visitante_nombre VARCHAR(150) NOT NULL,
+                visitante_dni VARCHAR(15) NOT NULL,
+                institucion VARCHAR(100) NOT NULL,
+                hora_ingreso TIME NOT NULL,
+                hora_caliente TIME, -- hora de salida
+                sintomas_salud BOOLEAN DEFAULT FALSE,
+                epp_entregado VARCHAR(150) NOT NULL,
+                responsable VARCHAR(100) NOT NULL
+            )
+        `);
+
+        // 22. Registro de Capacitaciones de Personal (CD-BPM-CP-001)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS registro_capacitaciones (
+                id VARCHAR(50) PRIMARY KEY,
+                fecha DATE DEFAULT CURRENT_DATE,
+                tema VARCHAR(200) NOT NULL,
+                ponente VARCHAR(100) NOT NULL,
+                duracion_horas NUMERIC(4, 1) NOT NULL,
+                asistentes_ids TEXT NOT NULL,
+                observaciones TEXT
+            )
+        `);
+
+
         // POBLAR DATOS DE PRUEBA SI LAS TABLAS ESTÁN VACÍAS
         
         // Roles
@@ -395,6 +486,75 @@ async function initDb() {
             `);
         }
 
+        // 17. Despachos y Transportes Semilla
+        const rDespachos = await client.query('SELECT COUNT(*) FROM despacho_producto');
+        if (parseInt(rDespachos.rows[0].count) === 0) {
+            const hoy = new Date();
+            const ayer = new Date();
+            ayer.setDate(hoy.getDate() - 1);
+
+            await client.query(`
+                INSERT INTO despacho_producto (id, fecha, lote_codigo, cliente, guia_remision, cantidad_carcasas, peso_total, temperatura_carne, observaciones, responsable) VALUES 
+                ('desp-1', $1, 'LBVA159', 'Carnicería Doris S.A.C.', 'GR-001-4820', 15, 3450.50, 4.20, 'Despacho de vacunos históricos en óptimas condiciones de frío.', 'Carlos Ruiz Rojas'),
+                ('desp-2', $2, 'LBPO160', 'Supermercados Metro', 'GR-001-4821', 10, 850.20, 3.80, 'Despacho regular de porcinos.', 'Carlos Ruiz Rojas')
+            `, [ayer, hoy]);
+
+            await client.query(`
+                INSERT INTO transporte_despacho (id, despacho_id, placa_vehiculo, conductor, licencia, higiene_furgon, temperatura_furgon, hermeticidad, observaciones) VALUES 
+                ('trans-1', 'desp-1', 'A3F-820', 'Pedro Mendoza', 'Q12345678', 'Conforme', 3.20, true, 'Vehículo limpio y desinfectado antes de la carga.'),
+                ('trans-2', 'desp-2', 'F4G-910', 'Manuel Silva', 'P87654321', 'Conforme', 2.90, true, 'Equipado con refrigeración operativa.')
+            `);
+        }
+
+        // 18. Control de Cloro Semilla
+        const rCloro = await client.query('SELECT COUNT(*) FROM control_cloro');
+        if (parseInt(rCloro.rows[0].count) === 0) {
+            const hoy = new Date();
+            const ayer = new Date();
+            ayer.setDate(hoy.getDate() - 1);
+            
+            await client.query(`
+                INSERT INTO control_cloro (id, fecha, hora, punto_muestreo, cloro_residual, desviacion, observaciones, responsable) VALUES 
+                ('cloro-1', $1, '08:30:00', 'Sala de Faenado - Punto 01', 0.80, false, 'Cloración en rango óptimo.', 'Carlos Ruiz Rojas'),
+                ('cloro-2', $1, '16:00:00', 'Servicios Higiénicos Personal', 0.85, false, 'Medición de la tarde.', 'Carlos Ruiz Rojas'),
+                ('cloro-3', $2, '09:15:00', 'Lavado de Manos - Ingreso', 0.75, false, 'Dosificación estable.', 'Carlos Ruiz Rojas')
+            `, [ayer, hoy]);
+        }
+
+        // 19. Registro POES Semilla
+        const rPoes = await client.query('SELECT COUNT(*) FROM registro_higiene_poes');
+        if (parseInt(rPoes.rows[0].count) === 0) {
+            const hoy = new Date();
+            await client.query(`
+                INSERT INTO registro_higiene_poes (id, fecha, tipo_item, nombre_item, frecuencia, limpieza_estado, desinfectante, concentracion_ppm, observaciones, responsable) VALUES 
+                ('poes-1', $1, 'Equipo', 'Sierra de Pecho - Vacunos', 'Diaria', 'Conforme', 'Hipoclorito de Sodio', 200, 'Limpieza profunda al final de la jornada.', 'Carlos Ruiz Rojas'),
+                ('poes-2', $1, 'Instalacion', 'Pisos Sala de Oreado', 'Diaria', 'Conforme', 'Hipoclorito de Sodio', 200, 'Lavado con detergente industrial y desinfección posterior.', 'Carlos Ruiz Rojas'),
+                ('poes-3', $1, 'Utensilio', 'Cuchillos de Degüello', 'Diaria', 'Conforme', 'Hipoclorito de Sodio', 100, 'Desinfección por inmersión.', 'Carlos Ruiz Rojas')
+            `, [hoy]);
+        }
+
+        // 20. Visitas Semilla
+        const rVisitas = await client.query('SELECT COUNT(*) FROM registro_visitas');
+        if (parseInt(rVisitas.rows[0].count) === 0) {
+            const ayer = new Date();
+            await client.query(`
+                INSERT INTO registro_visitas (id, fecha, visitante_nombre, visitante_dni, institucion, hora_ingreso, hora_caliente, sintomas_salud, epp_entregado, responsable) VALUES 
+                ('visita-1', $1, 'Sofía Lara Ruiz', '45678912', 'SENASA (Inspección)', '09:00:00', '11:30:00', false, 'Cofia, mascarilla, guardapolvo, botas', 'Carlos Ruiz Rojas'),
+                ('visita-2', $1, 'Luis Vega Montes', '78945612', 'Mantenimiento de Balanzas', '14:00:00', '15:45:00', false, 'Cofia, casco, botas de seguridad', 'Carlos Ruiz Rojas')
+            `, [ayer]);
+        }
+
+        // 21. Capacitaciones Semilla
+        const rCapacitaciones = await client.query('SELECT COUNT(*) FROM registro_capacitaciones');
+        if (parseInt(rCapacitaciones.rows[0].count) === 0) {
+            const haceTresDias = new Date();
+            haceTresDias.setDate(haceTresDias.getDate() - 3);
+            await client.query(`
+                INSERT INTO registro_capacitaciones (id, fecha, tema, ponente, duracion_horas, asistentes_ids, observaciones) VALUES 
+                ('cap-1', $1, 'Buenas Prácticas de Manufactura en Faenado e Higiene Personal', 'Dra. Elena Ramos (Consultora)', 2.0, 't-1,t-2', 'Capacitación mensual obligatoria teórica y práctica.')
+            `, [haceTresDias]);
+        }
+
         await client.query('COMMIT');
         console.log('Base de datos inicializada y migrada correctamente.');
     } catch (e) {
@@ -473,6 +633,25 @@ app.get('/api/data', async (req, res) => {
         const temperaturas = await pool.query('SELECT id, camara_id as "camaraId", CAST(temperatura AS double precision) as temperatura, fecha, desviacion FROM temperatura_monitoreo ORDER BY fecha DESC LIMIT 50');
         const productosNoConformes = await pool.query('SELECT id, origen, detalles, lote_codigo as "loteCodigo", accion_correctiva as "accionCorrectiva", fecha, responsable, estado FROM productos_no_conformes ORDER BY fecha DESC');
 
+        // Nuevos Datasets de la Fase 15
+        const despachosRaw = await pool.query('SELECT id, fecha, lote_codigo as "loteCodigo", cliente, guia_remision as "guiaRemision", cantidad_carcasas as "cantidadCarcasas", CAST(peso_total AS double precision) as "pesoTotal", CAST(temperatura_carne AS double precision) as "temperaturaCarne", observaciones, responsable FROM despacho_producto ORDER BY fecha DESC');
+        const despachos = [];
+        for (const d of despachosRaw.rows) {
+            const t = await pool.query('SELECT id, placa_vehiculo as "placaVehiculo", conductor, licencia, higiene_furgon as "higieneFurgon", CAST(temperatura_furgon AS double precision) as "temperaturaFurgon", hermeticidad, observaciones FROM transporte_despacho WHERE despacho_id = $1', [d.id]);
+            despachos.push({
+                ...d,
+                transporte: t.rows[0] || null
+            });
+        }
+
+        const controlCloro = await pool.query('SELECT id, fecha, hora, punto_muestreo as "puntoMuestreo", CAST(cloro_residual AS double precision) as "cloroResidual", desviacion, observaciones, responsable FROM control_cloro ORDER BY fecha DESC, hora DESC');
+        
+        const registrosHigiene = await pool.query('SELECT id, fecha, tipo_item as "tipoItem", nombre_item as "nombreItem", frecuencia, limpieza_estado as "limpiezaEstado", desinfectante, concentracion_ppm as "concentracionPpm", observaciones, responsable FROM registro_higiene_poes ORDER BY fecha DESC');
+        
+        const visitas = await pool.query('SELECT id, fecha, visitante_nombre as "visitanteNombre", visitante_dni as "visitanteDni", institucion, hora_ingreso as "horaIngreso", hora_caliente as "horaSalida", sintomas_salud as "sintomasSalid", epp_entregado as "eppEntregado", responsable FROM registro_visitas ORDER BY fecha DESC, hora_ingreso DESC');
+        
+        const capacitaciones = await pool.query('SELECT id, fecha, tema, ponente, CAST(duracion_horas AS double precision) as "duracionHoras", asistentes_ids as "asistentesIds", observaciones FROM registro_capacitaciones ORDER BY fecha DESC');
+
         res.json({
             roles: roles.rows,
             trabajadores: trabajadores.rows,
@@ -505,7 +684,12 @@ app.get('/api/data', async (req, res) => {
             pesajes: pesajes.rows,
             camaras: camaras.rows,
             temperaturas: temperaturas.rows,
-            productosNoConformes: productosNoConformes.rows
+            productosNoConformes: productosNoConformes.rows,
+            despachos,
+            controlCloro: controlCloro.rows,
+            registrosHigiene: registrosHigiene.rows,
+            visitas: visitas.rows,
+            capacitaciones: capacitaciones.rows
         });
     } catch (e) {
         console.error('Error al recuperar datos:', e);
@@ -1123,6 +1307,251 @@ app.delete('/api/productos-no-conformes/:id', async (req, res) => {
         res.status(500).json({ error: e.message });
     }
 });
+
+// --- DESPACHOS Y TRANSPORTES ---
+app.post('/api/despachos', async (req, res) => {
+    const { nuevoDespacho, nuevoTransporte } = req.body;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        await client.query(
+            'INSERT INTO despacho_producto (id, fecha, lote_codigo, cliente, guia_remision, cantidad_carcasas, peso_total, temperatura_carne, observaciones, responsable) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+            [nuevoDespacho.id, nuevoDespacho.fecha, nuevoDespacho.loteCodigo, nuevoDespacho.cliente, nuevoDespacho.guiaRemision, nuevoDespacho.cantidadCarcasas, nuevoDespacho.pesoTotal, nuevoDespacho.temperaturaCarne, nuevoDespacho.observaciones, nuevoDespacho.responsable]
+        );
+
+        if (nuevoTransporte) {
+            await client.query(
+                'INSERT INTO transporte_despacho (id, despacho_id, placa_vehiculo, conductor, licencia, higiene_furgon, temperatura_furgon, hermeticidad, observaciones) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+                [nuevoTransporte.id, nuevoDespacho.id, nuevoTransporte.placaVehiculo, nuevoTransporte.conductor, nuevoTransporte.licencia, nuevoTransporte.higieneFurgon, nuevoTransporte.temperaturaFurgon, nuevoTransporte.hermeticidad, nuevoTransporte.observaciones]
+            );
+        }
+
+        await client.query('COMMIT');
+        res.status(201).json({ success: true });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
+app.put('/api/despachos/:id', async (req, res) => {
+    const { id } = req.params;
+    const { nuevoDespacho, nuevoTransporte } = req.body;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        await client.query(
+            'UPDATE despacho_producto SET fecha = $1, lote_codigo = $2, cliente = $3, guia_remision = $4, cantidad_carcasas = $5, peso_total = $6, temperatura_carne = $7, observaciones = $8, responsable = $9 WHERE id = $10',
+            [nuevoDespacho.fecha, nuevoDespacho.loteCodigo, nuevoDespacho.cliente, nuevoDespacho.guiaRemision, nuevoDespacho.cantidadCarcasas, nuevoDespacho.pesoTotal, nuevoDespacho.temperaturaCarne, nuevoDespacho.observaciones, nuevoDespacho.responsable, id]
+        );
+
+        if (nuevoTransporte) {
+            // Verificar si ya existe transporte para este despacho
+            const rTrans = await client.query('SELECT id FROM transporte_despacho WHERE despacho_id = $1', [id]);
+            if (rTrans.rows.length > 0) {
+                await client.query(
+                    'UPDATE transporte_despacho SET placa_vehiculo = $1, conductor = $2, licencia = $3, higiene_furgon = $4, temperatura_furgon = $5, hermeticidad = $6, observaciones = $7 WHERE despacho_id = $8',
+                    [nuevoTransporte.placaVehiculo, nuevoTransporte.conductor, nuevoTransporte.licencia, nuevoTransporte.higieneFurgon, nuevoTransporte.temperaturaFurgon, nuevoTransporte.hermeticidad, nuevoTransporte.observaciones, id]
+                );
+            } else {
+                await client.query(
+                    'INSERT INTO transporte_despacho (id, despacho_id, placa_vehiculo, conductor, licencia, higiene_furgon, temperatura_furgon, hermeticidad, observaciones) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+                    [nuevoTransporte.id || 'trans-' + Date.now(), id, nuevoTransporte.placaVehiculo, nuevoTransporte.conductor, nuevoTransporte.licencia, nuevoTransporte.higieneFurgon, nuevoTransporte.temperaturaFurgon, nuevoTransporte.hermeticidad, nuevoTransporte.observaciones]
+                );
+            }
+        }
+
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
+app.delete('/api/despachos/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM despacho_producto WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- CONTROL DE CLORO ---
+app.post('/api/control-cloro', async (req, res) => {
+    const { id, fecha, hora, punto_muestreo, cloro_residual, desviacion, observaciones, responsable } = req.body;
+    try {
+        await pool.query(
+            'INSERT INTO control_cloro (id, fecha, hora, punto_muestreo, cloro_residual, desviacion, observaciones, responsable) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+            [id, fecha, hora, punto_muestreo, cloro_residual, desviacion, observaciones, responsable]
+        );
+        res.status(201).json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.put('/api/control-cloro/:id', async (req, res) => {
+    const { id } = req.params;
+    const { fecha, hora, punto_muestreo, cloro_residual, desviacion, observaciones, responsable } = req.body;
+    try {
+        await pool.query(
+            'UPDATE control_cloro SET fecha = $1, hora = $2, punto_muestreo = $3, cloro_residual = $4, desviacion = $5, observaciones = $6, responsable = $7 WHERE id = $8',
+            [fecha, hora, punto_muestreo, cloro_residual, desviacion, observaciones, responsable, id]
+        );
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.delete('/api/control-cloro/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM control_cloro WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- REGISTRO HIGIENE POES ---
+app.post('/api/registro-higiene-poes', async (req, res) => {
+    const { id, fecha, tipo_item, nombre_item, frecuencia, limpieza_estado, desinfectante, concentracion_ppm, observaciones, responsable } = req.body;
+    try {
+        await pool.query(
+            'INSERT INTO registro_higiene_poes (id, fecha, tipo_item, nombre_item, frecuencia, limpieza_estado, desinfectante, concentracion_ppm, observaciones, responsable) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+            [id, fecha, tipo_item, nombre_item, frecuencia, limpieza_estado, desinfectante, concentracion_ppm, observaciones, responsable]
+        );
+        res.status(201).json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.put('/api/registro-higiene-poes/:id', async (req, res) => {
+    const { id } = req.params;
+    const { fecha, tipo_item, nombre_item, frecuencia, limpieza_estado, desinfectante, concentracion_ppm, observaciones, responsable } = req.body;
+    try {
+        await pool.query(
+            'UPDATE registro_higiene_poes SET fecha = $1, tipo_item = $2, nombre_item = $3, frecuencia = $4, limpieza_estado = $5, desinfectante = $6, concentracion_ppm = $7, observaciones = $8, responsable = $9 WHERE id = $10',
+            [fecha, tipo_item, nombre_item, frecuencia, limpieza_estado, desinfectante, concentracion_ppm, observaciones, responsable, id]
+        );
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.delete('/api/registro-higiene-poes/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM registro_higiene_poes WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- REGISTRO VISITAS ---
+app.post('/api/visitas', async (req, res) => {
+    const { id, fecha, visitante_nombre, visitante_dni, institucion, hora_ingreso, hora_caliente, sintomas_salud, epp_entregado, responsable } = req.body;
+    try {
+        await pool.query(
+            'INSERT INTO registro_visitas (id, fecha, visitante_nombre, visitante_dni, institucion, hora_ingreso, hora_caliente, sintomas_salud, epp_entregado, responsable) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+            [id, fecha, visitante_nombre, visitante_dni, institucion, hora_ingreso, hora_caliente, sintomas_salud, epp_entregado, responsable]
+        );
+        res.status(201).json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.put('/api/visitas/:id', async (req, res) => {
+    const { id } = req.params;
+    const { fecha, visitante_nombre, visitante_dni, institucion, hora_ingreso, hora_caliente, sintomas_salud, epp_entregado, responsable } = req.body;
+    try {
+        await pool.query(
+            'UPDATE registro_visitas SET fecha = $1, visitante_nombre = $2, visitante_dni = $3, institucion = $4, hora_ingreso = $5, hora_caliente = $6, sintomas_salud = $7, epp_entregado = $8, responsable = $9 WHERE id = $10',
+            [fecha, visitante_nombre, visitante_dni, institucion, hora_ingreso, hora_caliente, sintomas_salud, epp_entregado, responsable, id]
+        );
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.delete('/api/visitas/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM registro_visitas WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- CAPACITACIONES ---
+app.post('/api/capacitaciones', async (req, res) => {
+    const { id, fecha, tema, ponente, duracion_horas, asistentes_ids, observaciones } = req.body;
+    try {
+        await pool.query(
+            'INSERT INTO registro_capacitaciones (id, fecha, tema, ponente, duracion_horas, asistentes_ids, observaciones) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+            [id, fecha, tema, ponente, duracion_horas, asistentes_ids, observaciones]
+        );
+        res.status(201).json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.put('/api/capacitaciones/:id', async (req, res) => {
+    const { id } = req.params;
+    const { fecha, tema, ponente, duracion_horas, asistentes_ids, observaciones } = req.body;
+    try {
+        await pool.query(
+            'UPDATE registro_capacitaciones SET fecha = $1, tema = $2, ponente = $3, duracion_horas = $4, asistentes_ids = $5, observaciones = $6 WHERE id = $7',
+            [fecha, tema, ponente, duracion_horas, asistentes_ids, observaciones, id]
+        );
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.delete('/api/capacitaciones/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM registro_capacitaciones WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 
 
 // Levantar servidor e inicializar base de datos

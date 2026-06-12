@@ -72,6 +72,17 @@
                         </a>
                     </li>
                     <li class="has-submenu">
+                        <a class="nav-item" onclick="switchTab('despachos')">
+                            <i class="fa-solid fa-dolly"></i>
+                            <span>Despacho y Salidas</span>
+                            <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li><a class="submenu-item despachos-nav-item active" onclick="switchTab('despachos'); switchDespachosSubTab('salidas'); event.stopPropagation();"><span>Control Despachos</span></a></li>
+                            <li><a class="submenu-item despachos-nav-item" onclick="switchTab('despachos'); switchDespachosSubTab('transportes'); event.stopPropagation();"><span>Control Transportes</span></a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
                         <a class="nav-item" onclick="switchTab('calidad')">
                             <i class="fa-solid fa-shield-halved"></i>
                             <span>Calidad (HACCP)</span>
@@ -80,6 +91,19 @@
                         <ul class="submenu">
                             <li><a class="submenu-item calidad-nav-item active" onclick="switchTab('calidad'); switchCalidadSubTab('camaras'); event.stopPropagation();"><span>Cámaras Frías</span></a></li>
                             <li><a class="submenu-item calidad-nav-item" onclick="switchTab('calidad'); switchCalidadSubTab('no-conformes'); event.stopPropagation();"><span>No Conformidades</span></a></li>
+                            <li><a class="submenu-item calidad-nav-item" onclick="switchTab('calidad'); switchCalidadSubTab('cloro'); event.stopPropagation();"><span>Control de Agua</span></a></li>
+                            <li><a class="submenu-item calidad-nav-item" onclick="switchTab('calidad'); switchCalidadSubTab('higiene-poes'); event.stopPropagation();"><span>Higiene (POES)</span></a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a class="nav-item" onclick="switchTab('visitas')">
+                            <i class="fa-solid fa-user-shield"></i>
+                            <span>Seguridad y BPM</span>
+                            <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li><a class="submenu-item visitas-nav-item active" onclick="switchTab('visitas'); switchVisitasSubTab('control-visitas'); event.stopPropagation();"><span>Control Visitas</span></a></li>
+                            <li><a class="submenu-item visitas-nav-item" onclick="switchTab('visitas'); switchVisitasSubTab('capacitaciones'); event.stopPropagation();"><span>Capacitaciones</span></a></li>
                         </ul>
                     </li>
                     <li class="has-submenu">
@@ -151,8 +175,19 @@
                         <button id="header-action-trabajadores" class="btn-header-action btn-primary" onclick="iniciarNuevoTrabajador()" style="display: none;"><i class="fa-solid fa-plus"></i> Nuevo Trabajador</button>
                         <button id="header-action-recepcion" class="btn-header-action btn-primary" onclick="iniciarNuevoIngreso()" style="display: none; background: linear-gradient(135deg, var(--color-ops), #047857); box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);"><i class="fa-solid fa-plus"></i> Nuevo Lote</button>
                         
+                        <!-- Acciones de Despachos -->
+                        <button id="header-action-despacho" class="btn-header-action btn-primary" onclick="iniciarNuevoDespacho()" style="display: none; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);"><i class="fa-solid fa-plus"></i> Registrar Despacho</button>
+
                         <!-- Acciones de Caja -->
                         <button id="header-action-caja-egreso" class="btn-header-action btn-primary" onclick="iniciarNuevoMovimiento()" style="display: none; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);"><i class="fa-solid fa-plus"></i> Registrar Egreso</button>
+
+                        <!-- Acciones de Calidad adicionales -->
+                        <button id="header-action-cloro" class="btn-header-action btn-primary" onclick="iniciarNuevoCloro()" style="display: none; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);"><i class="fa-solid fa-plus"></i> Registrar Cloro</button>
+                        <button id="header-action-higiene" class="btn-header-action btn-primary" onclick="iniciarNuevoHigiene()" style="display: none; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);"><i class="fa-solid fa-plus"></i> Registrar Higiene</button>
+
+                        <!-- Acciones de Visitas y Capacitaciones -->
+                        <button id="header-action-visita" class="btn-header-action btn-primary" onclick="iniciarNuevaVisita()" style="display: none; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);"><i class="fa-solid fa-plus"></i> Registrar Visita</button>
+                        <button id="header-action-capacitacion" class="btn-header-action btn-primary" onclick="iniciarNuevaCapacitacion()" style="display: none; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);"><i class="fa-solid fa-plus"></i> Registrar Capacitación</button>
 
                         <!-- Acciones de Configuración -->
                         <button id="header-action-config-animales" class="btn-header-action btn-primary" onclick="iniciarNuevaEspecie()" style="display: none; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);"><i class="fa-solid fa-plus"></i> Nueva Especie</button>
@@ -501,6 +536,75 @@
                                     </tr>
                                 </thead>
                                 <tbody id="table-pnc-body">
+                                    <!-- Cargado dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subpestaña 3: Control de Cloro Residual -->
+                <div id="calidad-subtab-cloro" class="calidad-subtab-section">
+                    <div class="table-container" style="margin-bottom: 0; display: flex; flex-direction: column;">
+                        <div class="table-header-row" style="padding: 16px 24px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                            <h3 class="card-title" style="margin-bottom: 0; font-size: 14px;">
+                                <i class="fa-solid fa-faucet-drip" style="color: var(--color-client); margin-right: 8px;"></i>
+                                Registro Diario de Cloro Residual en Agua Potable (CD-POES-CA-001)
+                            </h3>
+                            <button class="btn-primary" onclick="iniciarNuevoCloro()" style="padding: 8px 14px; font-size: 12px; display: flex; align-items: center; gap: 6px; background: var(--color-client);">
+                                <i class="fa-solid fa-plus"></i> Registrar Medición
+                            </button>
+                        </div>
+                        <div class="table-responsive-wrapper" style="flex: 1; min-height: 400px;">
+                            <table id="table-cloro">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Hora</th>
+                                        <th>Punto de Muestreo</th>
+                                        <th>Cloro Residual (ppm)</th>
+                                        <th>Estado</th>
+                                        <th>Observaciones</th>
+                                        <th>Responsable</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-cloro-body">
+                                    <!-- Cargado dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subpestaña 4: Higiene y POES de Equipos/Instalaciones -->
+                <div id="calidad-subtab-higiene-poes" class="calidad-subtab-section">
+                    <div class="table-container" style="margin-bottom: 0; display: flex; flex-direction: column;">
+                        <div class="table-header-row" style="padding: 16px 24px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                            <h3 class="card-title" style="margin-bottom: 0; font-size: 14px;">
+                                <i class="fa-solid fa-soap" style="color: var(--color-ops); margin-right: 8px;"></i>
+                                Bitácora de Higiene y Saneamiento POES (Formatos LDISHV-001 y LDEU-002)
+                            </h3>
+                            <button class="btn-primary" onclick="iniciarNuevoHigiene()" style="padding: 8px 14px; font-size: 12px; display: flex; align-items: center; gap: 6px; background: var(--color-ops);">
+                                <i class="fa-solid fa-plus"></i> Registrar Higiene
+                            </button>
+                        </div>
+                        <div class="table-responsive-wrapper" style="flex: 1; min-height: 400px;">
+                            <table id="table-higiene">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha y Hora</th>
+                                        <th>Tipo de Elemento</th>
+                                        <th>Nombre del Ítem</th>
+                                        <th>Frecuencia</th>
+                                        <th>Limpieza / Estado</th>
+                                        <th>Desinfectante Usado</th>
+                                        <th>Concentración (ppm)</th>
+                                        <th>Responsable</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-higiene-body">
                                     <!-- Cargado dinámicamente -->
                                 </tbody>
                             </table>
@@ -910,6 +1014,181 @@
                     </div>
                 </div>
 
+            </section>
+
+            <!-- SECCIÓN 6: DESPACHO Y SALIDAS (PRODUCTO TERMINADO) -->
+            <section id="tab-despachos" class="content-section">
+                <div class="config-layout">
+                    <!-- Menú Interno de Despachos -->
+                    <aside class="config-sidebar">
+                        <ul class="config-nav-menu">
+                            <li>
+                                <a class="despachos-nav-item active" onclick="switchDespachosSubTab('salidas')">
+                                    <i class="fa-solid fa-dolly"></i>
+                                    <span>Control Despachos</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="despachos-nav-item" onclick="switchDespachosSubTab('transportes')">
+                                    <i class="fa-solid fa-truck"></i>
+                                    <span>Control Transportes</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </aside>
+                    
+                    <!-- Panel de Despachos Activo -->
+                    <div class="config-panel-content">
+                        <!-- SUB-SECCIÓN: SALIDAS / KARDEX -->
+                        <div id="despachos-subtab-salidas" class="despachos-subtab-section active">
+                            <div class="table-container" style="border-radius: 12px; padding: 20px; border-top: 4px solid var(--color-client); margin-top: 0;">
+                                <div class="table-header-row" style="margin-bottom: 16px;">
+                                    <h3 class="card-title" style="margin-bottom: 0; font-size: 15px;">
+                                        <i class="fa-solid fa-file-export" style="color: var(--color-client);"></i>
+                                        Kardex de Salida de Producto Terminado (CD-BPM-CPT-002)
+                                    </h3>
+                                </div>
+                                <div class="table-responsive-wrapper">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha y Hora</th>
+                                                <th>Lote Origen</th>
+                                                <th>Cliente / Destino</th>
+                                                <th>N° Guía Remisión</th>
+                                                <th>Carcasas</th>
+                                                <th>Peso Total (kg)</th>
+                                                <th>Temp. Carne</th>
+                                                <th>Responsable</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="table-despachos-body">
+                                            <!-- Cargado dinámicamente -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SUB-SECCIÓN: TRANSPORTES -->
+                        <div id="despachos-subtab-transportes" class="despachos-subtab-section">
+                            <div class="table-container" style="border-radius: 12px; padding: 20px; border-top: 4px solid var(--color-client); margin-top: 0;">
+                                <div class="table-header-row" style="margin-bottom: 16px;">
+                                    <h3 class="card-title" style="margin-bottom: 0; font-size: 15px;">
+                                        <i class="fa-solid fa-truck-ramp-box" style="color: var(--color-client);"></i>
+                                        Control de Higiene y Temperatura de Vehículos (CD-BPM-CPT-003)
+                                    </h3>
+                                </div>
+                                <div class="table-responsive-wrapper">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Lote Relacionado</th>
+                                                <th>Placa Vehículo</th>
+                                                <th>Conductor / Licencia</th>
+                                                <th>Higiene Furgón</th>
+                                                <th>Temp. Furgón</th>
+                                                <th>Hermeticidad</th>
+                                                <th>Observaciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="table-transportes-body">
+                                            <!-- Cargado dinámicamente -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 7: SEGURIDAD Y BPM (VISITAS / CAPACITACIONES) -->
+            <section id="tab-visitas" class="content-section">
+                <div class="config-layout">
+                    <!-- Menú Interno de Seguridad y BPM -->
+                    <aside class="config-sidebar">
+                        <ul class="config-nav-menu">
+                            <li>
+                                <a class="visitas-nav-item active" onclick="switchVisitasSubTab('control-visitas')">
+                                    <i class="fa-solid fa-user-shield"></i>
+                                    <span>Control Visitas</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="visitas-nav-item" onclick="switchVisitasSubTab('capacitaciones')">
+                                    <i class="fa-solid fa-chalkboard-user"></i>
+                                    <span>Capacitaciones</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </aside>
+                    
+                    <!-- Panel de Seguridad Activo -->
+                    <div class="config-panel-content">
+                        <!-- SUB-SECCIÓN: VISITAS -->
+                        <div id="visitas-subtab-control-visitas" class="visitas-subtab-section active">
+                            <div class="table-container" style="border-radius: 12px; padding: 20px; border-top: 4px solid var(--color-client); margin-top: 0;">
+                                <div class="table-header-row" style="margin-bottom: 16px;">
+                                    <h3 class="card-title" style="margin-bottom: 0; font-size: 15px;">
+                                        <i class="fa-solid fa-id-card-clip" style="color: var(--color-client);"></i>
+                                        Registro de Entradas y Salidas de Visitas (CD-BPM-CP-002)
+                                    </h3>
+                                </div>
+                                <div class="table-responsive-wrapper">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Visitante</th>
+                                                <th>RUC / DNI / Entidad</th>
+                                                <th>Ingreso</th>
+                                                <th>Salida</th>
+                                                <th>Sintomatología</th>
+                                                <th>EPP Entregado</th>
+                                                <th>Autoriza</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="table-visitas-body">
+                                            <!-- Cargado dinámicamente -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SUB-SECCIÓN: CAPACITACIONES -->
+                        <div id="visitas-subtab-capacitaciones" class="visitas-subtab-section">
+                            <div class="table-container" style="border-radius: 12px; padding: 20px; border-top: 4px solid var(--color-client); margin-top: 0;">
+                                <div class="table-header-row" style="margin-bottom: 16px;">
+                                    <h3 class="card-title" style="margin-bottom: 0; font-size: 15px;">
+                                        <i class="fa-solid fa-graduation-cap" style="color: var(--color-client);"></i>
+                                        Control de Capacitaciones de Personal (CD-BPM-CP-001)
+                                    </h3>
+                                </div>
+                                <div class="table-responsive-wrapper">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Tema de Capacitación</th>
+                                                <th>Ponente / Expositor</th>
+                                                <th>Duración (Horas)</th>
+                                                <th>Asistentes (N°)</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="table-capacitaciones-body">
+                                            <!-- Cargado dinámicamente -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
         </main>
@@ -1634,6 +1913,374 @@
         </div>
     </div>
 
+    </div>
+
+    <!-- MODAL REGISTRO/EDICIÓN DE DESPACHO Y TRANSPORTE -->
+    <div class="form-modal-overlay" id="modal-despacho">
+        <div class="form-modal-card" style="max-width: 650px;">
+            <div class="form-modal-header">
+                <h3 id="modal-despacho-title">Registrar Salida / Despacho de Lote</h3>
+                <button class="btn-close-modal" onclick="closeModal('despacho')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-despacho" onsubmit="saveDespacho(event)">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+                    <div>
+                        <h4 style="font-size: 13px; font-weight: 700; color: var(--color-client); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-file-invoice-dollar"></i> Datos de Despacho</h4>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Lote de Faenado</label>
+                            <div class="custom-select-container" id="custom-select-despacho-lote-container">
+                                <input type="hidden" id="despacho-lote-codigo" onchange="actualizarCantidadMaximaCarcasas()" required>
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('despacho-lote', event)">
+                                    <span id="custom-select-despacho-lote-text">Selecciona un lote...</span>
+                                    <i class="fa-solid fa-chevron-down arrow"></i>
+                                </div>
+                                <div class="custom-select-options" id="custom-select-despacho-lote-options">
+                                    <!-- Poblado dinámicamente -->
+                                </div>
+                            </div>
+                            <span id="lbl-max-carcasas-stock" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; display: block;"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Cliente / Destino</label>
+                            <input type="text" id="despacho-cliente" class="form-control" placeholder="Ej. Carnicería Doris" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Guía de Remisión</label>
+                            <input type="text" id="despacho-guia" class="form-control" placeholder="Ej. GR-001-00251" required>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="form-group">
+                                <label class="form-label">Carcasas</label>
+                                <input type="number" id="despacho-cantidad" class="form-control" placeholder="Cant." min="1" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Peso Total (kg)</label>
+                                <input type="number" id="despacho-peso" class="form-control" placeholder="Peso" step="0.01" min="1" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Temp. Carne (°C)</label>
+                            <input type="number" id="despacho-temp-carne" class="form-control" placeholder="Ej. 4.2" step="0.1" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 style="font-size: 13px; font-weight: 700; color: var(--color-ops); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-truck"></i> Datos de Furgón / Transporte</h4>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Placa de Vehículo</label>
+                            <input type="text" id="despacho-placa" class="form-control" placeholder="Ej. A3F-820" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Conductor</label>
+                            <input type="text" id="despacho-conductor" class="form-control" placeholder="Ej. Pedro Mendoza" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Licencia Conductor</label>
+                            <input type="text" id="despacho-licencia" class="form-control" placeholder="Ej. Q12345678" required>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="form-group">
+                                <label class="form-label">Temp. Furgón (°C)</label>
+                                <input type="number" id="despacho-temp-furgon" class="form-control" placeholder="Ej. 3.0" step="0.1" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Higiene Furgón</label>
+                                <div class="custom-select-container" id="custom-select-despacho-higiene-container">
+                                    <input type="hidden" id="despacho-higiene" value="Conforme" required>
+                                    <div class="custom-select-trigger" onclick="toggleCustomSelect('despacho-higiene', event)">
+                                        <span id="custom-select-despacho-higiene-text">Conforme</span>
+                                        <i class="fa-solid fa-chevron-down arrow"></i>
+                                    </div>
+                                    <div class="custom-select-options" id="custom-select-despacho-higiene-options">
+                                        <div class="custom-select-option selected" data-value="Conforme" onclick="selectDespachoHigieneOption('Conforme', 'Conforme', event)">Conforme</div>
+                                        <div class="custom-select-option" data-value="No Conforme" onclick="selectDespachoHigieneOption('No Conforme', 'No Conforme', event)">No Conforme</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Hermeticidad</label>
+                            <div class="custom-select-container" id="custom-select-despacho-hermeticidad-container">
+                                <input type="hidden" id="despacho-hermeticidad" value="Sí" required>
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('despacho-hermeticidad', event)">
+                                    <span id="custom-select-despacho-hermeticidad-text">Sí</span>
+                                    <i class="fa-solid fa-chevron-down arrow"></i>
+                                </div>
+                                <div class="custom-select-options" id="custom-select-despacho-hermeticidad-options">
+                                    <div class="custom-select-option selected" data-value="Sí" onclick="selectDespachoHermeticidadOption('Sí', 'Sí', event)">Sí</div>
+                                    <div class="custom-select-option" data-value="No" onclick="selectDespachoHermeticidadOption('No', 'No', event)">No</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Observaciones generales</label>
+                    <input type="text" id="despacho-obs" class="form-control" placeholder="Detalles o anotaciones del despacho...">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Responsable (Firma)</label>
+                        <input type="text" id="despacho-responsable" class="form-control" placeholder="Carlos Ruiz Rojas" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fecha y Hora de Carga</label>
+                        <input type="datetime-local" id="despacho-fecha" class="form-control" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary" style="margin-top: 24px; width: 100%; background: linear-gradient(135deg, var(--color-client), #ea580c);">
+                    <span id="btn-text-despacho">Registrar Despacho</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL REGISTRO CONTROL DE CLORO -->
+    <div class="form-modal-overlay" id="modal-cloro">
+        <div class="form-modal-card" style="max-width: 450px;">
+            <div class="form-modal-header">
+                <h3 id="modal-cloro-title">Registrar Medición de Cloro Residual</h3>
+                <button class="btn-close-modal" onclick="closeModal('cloro')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-cloro" onsubmit="saveCloro(event)">
+                <div class="form-group">
+                    <label class="form-label">Punto de Muestreo de Agua</label>
+                    <input type="text" id="cloro-punto" class="form-control" placeholder="Ej. Sala de Faenado - Punto 01" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Cloro Residual Hallado (ppm)</label>
+                    <input type="number" id="cloro-residual" class="form-control" placeholder="Límite: 0.5 a 1.5 ppm" step="0.01" min="0" max="10" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Observaciones</label>
+                    <input type="text" id="cloro-obs" class="form-control" placeholder="Ej. Dosificación normal.">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Responsable de Medición</label>
+                    <input type="text" id="cloro-responsable" class="form-control" placeholder="Carlos Ruiz Rojas" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Fecha</label>
+                        <input type="date" id="cloro-fecha" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Hora</label>
+                        <input type="time" id="cloro-hora" class="form-control" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 24px; width: 100%; background: linear-gradient(135deg, var(--color-client), #ea580c);">
+                    <span id="btn-text-cloro">Registrar Cloro</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL REGISTRO HIGIENE POES -->
+    <div class="form-modal-overlay" id="modal-higiene">
+        <div class="form-modal-card" style="max-width: 480px;">
+            <div class="form-modal-header">
+                <h3 id="modal-higiene-title">Registrar Verificación de Higiene POES</h3>
+                <button class="btn-close-modal" onclick="closeModal('higiene')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-higiene" onsubmit="saveHigiene(event)">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Tipo de Elemento</label>
+                        <div class="custom-select-container" id="custom-select-higiene-tipo-container">
+                            <input type="hidden" id="higiene-tipo" value="Equipo" required>
+                            <div class="custom-select-trigger" onclick="toggleCustomSelect('higiene-tipo', event)">
+                                <span id="custom-select-higiene-tipo-text">Equipo</span>
+                                <i class="fa-solid fa-chevron-down arrow"></i>
+                            </div>
+                            <div class="custom-select-options" id="custom-select-higiene-tipo-options">
+                                <div class="custom-select-option selected" data-value="Equipo" onclick="selectHigieneTipoOption('Equipo', 'Equipo', event)">Equipo</div>
+                                <div class="custom-select-option" data-value="Instalacion" onclick="selectHigieneTipoOption('Instalacion', 'Instalación', event)">Instalación</div>
+                                <div class="custom-select-option" data-value="Utensilio" onclick="selectHigieneTipoOption('Utensilio', 'Utensilio', event)">Utensilio</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Frecuencia</label>
+                        <div class="custom-select-container" id="custom-select-higiene-frecuencia-container">
+                            <input type="hidden" id="higiene-frecuencia" value="Diaria" required>
+                            <div class="custom-select-trigger" onclick="toggleCustomSelect('higiene-frecuencia', event)">
+                                <span id="custom-select-higiene-frecuencia-text">Diaria</span>
+                                <i class="fa-solid fa-chevron-down arrow"></i>
+                            </div>
+                            <div class="custom-select-options" id="custom-select-higiene-frecuencia-options">
+                                <div class="custom-select-option selected" data-value="Diaria" onclick="selectHigieneFrecuenciaOption('Diaria', 'Diaria', event)">Diaria</div>
+                                <div class="custom-select-option" data-value="Semanal" onclick="selectHigieneFrecuenciaOption('Semanal', 'Semanal', event)">Semanal</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nombre del Área / Equipo / Utensilio</label>
+                    <input type="text" id="higiene-nombre" class="form-control" placeholder="Ej. Sierra de Pecho / Pisos Sala Oreado" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Estado de Limpieza</label>
+                        <div class="custom-select-container" id="custom-select-higiene-estado-container">
+                            <input type="hidden" id="higiene-estado" value="Conforme" required>
+                            <div class="custom-select-trigger" onclick="toggleCustomSelect('higiene-estado', event)">
+                                <span id="custom-select-higiene-estado-text">Conforme</span>
+                                <i class="fa-solid fa-chevron-down arrow"></i>
+                            </div>
+                            <div class="custom-select-options" id="custom-select-higiene-estado-options">
+                                <div class="custom-select-option selected" data-value="Conforme" onclick="selectHigieneEstadoOption('Conforme', 'Conforme', event)">Conforme</div>
+                                <div class="custom-select-option" data-value="No Conforme" onclick="selectHigieneEstadoOption('No Conforme', 'No Conforme', event)">No Conforme</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Químico Desinfectante</label>
+                        <input type="text" id="higiene-quimico" class="form-control" placeholder="Ej. Hipoclorito de Sodio" required>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 120px 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Conc. (ppm)</label>
+                        <input type="number" id="higiene-concentracion" class="form-control" placeholder="200" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Responsable (Firma)</label>
+                        <input type="text" id="higiene-responsable" class="form-control" placeholder="Carlos Ruiz Rojas" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Observaciones</label>
+                    <input type="text" id="higiene-obs" class="form-control" placeholder="Ej. Conforme para inicio de labores.">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fecha y Hora de Verificación</label>
+                    <input type="datetime-local" id="higiene-fecha" class="form-control" required>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 24px; width: 100%; background: linear-gradient(135deg, var(--color-client), #ea580c);">
+                    <span id="btn-text-higiene">Registrar Higiene</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL REGISTRO CONTROL DE VISITAS -->
+    <div class="form-modal-overlay" id="modal-visita">
+        <div class="form-modal-card" style="max-width: 500px;">
+            <div class="form-modal-header">
+                <h3 id="modal-visita-title">Registrar Ingreso de Visita</h3>
+                <button class="btn-close-modal" onclick="closeModal('visita')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-visita" onsubmit="saveVisita(event)">
+                <div class="form-group">
+                    <label class="form-label">Nombres y Apellidos del Visitante</label>
+                    <input type="text" id="visita-nombre" class="form-control" placeholder="Ej. Sofía Lara Ruiz" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">DNI / Identidad</label>
+                        <input type="text" id="visita-dni" class="form-control" placeholder="DNI" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Empresa / Institución / Motivo</label>
+                        <input type="text" id="visita-empresa" class="form-control" placeholder="Ej. SENASA / Mantenimiento" required>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Hora Ingreso</label>
+                        <input type="time" id="visita-hora-ingreso" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Hora Salida (Opcional)</label>
+                        <input type="time" id="visita-hora-salida" class="form-control">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Declaración de Síntomas de Salud (Tos, fiebre, diarrea)</label>
+                    <div class="custom-select-container" id="custom-select-visita-sintomas-container">
+                        <input type="hidden" id="visita-sintomas" value="No" required>
+                        <div class="custom-select-trigger" onclick="toggleCustomSelect('visita-sintomas', event)">
+                            <span id="custom-select-visita-sintomas-text">No (Salud Conforme)</span>
+                            <i class="fa-solid fa-chevron-down arrow"></i>
+                        </div>
+                        <div class="custom-select-options" id="custom-select-visita-sintomas-options">
+                            <div class="custom-select-option selected" data-value="No" onclick="selectVisitaSintomasOption('No', 'No (Salud Conforme)', event)">No (Salud Conforme)</div>
+                            <div class="custom-select-option" data-value="Sí" onclick="selectVisitaSintomasOption('Sí', 'Sí (Acceso Restringido)', event)">Sí (Acceso Restringido)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">EPP Entregado (Separados por coma)</label>
+                    <input type="text" id="visita-epp" class="form-control" placeholder="Ej. Cofia, mascarilla, guardapolvo, botas" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Fecha de Visita</label>
+                        <input type="date" id="visita-fecha" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Autoriza / Responsable</label>
+                        <input type="text" id="visita-responsable" class="form-control" placeholder="Carlos Ruiz Rojas" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 24px; width: 100%; background: linear-gradient(135deg, var(--color-client), #ea580c);">
+                    <span id="btn-text-visita">Registrar Visita</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL REGISTRO CAPACITACION -->
+    <div class="form-modal-overlay" id="modal-capacitacion">
+        <div class="form-modal-card" style="max-width: 520px;">
+            <div class="form-modal-header">
+                <h3 id="modal-capacitacion-title">Registrar Capacitación de Higiene</h3>
+                <button class="btn-close-modal" onclick="closeModal('capacitacion')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-capacitacion" onsubmit="saveCapacitacion(event)">
+                <div class="form-group">
+                    <label class="form-label">Tema / Contenido de Capacitación</label>
+                    <input type="text" id="capacitacion-tema" class="form-control" placeholder="Ej. Higiene Personal y BPM en Faenado" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 120px; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Ponente / Expositor</label>
+                        <input type="text" id="capacitacion-ponente" class="form-control" placeholder="Ej. Dra. Elena Ramos (Consultora)" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Duración (Hrs)</label>
+                        <input type="number" id="capacitacion-duracion" class="form-control" placeholder="2.0" step="0.5" min="0.5" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Seleccionar Trabajadores Asistentes</label>
+                    <div id="capacitacion-asistentes-check-list" style="max-height: 140px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; background: #f8fafc; display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Cargado dinámicamente con checkboxes de trabajadores -->
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Observaciones generales</label>
+                    <input type="text" id="capacitacion-obs" class="form-control" placeholder="Ej. Evaluación teórica satisfactoria.">
+                </div>
+                <div class="form-group" style="max-width: 200px;">
+                    <label class="form-label">Fecha</label>
+                    <input type="date" id="capacitacion-fecha" class="form-control" required>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 24px; width: 100%; background: linear-gradient(135deg, var(--color-client), #ea580c);">
+                    <span id="btn-text-capacitacion">Registrar Capacitación</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Contenedor de Notificaciones Flotantes (Toasts) -->
     <div id="toast-container"></div>
 
@@ -1653,6 +2300,6 @@
     </div>
 
     <!-- Archivo JS Vainilla -->
-    <script src="app.js?v=2.1.0"></script>
+    <script src="app.js?v=2.1.5"></script>
 </body>
 </html>
