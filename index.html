@@ -6,8 +6,7 @@
     <title>Dashboard Administrador - Faenos.click</title>
     <!-- Font Awesome para Iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Archivo CSS Vainilla -->
-    <link rel="stylesheet" href="style.css?v=2.0.6">
+    <link rel="stylesheet" href="style.css?v=2.0.7">
     <!-- Favicon Dinámico (Emoji) para evitar error 404 -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐄</text></svg>">
 </head>
@@ -85,14 +84,10 @@
             <!-- Nivel 1: Topbar Superior General -->
             <div class="topbar">
                 <div class="topbar-left">
-                    <button class="topbar-btn" title="Nota de Crédito">NC</button>
-                    <button class="topbar-btn" title="Punto de Venta (POS)">POS</button>
-                    <button class="topbar-btn" title="Movimiento Extraordinario">ME</button>
-                    <button class="topbar-btn-more"><i class="fa-solid fa-ellipsis"></i></button>
-                </div>
-                
-                <div class="topbar-center">
-                    <span class="badge-env"><span class="pulse-dot"></span> PRODUCCIÓN - Conectado a BD</span>
+                    <div class="brand-badge">
+                        <span class="pulse-dot"></span>
+                        <span class="brand-badge-text">Faenos.click • Matadero Arcada de Noé</span>
+                    </div>
                 </div>
                 
                 <div class="topbar-right">
@@ -102,7 +97,7 @@
                         <div class="topbar-user-avatar">AD</div>
                         <div class="topbar-user-info">
                             <span class="topbar-username">Admin Doris</span>
-                            <span class="topbar-userrole">Control de Calidad</span>
+                            <span class="topbar-userrole">Administrador</span>
                         </div>
                     </div>
                 </div>
@@ -1280,6 +1275,6 @@
     </div>
 
     <!-- Archivo JS Vainilla -->
-    <script src="app.js?v=2.0.6"></script>
+    <script src="app.js?v=2.0.7"></script>
 </body>
 </html>

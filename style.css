@@ -399,10 +399,10 @@ body {
     justify-content: center;
 }
 
-.badge-env {
+.brand-badge {
     font-size: 10px;
     font-weight: 700;
-    color: #0f172a;
+    color: #475569;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -411,6 +411,14 @@ body {
     border-radius: 20px;
     border: 1px solid #e2e8f0;
     letter-spacing: 0.5px;
+}
+
+.brand-badge-text {
+    font-family: 'Outfit', sans-serif;
+    text-transform: uppercase;
+    font-size: 9px;
+    color: #64748b;
+    font-weight: 600;
 }
 
 .pulse-dot {
@@ -577,8 +585,6 @@ body {
 
 .btn-header-action i {
     font-size: 11px;
-}
-    border: 1px solid rgba(79, 70, 229, 0.15);
 }
 
 /* Secciones de Contenido */
