@@ -328,7 +328,7 @@ body {
 /* Área de Contenido Principal - Tarjeta Blanca Flotante */
 .main-content {
     flex: 1;
-    margin: 16px 16px 16px 0;
+    margin: 16px;
     height: calc(100vh - 32px);
     background-color: transparent;
     border-radius: 0;
@@ -352,7 +352,7 @@ body {
     justify-content: space-between;
     background: #ffffff;
     user-select: none;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
 }
 
 .topbar-left {
@@ -532,7 +532,7 @@ body {
     align-items: center;
     justify-content: space-between;
     background: #ffffff;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
 }
 
 .section-header-left {
