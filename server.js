@@ -119,6 +119,7 @@ async function initDb() {
             END
             WHERE registro_establo IS NULL
         `);
+        await client.query(`UPDATE recepciones SET lote_codigo = 'LBVA163-OLD' WHERE lote_codigo = 'LBVA163'`);
 
         // 8. Cajas
         await client.query(`
