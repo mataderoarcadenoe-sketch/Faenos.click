@@ -1041,6 +1041,9 @@ function renderAll() {
         if (valOtrosIngresos) valOtrosIngresos.innerText = `+ S/. ${ingresosOtros.toFixed(2)}`;
         if (valSaldo) valSaldo.innerText = `S/. ${saldoFisicoTeorico.toFixed(2)}`;
         
+        const valEncargado = document.getElementById('caja-encargado-nombre');
+        if (valEncargado) valEncargado.innerText = cajaActiva.encargadoNombre || 'Operador General';
+        
         // Actualizar visibilidad del desglose y botón de cerrar caja según cajaDetallesRevelados
         const detallesDiv = document.getElementById('caja-resumen-detalles');
         const btnCerrarCaja = document.getElementById('btn-cerrar-caja-control');
@@ -1094,7 +1097,7 @@ function renderAll() {
                         </td>
                         <td><span style="font-size: 12px;">${metodoNombre}</span></td>
                         <td>${badgeTipo}</td>
-                        <td style="${montoEstilo}">S/. ${m.monto.toFixed(2)}</td>
+                        <td style="${montoEstilo} text-align: right;">S/. ${m.monto.toFixed(2)}</td>
                     `;
                     tbodyMovs.appendChild(tr);
                 });
