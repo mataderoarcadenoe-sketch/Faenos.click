@@ -177,6 +177,17 @@ async function initDb() {
             )
         `);
 
+        // 13. Pesajes de Animales
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS pesajes_animales (
+                id VARCHAR(50) PRIMARY KEY,
+                recepcion_id VARCHAR(50) REFERENCES recepciones(id) ON DELETE CASCADE,
+                correlativo_orejera VARCHAR(100) NOT NULL,
+                peso_pie_kg NUMERIC(8, 2) NOT NULL,
+                creado_el TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         // POBLAR DATOS DE PRUEBA SI LAS TABLAS ESTÁN VACÍAS
         
         // Roles
@@ -304,6 +315,19 @@ async function initDb() {
             `);
         }
 
+        // Pesajes de Animales
+        const rPesajes = await client.query('SELECT COUNT(*) FROM pesajes_animales');
+        if (parseInt(rPesajes.rows[0].count) === 0) {
+            await client.query(`
+                INSERT INTO pesajes_animales (id, recepcion_id, correlativo_orejera, peso_pie_kg) VALUES 
+                ('p-1', 'r-ex-1', 'OR-1001', 450.50),
+                ('p-2', 'r-ex-1', 'OR-1002', 462.00),
+                ('p-3', 'r-ex-1', 'OR-1003', 448.00),
+                ('p-4', 'r-ex-2', 'OR-2001', 95.20),
+                ('p-5', 'r-ex-2', 'OR-2002', 98.60)
+            `);
+        }
+
         await client.query('COMMIT');
         console.log('Base de datos inicializada y migrada correctamente.');
     } catch (e) {
@@ -376,6 +400,8 @@ app.get('/api/data', async (req, res) => {
             });
         }
 
+        const pesajes = await pool.query('SELECT id, recepcion_id as "recepcionId", correlativo_orejera as "correlativoOrejera", CAST(peso_pie_kg AS double precision) as "pesoPieKg", creado_el as "creadoEl" FROM pesajes_animales ORDER BY creado_el DESC');
+
         res.json({
             roles: roles.rows,
             trabajadores: trabajadores.rows,
@@ -404,7 +430,8 @@ app.get('/api/data', async (req, res) => {
             })),
             cajas,
             deudas: deudas.rows,
-            abonos
+            abonos,
+            pesajes: pesajes.rows
         });
     } catch (e) {
         console.error('Error al recuperar datos:', e);
@@ -880,6 +907,48 @@ app.post('/api/abonos', async (req, res) => {
         res.status(500).json({ error: e.message });
     } finally {
         client.release();
+    }
+});
+
+
+// --- PESAJES ANIMALES ---
+app.post('/api/pesajes', async (req, res) => {
+    const { id, recepcion_id, correlativo_orejera, peso_pie_kg } = req.body;
+    try {
+        await pool.query(
+            'INSERT INTO pesajes_animales (id, recepcion_id, correlativo_orejera, peso_pie_kg) VALUES ($1, $2, $3, $4)',
+            [id, recepcion_id, correlativo_orejera, peso_pie_kg]
+        );
+        res.status(201).json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.put('/api/pesajes/:id', async (req, res) => {
+    const { id } = req.params;
+    const { correlativo_orejera, peso_pie_kg } = req.body;
+    try {
+        await pool.query(
+            'UPDATE pesajes_animales SET correlativo_orejera = $1, peso_pie_kg = $2 WHERE id = $3',
+            [correlativo_orejera, peso_pie_kg, id]
+        );
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.delete('/api/pesajes/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM pesajes_animales WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
     }
 });
 

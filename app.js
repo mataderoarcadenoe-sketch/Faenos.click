@@ -11,12 +11,14 @@ let roles = [];
 let tiposPago = [];
 let deudas = [];
 let abonos = [];
+let pesajes = [];
 let editingGanaderoId = null; // Estado de edición global
 let editingEspecieId = null; // Estado de edición de especie global
 let editingPagoId = null; // Estado de edición de pago global
 let editingTrabajadorId = null; // Estado de edición de trabajador global
 let editingRolId = null; // Estado de edición de cargo / rol global
 let editingTipoPagoId = null; // Estado de edición de tipo de pago global
+let editingPesajeId = null; // Estado de edición de pesaje global
 
 
 // ==========================================
@@ -233,6 +235,7 @@ async function loadServerData() {
         tiposPago = data.tiposPago;
         deudas = data.deudas;
         abonos = data.abonos;
+        pesajes = data.pesajes || [];
         renderAll();
     } catch (err) {
         showToast('Error al conectar con el servidor de base de datos.', 'error');
@@ -319,6 +322,10 @@ function switchTab(tabName) {
         iconClass = 'fa-receipt';
         // Resetear vista al entrar
         cerrarDetalleDeudas();
+    } else if (tabName === 'pesajes') {
+        titleText = 'Control de Pesaje en Manga';
+        iconClass = 'fa-weight-scale';
+        cancelarEdicionPesaje();
     }
     
     // Actualizar título e icono en el header superior
@@ -1064,6 +1071,9 @@ function renderAll() {
 
     // 18. Actualizar visibilidad del botón de egreso en el header
     actualizarBotonEgresoHeader();
+
+    // 19. Módulo de Pesaje en Manga de Recepción
+    renderPesajes();
 }
 
 // Generar un código único de 2 letras a partir de una razón social
@@ -3236,5 +3246,299 @@ function setupSidebarInteractivo() {
             }
         }
     });
+}
+
+// ==========================================
+// MÓDULO DE PESAJE EN MANGA DE RECEPCIÓN
+// ==========================================
+
+function selectPesajesLoteOption(id, texto, event) {
+    if (event) event.stopPropagation();
+    const inputHidden = document.getElementById('pesajes-lote-id');
+    const triggerText = document.getElementById('custom-select-pesajes-lote-text');
+    const container = document.getElementById('custom-select-pesajes-lote-container');
+    const options = document.querySelectorAll('#custom-select-pesajes-lote-options .custom-select-option');
+
+    if (inputHidden && triggerText && container) {
+        inputHidden.value = id;
+        triggerText.innerText = texto;
+        
+        options.forEach(opt => {
+            if (opt.getAttribute('data-value') === id) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        
+        container.classList.remove('active');
+        cambiarLotePesaje();
+    }
+}
+
+function cambiarLotePesaje() {
+    cancelarEdicionPesaje();
+    renderPesajes();
+}
+
+function simularPesoBalanza() {
+    const loteId = document.getElementById('pesajes-lote-id').value;
+    if (!loteId) {
+        showToast('Seleccione un lote para simular el pesaje.', 'warning');
+        return;
+    }
+    const lote = recepciones.find(r => r.id === loteId);
+    if (!lote) return;
+
+    let pesoMin = 50;
+    let pesoMax = 150;
+    const especie = lote.especie.toLowerCase();
+    if (especie.includes('vacuno') || especie.includes('res') || especie.includes('toro') || especie.includes('vaca')) {
+        pesoMin = 380;
+        pesoMax = 520;
+    } else if (especie.includes('porcino') || especie.includes('cerdo') || especie.includes('chancho')) {
+        pesoMin = 80;
+        pesoMax = 115;
+    }
+
+    const pesoFinal = (Math.random() * (pesoMax - pesoMin) + pesoMin).toFixed(2);
+    
+    // Animación interactiva de la balanza
+    const display = document.getElementById('balanza-peso-digital');
+    const input = document.getElementById('pesaje-peso-input');
+    
+    let clicks = 0;
+    const interval = setInterval(() => {
+        const pesoTemp = (Math.random() * (pesoMax - pesoMin) + pesoMin).toFixed(2);
+        display.innerText = pesoTemp;
+        clicks++;
+        if (clicks > 8) {
+            clearInterval(interval);
+            display.innerText = pesoFinal;
+            input.value = pesoFinal;
+            showToast('Peso capturado con éxito de la balanza.', 'success');
+        }
+    }, 60);
+}
+
+async function savePesaje(event) {
+    event.preventDefault();
+    const loteId = document.getElementById('pesajes-lote-id').value;
+    if (!loteId) {
+        showToast('Seleccione un lote antes de registrar.', 'warning');
+        return;
+    }
+    const lote = recepciones.find(r => r.id === loteId);
+    if (!lote) return;
+
+    const pesoInput = document.getElementById('pesaje-peso-input');
+    const orejeraInput = document.getElementById('pesaje-orejera');
+    
+    const peso = parseFloat(pesoInput.value);
+    const orejera = orejeraInput.value.trim().toUpperCase();
+
+    if (isNaN(peso) || peso <= 0) {
+        showToast('Ingrese un peso válido.', 'warning');
+        return;
+    }
+    if (!orejera) {
+        showToast('Ingrese un código de orejera válido.', 'warning');
+        return;
+    }
+
+    // Si es un nuevo pesaje, verificar si se excede la cantidad declarada
+    if (editingPesajeId === null) {
+        const pesajesLote = pesajes.filter(p => p.recepcionId === loteId);
+        if (pesajesLote.length >= parseInt(lote.cantidad)) {
+            const confirmado = await customConfirm(`El lote ya tiene registradas todas las cabezas declaradas (${lote.cantidad}). ¿Desea registrar un animal adicional?`);
+            if (!confirmado) return;
+        }
+    }
+
+    const payload = {
+        id: editingPesajeId || 'p-' + Date.now(),
+        recepcion_id: loteId,
+        correlativo_orejera: orejera,
+        peso_pie_kg: peso
+    };
+
+    try {
+        if (editingPesajeId === null) {
+            await apiPost('/api/pesajes', payload);
+            showToast('Pesaje registrado correctamente.', 'success');
+        } else {
+            await apiPut(`/api/pesajes/${editingPesajeId}`, payload);
+            showToast('Pesaje modificado correctamente.', 'success');
+        }
+
+        cancelarEdicionPesaje();
+        await loadServerData();
+    } catch (err) {
+        showToast(err.message, 'error');
+        console.error(err);
+    }
+}
+
+function editPesaje(id) {
+    const p = pesajes.find(item => item.id === id);
+    if (!p) return;
+
+    editingPesajeId = id;
+    
+    // Rellenar formulario
+    document.getElementById('pesaje-peso-input').value = p.pesoPieKg;
+    document.getElementById('balanza-peso-digital').innerText = parseFloat(p.pesoPieKg).toFixed(2);
+    document.getElementById('pesaje-orejera').value = p.correlativoOrejera;
+
+    // Cambiar botones
+    document.getElementById('text-submit-pesaje').innerText = 'Guardar Cambios';
+    document.getElementById('btn-cancelar-pesaje').style.display = 'block';
+    
+    // Enfocar
+    document.getElementById('pesaje-orejera').focus();
+}
+
+function cancelarEdicionPesaje() {
+    editingPesajeId = null;
+    
+    document.getElementById('pesaje-peso-input').value = '';
+    document.getElementById('balanza-peso-digital').innerText = '0.00';
+    document.getElementById('pesaje-orejera').value = '';
+
+    document.getElementById('text-submit-pesaje').innerText = 'Registrar Pesada';
+    document.getElementById('btn-cancelar-pesaje').style.display = 'none';
+}
+
+async function deletePesaje(id) {
+    const p = pesajes.find(item => item.id === id);
+    if (!p) return;
+
+    const confirmado = await customConfirm(`¿Está seguro de eliminar el pesaje del animal con orejera "${p.correlativoOrejera}"? Esta acción no se puede deshacer.`);
+    if (confirmado) {
+        try {
+            await apiDelete(`/api/pesajes/${id}`);
+            await loadServerData();
+            showToast('Pesaje eliminado correctamente.', 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+            console.error(err);
+        }
+    }
+}
+
+function renderPesajes() {
+    const lotesActivos = recepciones.filter(r => r.estado === 'Pendiente Inspección' || r.estado === 'Inspeccionado');
+    
+    const customOptions = document.getElementById('custom-select-pesajes-lote-options');
+    if (customOptions) {
+        customOptions.innerHTML = '';
+        
+        if (lotesActivos.length === 0) {
+            customOptions.innerHTML = '<div style="padding: 10px; text-align: center; color: var(--text-secondary); font-size: 13px;">No hay lotes activos para pesar</div>';
+        } else {
+            lotesActivos.forEach(l => {
+                const divOpt = document.createElement('div');
+                divOpt.className = 'custom-select-option';
+                divOpt.innerText = `${l.lote_codigo} - ${l.ganadero_nombre}`;
+                divOpt.setAttribute('data-value', l.id);
+                
+                const selectedVal = document.getElementById('pesajes-lote-id').value;
+                if (selectedVal === l.id) {
+                    divOpt.classList.add('selected');
+                }
+                
+                divOpt.onclick = (event) => selectPesajesLoteOption(l.id, `${l.lote_codigo} - ${l.ganadero_nombre}`, event);
+                customOptions.appendChild(divOpt);
+            });
+        }
+    }
+
+    const loteId = document.getElementById('pesajes-lote-id').value;
+    const resumenCard = document.getElementById('pesaje-resumen-lote');
+    const capturaCard = document.getElementById('pesaje-captura-card');
+    const defaultMsg = document.getElementById('pesajes-default-message');
+    const tablaPesajes = document.getElementById('table-pesajes-ganado');
+    const tableBody = document.getElementById('table-pesajes-body');
+
+    if (!loteId) {
+        if (resumenCard) resumenCard.style.display = 'none';
+        if (capturaCard) capturaCard.style.display = 'none';
+        if (defaultMsg) defaultMsg.style.display = 'block';
+        if (tablaPesajes) tablaPesajes.style.display = 'none';
+        return;
+    }
+
+    const lote = recepciones.find(r => r.id === loteId);
+    if (!lote) {
+        document.getElementById('pesajes-lote-id').value = '';
+        document.getElementById('custom-select-pesajes-lote-text').innerText = 'Selecciona un lote...';
+        if (resumenCard) resumenCard.style.display = 'none';
+        if (capturaCard) capturaCard.style.display = 'none';
+        if (defaultMsg) defaultMsg.style.display = 'block';
+        if (tablaPesajes) tablaPesajes.style.display = 'none';
+        return;
+    }
+
+    if (resumenCard) resumenCard.style.display = 'block';
+    if (capturaCard) capturaCard.style.display = 'block';
+    if (defaultMsg) defaultMsg.style.display = 'none';
+    if (tablaPesajes) tablaPesajes.style.display = 'table';
+
+    const pesajesLote = pesajes.filter(p => p.recepcionId === loteId);
+
+    const totalCabezas = parseInt(lote.cantidad) || 0;
+    const cabezasPesadas = pesajesLote.length;
+    const totalPeso = pesajesLote.reduce((acc, p) => acc + parseFloat(p.pesoPieKg || 0), 0);
+    const promedioPeso = cabezasPesadas > 0 ? (totalPeso / cabezasPesadas) : 0;
+    const avancePorcentaje = totalCabezas > 0 ? Math.min(Math.round((cabezasPesadas / totalCabezas) * 100), 100) : 0;
+
+    document.getElementById('pesaje-lbl-ganadero').innerText = lote.ganadero_nombre;
+    document.getElementById('pesaje-lbl-especie').innerText = lote.especie;
+    document.getElementById('pesaje-lbl-total').innerText = `${totalCabezas} cabezas`;
+    document.getElementById('pesaje-lbl-pesadas').innerText = `${cabezasPesadas} cabezas`;
+    document.getElementById('pesaje-lbl-promedio').innerText = `${promedioPeso.toFixed(2)} kg`;
+    document.getElementById('pesaje-lbl-total-peso').innerText = `${totalPeso.toFixed(2)} kg`;
+    document.getElementById('pesaje-lbl-progreso-porcentaje').innerText = `${avancePorcentaje}%`;
+    
+    const progressBar = document.getElementById('pesaje-progress-bar');
+    if (progressBar) {
+        progressBar.style.width = `${avancePorcentaje}%`;
+    }
+
+    if (tableBody) {
+        tableBody.innerHTML = '';
+        if (pesajesLote.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 24px; color: var(--text-secondary);">
+                        <i class="fa-solid fa-weight-scale" style="font-size: 24px; color: var(--border-color); margin-bottom: 8px; display: block;"></i>
+                        No se han registrado pesadas para este lote todavía.
+                    </td>
+                </tr>
+            `;
+        } else {
+            const pesajesOrdenados = [...pesajesLote].sort((a, b) => new Date(a.creadoEl) - new Date(b.creadoEl));
+            
+            pesajesOrdenados.forEach((p, index) => {
+                const tr = document.createElement('tr');
+                const fechaFormat = p.creadoEl ? new Date(p.creadoEl).toLocaleString('es-PE', { hour12: false }) : '--';
+                tr.innerHTML = `
+                    <td><span class="lote-tag" style="background: #f1f5f9; color: #475569;">#${index + 1}</span></td>
+                    <td><strong>${p.correlativoOrejera}</strong></td>
+                    <td style="font-weight: 700; color: var(--text-primary);">${parseFloat(p.pesoPieKg).toFixed(2)} kg</td>
+                    <td>${fechaFormat}</td>
+                    <td>
+                        <button onclick="editPesaje('${p.id}')" style="background: none; border: none; color: var(--color-admin); cursor: pointer; font-size: 15px; margin-right: 12px;" title="Editar">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button onclick="deletePesaje('${p.id}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 15px;" title="Eliminar">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+    }
 }
 
