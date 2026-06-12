@@ -1044,24 +1044,10 @@ function renderAll() {
         const valEncargado = document.getElementById('caja-encargado-nombre');
         if (valEncargado) valEncargado.innerText = cajaActiva.encargadoNombre || 'Operador General';
         
-        // Actualizar visibilidad del desglose y botón de cerrar caja según cajaDetallesRevelados
+        // Mantener visibilidad del desglose de caja siempre activo
         const detallesDiv = document.getElementById('caja-resumen-detalles');
-        const btnCerrarCaja = document.getElementById('btn-cerrar-caja-control');
-        
-        if (detallesDiv && btnCerrarCaja) {
-            if (cajaDetallesRevelados) {
-                detallesDiv.style.display = 'flex';
-                btnCerrarCaja.innerHTML = '<i class="fa-solid fa-calculator"></i> Realizar Arqueo y Liquidar';
-                btnCerrarCaja.style.background = 'linear-gradient(135deg, #ea580c, #ff782b)';
-                btnCerrarCaja.style.boxShadow = '0 4px 12px rgba(234, 88, 12, 0.15)';
-                btnCerrarCaja.onclick = cerrarCaja;
-            } else {
-                detallesDiv.style.display = 'none';
-                btnCerrarCaja.innerHTML = '<i class="fa-solid fa-lock"></i> Cerrar Turno de Caja';
-                btnCerrarCaja.style.background = '#ef4444';
-                btnCerrarCaja.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.15)';
-                btnCerrarCaja.onclick = solicitarCierreCaja;
-            }
+        if (detallesDiv) {
+            detallesDiv.style.display = 'flex';
         }
         
         // Poblar movimientos del turno activo
@@ -1987,10 +1973,6 @@ async function aperturarCaja(event) {
     }
 }
 
-function solicitarCierreCaja() {
-    cajaDetallesRevelados = true;
-    renderAll();
-}
 
 function cerrarCaja() {
     const cajaActiva = cajas.find(c => c.estado === 'Abierta');
@@ -2067,7 +2049,7 @@ function iniciarNuevoMovimiento() {
 
 function actualizarBotonEgresoHeader() {
     const btn = document.getElementById('header-action-caja-egreso');
-    if (!btn) return;
+    const btnCerrar = document.getElementById('header-action-caja-cerrar');
     
     const activeSection = document.querySelector('.content-section.active');
     const isCajaTab = activeSection && activeSection.id === 'tab-caja';
@@ -2078,9 +2060,11 @@ function actualizarBotonEgresoHeader() {
     const cajaActiva = cajas.find(c => c.estado === 'Abierta');
     
     if (isCajaTab && isTurnoSubtab && cajaActiva) {
-        btn.style.display = 'flex';
+        if (btn) btn.style.display = 'flex';
+        if (btnCerrar) btnCerrar.style.display = 'flex';
     } else {
-        btn.style.display = 'none';
+        if (btn) btn.style.display = 'none';
+        if (btnCerrar) btnCerrar.style.display = 'none';
     }
 }
 

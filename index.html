@@ -180,6 +180,7 @@
 
                         <!-- Acciones de Caja -->
                         <button id="header-action-caja-egreso" class="btn-header-action btn-primary" onclick="iniciarNuevoMovimiento()" style="display: none; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);"><i class="fa-solid fa-plus"></i> Registrar Egreso</button>
+                        <button id="header-action-caja-cerrar" class="btn-header-action btn-primary" onclick="cerrarCaja()" style="display: none; background: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);"><i class="fa-solid fa-lock"></i> Cerrar Caja</button>
 
                         <!-- Acciones de Calidad adicionales -->
                         <button id="header-action-cloro" class="btn-header-action btn-primary" onclick="iniciarNuevoCloro()" style="display: none; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);"><i class="fa-solid fa-plus"></i> Registrar Cloro</button>
@@ -856,8 +857,8 @@
                                                 </div>
                                             </div>
                                             
-                                            <!-- Detalles de saldos (ocultos por defecto) -->
-                                            <div id="caja-resumen-detalles" style="display: none; flex-direction: column; gap: 12px; margin-bottom: 20px; animation: fadeIn 0.3s ease-out;">
+                                            <!-- Detalles de saldos (Siempre Visibles) -->
+                                            <div id="caja-resumen-detalles" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 0; animation: fadeIn 0.3s ease-out;">
                                                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-secondary); padding: 4px 0;">
                                                     <span style="display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-coins" style="color: #94a3b8; width: 14px;"></i> Monto Apertura:</span>
                                                     <span id="caja-val-apertura" style="font-weight: 600; color: var(--text-primary);">S/. 0.00</span>
@@ -880,10 +881,6 @@
                                                     <span id="caja-val-saldo" style="font-size: 24px; font-weight: 800; color: #047857; font-family: 'Outfit', sans-serif;">S/. 0.00</span>
                                                 </div>
                                             </div>
-                                            
-                                            <button id="btn-cerrar-caja-control" onclick="solicitarCierreCaja()" class="btn-primary" style="margin-top: 0; padding: 14px; background: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15); font-size: 13px; width: 100%; border-radius: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: var(--transition-fast);">
-                                                <i class="fa-solid fa-lock"></i> Cerrar Turno de Caja
-                                            </button>
                                         </div>
                                     </div>
 
