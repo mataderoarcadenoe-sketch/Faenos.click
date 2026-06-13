@@ -5683,10 +5683,12 @@ function consultarTrazabilidad(loteCodigo) {
     const recepcion = recepciones.find(r => r.lote_codigo === loteCodigo);
     if (!recepcion) {
         container.innerHTML = `
-            <div style="text-align: center; padding: 40px 20px; background: rgba(239, 68, 68, 0.05); border: 1px dashed #ef4444; border-radius: 8px;">
-                <i class="fa-solid fa-triangle-exclamation" style="font-size: 36px; color: #ef4444; margin-bottom: 12px; display: block;"></i>
-                <h3 style="font-size: 15px; font-weight: 600; color: #b91c1c; margin-bottom: 4px;">Lote No Encontrado</h3>
-                <p style="font-size: 13px; color: #7f1d1d; max-width: 400px; margin: 0 auto;">El código de lote "${loteCodigo}" no existe o no ha sido ingresado en el sistema.</p>
+            <div style="text-align: center; padding: 40px 24px; background: rgba(239, 68, 68, 0.03); border: 1px dashed #f87171; border-radius: 16px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.02); max-width: 500px; margin: 20px auto;">
+                <div style="width: 56px; height: 56px; background: rgba(239, 68, 68, 0.08); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ef4444; font-size: 24px; margin: 0 auto 16px auto;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h3 style="font-size: 16px; font-weight: 700; color: #991b1b; margin-bottom: 6px; font-family: 'Outfit', sans-serif;">Lote No Encontrado</h3>
+                <p style="font-size: 13px; color: #7f1d1d; line-height: 1.4; margin: 0;">El código de lote <strong style="background: rgba(239,68,68,0.08); padding: 2px 6px; border-radius: 4px; font-family: monospace;">"${loteCodigo}"</strong> no está registrado en el sistema. Por favor, verifica el código e inténtalo de nuevo.</p>
             </div>
         `;
         return;
@@ -5705,10 +5707,14 @@ function consultarTrazabilidad(loteCodigo) {
     const dictamenIcon = esInspeccionado ? 'fa-circle-check' : 'fa-circle-question';
     const dictamenColor = esInspeccionado ? 'var(--color-ops)' : 'var(--color-client)';
     const dictamenTexto = esInspeccionado 
-        ? `Lote Apto para Faenado. Inspección ante-mortem concluida con éxito.` 
-        : `Lote en espera de inspección sanitaria. Dictamen médico pendiente.`;
-    const dictamenResponsable = esInspeccionado ? 'Dr. Alfonso Cárdenas (Médico Veterinario)' : 'Pendiente Asignación';
+        ? `Lote Apto para Faenado. Inspección ante-mortem concluida con éxito sin observaciones sanitarias.` 
+        : `Lote en espera de inspección sanitaria ante-mortem. Dictamen médico pendiente.`;
+    const dictamenResponsable = esInspeccionado ? 'Dr. Alfonso Cárdenas (Médico Veterinario Inspector)' : 'Médico Veterinario Pendiente';
     
+    const badgeDictamen = esInspeccionado
+        ? `<span class="badge" style="background: rgba(5, 150, 105, 0.08); color: var(--color-ops); border: 1px solid rgba(5, 150, 105, 0.15); padding: 6px 14px; font-size: 11px; font-weight: 700; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase;"><i class="fa-solid fa-circle-check"></i> Apto para Faena</span>`
+        : `<span class="badge" style="background: rgba(245, 158, 11, 0.08); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.15); padding: 6px 14px; font-size: 11px; font-weight: 700; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase;"><i class="fa-solid fa-clock"></i> Dictamen Pendiente</span>`;
+
     // Paso 3: Pesajes y Manga
     const pesajesLote = pesajes.filter(p => p.recepcion_id === recepcion.id);
     const totalCabezas = parseInt(recepcion.cantidad) || 0;
@@ -5719,41 +5725,55 @@ function consultarTrazabilidad(loteCodigo) {
     let pesajesDetalleHtml = '';
     if (cabezasPesadas > 0) {
         const trs = pesajesLote.map((p, idx) => `
-            <tr>
-                <td>#${idx + 1}</td>
-                <td><strong>${p.correlativo_orejera}</strong></td>
-                <td>${parseFloat(p.peso_pie_kg).toFixed(2)} kg</td>
-                <td>${p.fecha ? new Date(p.fecha).toLocaleString('es-PE', { hour12: false }) : '--'}</td>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 6px 8px; color: var(--text-secondary); text-align: center;">#${idx + 1}</td>
+                <td style="padding: 6px 8px; font-weight: 600; text-align: center;"><strong>${p.correlativo_orejera}</strong></td>
+                <td style="padding: 6px 8px; font-weight: 700; color: var(--color-admin); text-align: center;">${parseFloat(p.peso_pie_kg).toFixed(2)} kg</td>
+                <td style="padding: 6px 8px; color: var(--text-secondary); text-align: center;">${p.fecha ? new Date(p.fecha).toLocaleString('es-PE', { hour12: false }) : '--'}</td>
             </tr>
         `).join('');
+        
         pesajesDetalleHtml = `
-            <div style="margin-top: 10px; max-height: 150px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px;">
-                <table style="width: 100%; font-size: 11px;">
-                    <thead>
-                        <tr style="background: #f8fafc; border-bottom: 1px solid var(--border-color);">
-                            <th style="padding: 4px 8px;">N°</th>
-                            <th style="padding: 4px 8px;">Orejera</th>
-                            <th style="padding: 4px 8px;">Peso</th>
-                            <th style="padding: 4px 8px;">Fecha/Hora</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${trs}
-                    </tbody>
-                </table>
+            <div class="custom-accordion" style="margin-top: 12px; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; background: #ffffff;">
+                <div class="accordion-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'; this.querySelector('.arrow').classList.toggle('rotate');" style="background: #f8fafc; padding: 10px 14px; font-size: 12px; font-weight: 600; color: var(--text-primary); cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; border-bottom: 1px solid var(--border-color);">
+                    <span style="display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-list-check" style="color: var(--color-ops);"></i> Detalle de Pesas individuales por Cabezas (${cabezasPesadas})</span>
+                    <i class="fa-solid fa-chevron-down arrow" style="font-size: 10px; transition: transform 0.2s ease;"></i>
+                </div>
+                <div class="accordion-content" style="display: none; max-height: 180px; overflow-y: auto;">
+                    <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f1f5f9; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-weight: 600;">
+                                <th style="padding: 6px 8px; text-align: center; width: 50px;">N°</th>
+                                <th style="padding: 6px 8px; text-align: center;">Orejera</th>
+                                <th style="padding: 6px 8px; text-align: center;">Peso Caliente</th>
+                                <th style="padding: 6px 8px; text-align: center;">Fecha/Hora Pesaje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${trs}
+                        </tbody>
+                    </table>
+                </div>
             </div>
+            <style>
+                .accordion-header .arrow.rotate {
+                    transform: rotate(180deg);
+                }
+            </style>
         `;
     } else {
-        pesajesDetalleHtml = `<p style="font-size: 11px; color: var(--text-secondary); font-style: italic; margin-top: 6px;">No se registran pesajes individuales en manga de faena aún.</p>`;
+        pesajesDetalleHtml = `
+            <div style="background: rgba(100, 116, 139, 0.02); border: 1px dashed #cbd5e1; padding: 12px; border-radius: 8px; text-align: center; margin-top: 10px;">
+                <p style="font-size: 11px; color: var(--text-secondary); font-style: italic; margin: 0;">No se registran pesajes individuales en manga de faena aún.</p>
+            </div>
+        `;
     }
     
     // Paso 4: Cámara Frigorífica (HACCP)
-    // Buscamos si la cámara de la especie tiene lecturas
     let camaraAsignada = '--';
     let tempCámara = '--';
     let desvCámara = 'No se registran alertas';
     
-    // Buscar cámara según la especie
     const camara = camaras.find(c => c.nombre.toLowerCase().includes(recepcion.especie.toLowerCase()) || (recepcion.especie === 'GV' && c.nombre.toLowerCase().includes('vacuno')) || (recepcion.especie === 'GP' && c.nombre.toLowerCase().includes('porcino')));
     if (camara) {
         camaraAsignada = camara.nombre;
@@ -5763,25 +5783,54 @@ function consultarTrazabilidad(loteCodigo) {
             tempCámara = `${tempPromedio.toFixed(1)} °C`;
             const huboDesv = tempsCamara.some(t => t.desviacion === true);
             desvCámara = huboDesv 
-                ? `<span style="color: #ef4444; font-weight: 600;"><i class="fa-solid fa-triangle-exclamation"></i> Desviación HACCP Registrada</span>` 
-                : `<span style="color: var(--color-ops); font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Monitoreo Térmico Conforme</span>`;
+                ? `<span style="color: #ef4444; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-triangle-exclamation"></i> Desviación HACCP Registrada</span>` 
+                : `<span style="color: var(--color-ops); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-circle-check"></i> Monitoreo Térmico Conforme</span>`;
         }
     }
     
-    // Buscar no conformidades asociadas a este lote
     const pncs = productosNoConformes.filter(p => p.loteCodigo === loteCodigo);
     let pncHtml = '';
     if (pncs.length > 0) {
         pncHtml = pncs.map(p => `
-            <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.15); padding: 8px; border-radius: 6px; margin-top: 6px; font-size: 11px;">
-                <span style="color: #b91c1c; font-weight: 600;">No Conformidad: ${p.id}</span> (Estado: ${p.estado})<br>
-                <strong>Detalles:</strong> ${p.detalles}<br>
-                <strong>Acción Correctiva:</strong> ${p.accionCorrectiva || 'No especificada'}
+            <div style="background: rgba(239, 68, 68, 0.03); border: 1px solid rgba(239, 68, 68, 0.15); border-left: 4px solid #ef4444; padding: 12px; border-radius: 8px; margin-top: 8px; font-size: 11.5px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-weight: 700; color: #b91c1c;">
+                    <span><i class="fa-solid fa-triangle-exclamation"></i> Desviación Reg: ${p.id}</span>
+                    <span style="font-size: 10px; background: rgba(239,68,68,0.1); padding: 2px 6px; border-radius: 4px; color: #b91c1c;">${p.estado}</span>
+                </div>
+                <p style="margin: 0 0 6px 0; color: #7f1d1d;"><strong>Detalle del Hallazgo:</strong> ${p.detalles}</p>
+                <p style="margin: 0; color: var(--color-ops); font-weight: 600;"><strong>Acción Correctiva:</strong> ${p.accionCorrectiva || 'No especificada'}</p>
             </div>
         `).join('');
     } else {
-        pncHtml = `<span style="color: var(--color-ops); font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Ninguna no conformidad reportada.</span>`;
+        pncHtml = `
+            <div style="background: rgba(5, 150, 105, 0.03); border: 1px solid rgba(5, 150, 105, 0.1); padding: 10px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; color: var(--color-ops); font-size: 11px; font-weight: 600; margin-top: 8px;">
+                <i class="fa-solid fa-shield-check" style="font-size: 14px;"></i> Límites Críticos Conformes. Ninguna no conformidad reportada.
+            </div>
+        `;
     }
+
+    const tempNumber = parseFloat(tempCámara);
+    const isTempOk = !isNaN(tempNumber) && tempNumber <= 4.0;
+    const tempColor = isTempOk ? '#2563eb' : '#ef4444';
+    const tempBg = isTempOk ? 'rgba(59, 130, 246, 0.05)' : 'rgba(239, 68, 68, 0.05)';
+    const tempTextLabel = isNaN(tempNumber) ? 'N/A' : `${tempNumber.toFixed(1)} °C`;
+    
+    const termometroHtml = `
+    <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 14px; flex-wrap: wrap;">
+        <!-- Termostato Digital Simulado -->
+        <div style="background: ${tempBg}; border: 1px solid ${isTempOk ? '#bfdbfe' : '#fca5a5'}; padding: 10px 16px; border-radius: 12px; display: inline-flex; align-items: center; gap: 12px; min-width: 140px;">
+            <i class="fa-solid fa-thermometer" style="color: ${tempColor}; font-size: 24px; animation: ${isTempOk ? 'none' : 'pulse-red 1.5s infinite'};"></i>
+            <div>
+                <span style="font-size: 9px; color: var(--text-secondary); display: block; text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Temperatura Media</span>
+                <strong style="font-size: 18px; color: ${tempColor}; font-family: monospace;">${tempTextLabel}</strong>
+            </div>
+        </div>
+        <div>
+            <p style="font-size: 12px; color: var(--text-primary); margin: 0 0 2px 0;"><strong>Cámara Asignada:</strong> ${camaraAsignada}</p>
+            <p style="font-size: 11px; color: var(--text-secondary); margin: 0;"><strong>Control PCC N°1:</strong> ${desvCámara}</p>
+        </div>
+    </div>
+    `;
     
     // Paso 5: Despacho y Transporte (Hacia Adelante)
     const desp = despachos.find(d => d.loteCodigo === loteCodigo);
@@ -5793,20 +5842,30 @@ function consultarTrazabilidad(loteCodigo) {
         
         let transporteChecklist = '';
         if (t) {
-            const hFurgon = t.higieneFurgon === 'Conforme' ? '<span style="color: var(--color-ops);">✓ Conforme</span>' : '<span style="color: #ef4444;">✗ No Conforme</span>';
-            const herm = t.hermeticidad ? '<span style="color: var(--color-ops);">✓ Sí</span>' : '<span style="color: #ef4444;">✗ No</span>';
-            const fum = t.fumigacion ? '<span style="color: var(--color-ops);">✓ Sí</span>' : '<span style="color: #ef4444;">✗ No</span>';
-            const apil = t.apilamientoAdecuado ? '<span style="color: var(--color-ops);">✓ Sí</span>' : '<span style="color: #ef4444;">✗ No</span>';
+            const checkIcon = '<i class="fa-solid fa-circle-check" style="color: var(--color-ops); margin-right: 6px; font-size: 13px; vertical-align: middle;"></i>';
+            const crossIcon = '<i class="fa-solid fa-circle-xmark" style="color: #ef4444; margin-right: 6px; font-size: 13px; vertical-align: middle;"></i>';
+            
+            const hFurgon = t.higieneFurgon === 'Conforme' ? `${checkIcon} Conforme` : `${crossIcon} No Conforme`;
+            const herm = t.hermeticidad ? `${checkIcon} Conforme` : `${crossIcon} No Conforme`;
+            const fum = t.fumigacion ? `${checkIcon} Conforme` : `${crossIcon} No Conforme`;
+            const apil = t.apilamientoAdecuado ? `${checkIcon} Conforme` : `${crossIcon} No Conforme`;
             
             transporteChecklist = `
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px;">
-                    <div><strong>Higiene/Limpieza:</strong> ${hFurgon}</div>
-                    <div><strong>Hermeticidad furgón:</strong> ${herm}</div>
-                    <div><strong>Cert. Fumigación:</strong> ${fum}</div>
-                    <div><strong>Apilamiento/Colgado:</strong> ${apil}</div>
-                    <div><strong>Temperatura Furgón:</strong> ${t.temperaturaFurgon.toFixed(1)} °C</div>
-                    <div><strong>Placa Vehículo:</strong> ${t.placaVehiculo}</div>
-                    <div style="grid-column: 1 / span 2;"><strong>Conductor:</strong> ${t.conductor} (Lic. ${t.licencia})</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 10px; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 11.5px;">
+                    <div><span style="color: var(--text-secondary); display: block; font-size: 10px; margin-bottom: 2px;">HIGIENE FURGÓN</span><strong>${hFurgon}</strong></div>
+                    <div><span style="color: var(--text-secondary); display: block; font-size: 10px; margin-bottom: 2px;">HERMETICIDAD</span><strong>${herm}</strong></div>
+                    <div><span style="color: var(--text-secondary); display: block; font-size: 10px; margin-bottom: 2px;">CERT. FUMIGACIÓN</span><strong>${fum}</strong></div>
+                    <div><span style="color: var(--text-secondary); display: block; font-size: 10px; margin-bottom: 2px;">APILAMIENTO / COLGADO</span><strong>${apil}</strong></div>
+                    <div><span style="color: var(--text-secondary); display: block; font-size: 10px; margin-bottom: 2px;">TEMP. FURGÓN (SALA)</span><strong style="color: var(--color-ops); font-family: monospace;">${t.temperaturaFurgon.toFixed(1)} °C</strong></div>
+                    <div><span style="color: var(--text-secondary); display: block; font-size: 10px; margin-bottom: 2px;">PLACA VEHÍCULO</span>
+                        <span style="display: inline-block; background: #fef08a; border: 1px solid #eab308; color: #1e293b; font-family: monospace; font-weight: 700; padding: 2px 8px; border-radius: 4px; font-size: 10px; letter-spacing: 0.05em; margin-top: 1px; box-shadow: inset 0 -1px 0 rgba(0,0,0,0.1);">
+                            ${t.placaVehiculo}
+                        </span>
+                    </div>
+                    <div style="grid-column: 1 / span 2; border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 4px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <span><strong>Conductor:</strong> ${t.conductor}</span>
+                        <span style="font-size: 10.5px; color: var(--text-secondary);">Licencia N°: ${t.licencia}</span>
+                    </div>
                 </div>
             `;
         } else {
@@ -5814,32 +5873,121 @@ function consultarTrazabilidad(loteCodigo) {
         }
         
         despachoHtml = `
-            <div style="font-size: 12px; color: var(--text-primary);">
-                <p style="margin: 0 0 6px 0;"><strong>Destino / Cliente:</strong> ${desp.cliente}</p>
-                <p style="margin: 0 0 6px 0;"><strong>Guía de Remisión:</strong> ${desp.guiaRemision}</p>
-                <p style="margin: 0 0 6px 0;"><strong>Cantidad carcasas despachadas:</strong> ${desp.cantidadCarcasas} unidades</p>
-                <p style="margin: 0 0 6px 0;"><strong>Peso Total Despachado:</strong> ${parseFloat(desp.pesoTotal).toFixed(2)} kg</p>
-                <p style="margin: 0 0 6px 0;"><strong>Temp. Carne al cargar:</strong> ${parseFloat(desp.temperaturaCarne).toFixed(1)} °C</p>
-                <p style="margin: 0 0 6px 0;"><strong>Fecha de Prod.:</strong> ${fProd} | <strong>Fecha de Venc.:</strong> ${fVenc}</p>
-                <h5 style="font-size: 11px; font-weight: 700; margin: 10px 0 4px 0; color: var(--color-client); text-transform: uppercase;">Checklist de Vehículo de Transporte (CPT-003)</h5>
+            <div style="font-size: 12.5px; color: var(--text-primary);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                    <div><strong>Destino / Cliente:</strong> ${desp.cliente}</div>
+                    <div><strong>Guía de Remisión:</strong> <span style="font-family: monospace; font-weight: 600; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">${desp.guiaRemision}</span></div>
+                    <div><strong>Carcasas despachadas:</strong> ${desp.cantidadCarcasas} unidades</div>
+                    <div><strong>Peso Total Despachado:</strong> ${parseFloat(desp.pesoTotal).toFixed(2)} kg</div>
+                    <div><strong>Temp. Carne al cargar:</strong> <strong style="color: var(--color-ops);">${parseFloat(desp.temperaturaCarne).toFixed(1)} °C</strong></div>
+                    <div><strong>Fecha de Producción:</strong> ${fProd}</div>
+                </div>
+                <div style="font-size: 11px; color: var(--text-secondary); background: #f8fafc; padding: 8px 12px; border-radius: 8px; border-left: 3px solid var(--color-client); margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                    <span><strong>Fecha de Vencimiento:</strong> ${fVenc} (Control de Vida Útil de la Carne)</span>
+                    <span style="background: rgba(234,88,12,0.08); color: var(--color-client); padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 10px;">Art. 4.1 HACCP</span>
+                </div>
+                <h5 style="font-size: 11px; font-weight: 700; margin: 16px 0 6px 0; color: var(--color-client); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-clipboard-check"></i> Checklist del Vehículo de Transporte (CPT-003)
+                </h5>
                 ${transporteChecklist}
-                <p style="font-size: 11px; color: var(--text-secondary); margin-top: 8px;"><strong>Responsable de despacho (Firma):</strong> ${desp.responsable}</p>
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 14px; text-align: right; border-top: 1px dashed var(--border-color); padding-top: 10px;">
+                    <strong>Responsable de despacho (Autorización):</strong> ${desp.responsable}
+                </div>
             </div>
         `;
     } else {
         despachoHtml = `
-            <div style="background: rgba(234, 88, 12, 0.03); border: 1px dashed rgba(234, 88, 12, 0.15); padding: 12px; border-radius: 6px; font-size: 12px; color: var(--color-client);">
-                <i class="fa-solid fa-info-circle"></i> Lote no despachado. El producto se encuentra actualmente almacenado en las cámaras de refrigeración.
+            <div style="background: rgba(234, 88, 12, 0.03); border: 1px dashed rgba(234, 88, 12, 0.2); padding: 16px; border-radius: 10px; font-size: 12px; color: var(--color-client); display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-circle-info" style="font-size: 18px;"></i>
+                <div>
+                    <strong>Lote no despachado aún.</strong> El producto se encuentra actualmente almacenado en conservación en frío en las cámaras frigoríficas.
+                </div>
             </div>
         `;
     }
     
+    // Ficha de Resumen Rápido Superior (KPIs)
+    let estadoGlobalBadge = '';
+    if (desp) {
+        estadoGlobalBadge = `<span class="badge" style="background: rgba(5, 150, 105, 0.08); color: var(--color-ops); border: 1px solid rgba(5, 150, 105, 0.15); display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; font-size: 11px; border-radius: 20px; font-weight: 600; text-transform: uppercase;"><span style="width: 6px; height: 6px; background-color: var(--color-ops); border-radius: 50%; display: inline-block;"></span>Despachado</span>`;
+    } else if (cabezasPesadas > 0) {
+        estadoGlobalBadge = `<span class="badge" style="background: rgba(59, 130, 246, 0.08); color: #2563eb; border: 1px solid rgba(59, 130, 246, 0.15); display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; font-size: 11px; border-radius: 20px; font-weight: 600; text-transform: uppercase;"><span style="width: 6px; height: 6px; background-color: #2563eb; border-radius: 50%; display: inline-block;"></span>En Cámara Fría</span>`;
+    } else if (esInspeccionado) {
+        estadoGlobalBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.08); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.15); display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; font-size: 11px; border-radius: 20px; font-weight: 600; text-transform: uppercase;"><span style="width: 6px; height: 6px; background-color: #d97706; border-radius: 50%; display: inline-block;"></span>Apto Faenado</span>`;
+    } else {
+        estadoGlobalBadge = `<span class="badge" style="background: rgba(100, 116, 139, 0.08); color: #475569; border: 1px solid rgba(100, 116, 139, 0.15); display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; font-size: 11px; border-radius: 20px; font-weight: 600; text-transform: uppercase;"><span style="width: 6px; height: 6px; background-color: #475569; border-radius: 50%; display: inline-block;"></span>Ingresado</span>`;
+    }
+
+    const fichaRapidaHtml = `
+    <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 16px; padding: 20px 24px; margin-bottom: 28px; box-shadow: 0 4px 16px rgba(0,0,0,0.005);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 14px; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+            <div>
+                <span style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--color-client); letter-spacing: 0.05em; display: block; margin-bottom: 2px;">Ficha de Rastreabilidad</span>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <h3 style="font-size: 20px; font-weight: 800; color: var(--text-primary); margin: 0; font-family: 'Outfit', sans-serif; letter-spacing: -0.01em;">Lote: ${loteCodigo}</h3>
+                    ${estadoGlobalBadge}
+                </div>
+            </div>
+            <div style="font-size: 11px; color: var(--text-secondary); background: #f8fafc; border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 8px; font-weight: 500;">
+                <i class="fa-solid fa-shield-halved" style="color: var(--color-ops); margin-right: 4px;"></i> Certificado Oficial de Calidad
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <!-- KPI 1: GANADERO -->
+            <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px;">
+                <div style="width: 38px; height: 38px; background: rgba(79, 70, 229, 0.06); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--color-admin); font-size: 15px; flex-shrink: 0;">
+                    <i class="fa-solid fa-address-card"></i>
+                </div>
+                <div style="overflow: hidden;">
+                    <span style="font-size: 10px; color: var(--text-secondary); display: block; margin-bottom: 1px;">Productor / Ganadero</span>
+                    <strong style="font-size: 12.5px; color: var(--text-primary); display: block; font-family: 'Outfit', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${recepcion.ganadero_nombre}</strong>
+                    <span style="font-size: 10px; color: var(--text-secondary);">RUC: ${ganaderoRuc}</span>
+                </div>
+            </div>
+            <!-- KPI 2: ESPECIE Y CANTIDAD -->
+            <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px;">
+                <div style="width: 38px; height: 38px; background: rgba(5, 150, 105, 0.06); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--color-ops); font-size: 15px; flex-shrink: 0;">
+                    <i class="fa-solid fa-cow"></i>
+                </div>
+                <div>
+                    <span style="font-size: 10px; color: var(--text-secondary); display: block; margin-bottom: 1px;">Especie y Volumen</span>
+                    <strong style="font-size: 12.5px; color: var(--text-primary); display: block; font-family: 'Outfit', sans-serif;">${especieNombre}</strong>
+                    <span style="font-size: 10px; color: var(--text-secondary);">${totalCabezas} cabezas de ganado</span>
+                </div>
+            </div>
+            <!-- KPI 3: AUTORIZACION SENASA -->
+            <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px;">
+                <div style="width: 38px; height: 38px; background: rgba(234, 88, 12, 0.06); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--color-client); font-size: 15px; flex-shrink: 0;">
+                    <i class="fa-solid fa-file-shield"></i>
+                </div>
+                <div>
+                    <span style="font-size: 10px; color: var(--text-secondary); display: block; margin-bottom: 1px;">Tránsito Sanitario</span>
+                    <strong style="font-size: 12.5px; color: var(--text-primary); display: block; font-family: 'Outfit', sans-serif;">Guía SENASA</strong>
+                    <span style="font-size: 10px; color: var(--text-secondary); font-family: monospace;">${recepcion.guia_transito}</span>
+                </div>
+            </div>
+            <!-- KPI 4: PROCESAMIENTO -->
+            <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px;">
+                <div style="width: 38px; height: 38px; background: rgba(59, 130, 246, 0.06); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #2563eb; font-size: 15px; flex-shrink: 0;">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <div>
+                    <span style="font-size: 10px; color: var(--text-secondary); display: block; margin-bottom: 1px;">Rendimiento Planta</span>
+                    <strong style="font-size: 12.5px; color: var(--text-primary); display: block; font-family: 'Outfit', sans-serif;">${cabezasPesadas} faenadas</strong>
+                    <span style="font-size: 10px; color: var(--text-secondary);">${totalPeso > 0 ? totalPeso.toFixed(1) + ' kg carne' : 'En espera de pesajes'}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+
     // Renderizado del Timeline Premium
     container.innerHTML = `
         <style>
             .trace-timeline {
                 position: relative;
-                padding-left: 32px;
+                padding-left: 36px;
                 margin-top: 16px;
             }
             .trace-timeline::before {
@@ -5849,31 +5997,32 @@ function consultarTrazabilidad(loteCodigo) {
                 top: 8px;
                 bottom: 8px;
                 width: 2px;
-                background: var(--border-color);
+                background: #e2e8f0;
             }
             .trace-step {
                 position: relative;
-                margin-bottom: 30px;
+                margin-bottom: 36px;
             }
             .trace-step:last-child {
                 margin-bottom: 0;
             }
             .trace-node {
                 position: absolute;
-                left: -32px;
-                top: 2px;
+                left: -36px;
+                top: 4px;
                 width: 24px;
                 height: 24px;
                 border-radius: 50%;
                 background: white;
-                border: 2px solid var(--border-color);
+                border: 2px solid #cbd5e1;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 11px;
-                color: var(--text-secondary);
+                font-size: 10px;
+                color: #64748b;
                 transition: all 0.3s ease;
                 z-index: 2;
+                box-shadow: 0 0 0 4px white;
             }
             .trace-step.completed .trace-node {
                 border-color: var(--color-ops);
@@ -5884,51 +6033,43 @@ function consultarTrazabilidad(loteCodigo) {
                 border-color: var(--color-client);
                 background: var(--color-client);
                 color: white;
-                box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.15);
+                box-shadow: 0 0 0 4px white, 0 0 0 8px rgba(234, 88, 12, 0.15);
             }
             .trace-content {
                 background: white;
                 border: 1px solid var(--border-color);
-                border-radius: 8px;
-                padding: 16px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+                border-radius: 12px;
+                padding: 20px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.005);
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+            }
+            .trace-content:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(0,0,0,0.02);
             }
             .trace-title {
-                font-size: 14px;
+                font-size: 14.5px;
                 font-weight: 700;
                 color: var(--text-primary);
-                margin: 0 0 6px 0;
+                margin: 0 0 14px 0;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
+                border-bottom: 1px solid #f8fafc;
+                padding-bottom: 8px;
+                font-family: 'Outfit', sans-serif;
             }
             .trace-time {
                 font-size: 11px;
                 color: var(--text-secondary);
                 font-weight: 500;
+                background: #f1f5f9;
+                padding: 3px 8px;
+                border-radius: 12px;
             }
         </style>
         
-        <div style="background: white; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-            <div>
-                <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--color-client); letter-spacing: 0.05em;">Lote Rastreado</span>
-                <h3 style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin: 2px 0 0 0; font-family: 'Outfit', sans-serif;">${loteCodigo}</h3>
-            </div>
-            <div style="display: flex; gap: 24px;">
-                <div>
-                    <span style="font-size: 11px; color: var(--text-secondary); display: block;">Ganadero</span>
-                    <strong style="font-size: 14px; color: var(--text-primary);">${recepcion.ganadero_nombre}</strong>
-                </div>
-                <div>
-                    <span style="font-size: 11px; color: var(--text-secondary); display: block;">Especie</span>
-                    <strong style="font-size: 14px; color: var(--text-primary);">${especieNombre}</strong>
-                </div>
-                <div>
-                    <span style="font-size: 11px; color: var(--text-secondary); display: block;">Cabezas</span>
-                    <strong style="font-size: 14px; color: var(--text-primary);">${totalCabezas} uds.</strong>
-                </div>
-            </div>
-        </div>
+        ${fichaRapidaHtml}
 
         <div class="trace-timeline">
             <!-- PASO 1: RECEPCION -->
@@ -5939,16 +6080,26 @@ function consultarTrazabilidad(loteCodigo) {
                         <span>1. Recepción e Ingreso del Ganado (Hacia Atrás)</span>
                         <span class="trace-time">${fechaIngreso}</span>
                     </div>
-                    <div style="font-size: 12px; color: var(--text-primary); display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div style="font-size: 12px; color: var(--text-primary); display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 16px;">
                         <div><strong>Ganadero:</strong> ${recepcion.ganadero_nombre}</div>
                         <div><strong>RUC Proveedor:</strong> ${ganaderoRuc}</div>
                         <div><strong>Código Proveedor:</strong> ${ganaderoCodigo}</div>
-                        <div><strong>Especie:</strong> ${especieNombre}</div>
+                        <div><strong>Especie de ganado:</strong> ${especieNombre}</div>
                         <div><strong>Cantidad ingresada:</strong> ${totalCabezas} cabezas</div>
-                        <div><strong>Guía de Tránsito SENASA:</strong> ${recepcion.guia_transito}</div>
-                        <div style="grid-column: 1 / span 2;"><strong>Establo de Origen:</strong> ${recepcion.registro_establo || 'No registrado'}</div>
-                        <div style="grid-column: 1 / span 2; margin-top: 4px; padding-top: 4px; border-top: 1px solid #f1f5f9; color: var(--text-secondary);">
-                            <strong>Observaciones:</strong> ${recepcion.observaciones}
+                        <div><strong>Registro Establo Origen:</strong> ${recepcion.registro_establo || 'Establo no codificado'}</div>
+                        
+                        <div style="grid-column: 1 / -1; margin-top: 4px;">
+                            <div style="background: rgba(79, 70, 229, 0.03); border: 1px solid rgba(79, 70, 229, 0.1); padding: 10px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 10px;">
+                                <i class="fa-solid fa-file-circle-check" style="color: var(--color-admin); font-size: 18px;"></i>
+                                <div>
+                                    <span style="font-size: 9px; color: var(--text-secondary); display: block; text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Guía de Tránsito SENASA</span>
+                                    <strong style="font-size: 12px; color: var(--text-primary); font-family: monospace;">${recepcion.guia_transito}</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="grid-column: 1 / -1; margin-top: 8px; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; border-left: 3px solid #cbd5e1; color: var(--text-secondary); font-size: 11.5px; font-style: italic; line-height: 1.4;">
+                            <strong>Observaciones del lote:</strong> "${recepcion.observaciones || 'Lote descargado y estabulado en corrales sin incidencias registradas.'}"
                         </div>
                     </div>
                 </div>
@@ -5960,15 +6111,24 @@ function consultarTrazabilidad(loteCodigo) {
                 <div class="trace-content">
                     <div class="trace-title">
                         <span>2. Inspección Veterinaria Ante-Mortem (IS-001)</span>
-                        <span class="trace-time">${esInspeccionado ? 'Completado' : 'Pendiente'}</span>
+                        <span class="trace-time">${esInspeccionado ? 'Aprobado' : 'Pendiente'}</span>
                     </div>
                     <div style="font-size: 12px; color: var(--text-primary);">
-                        <p style="margin: 0 0 6px 0; display: flex; align-items: center; gap: 6px;">
-                            <i class="fa-solid ${dictamenIcon}" style="color: ${dictamenColor}; font-size: 14px;"></i>
-                            <strong>Dictamen Médico:</strong> ${recepcion.estado}
-                        </p>
-                        <p style="margin: 0 0 6px 0;">${dictamenTexto}</p>
-                        <p style="margin: 0; font-size: 11px; color: var(--text-secondary);"><strong>Médico Veterinario Responsable:</strong> ${dictamenResponsable}</p>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px; flex-wrap: wrap;">
+                            <strong>Dictamen Sanitario:</strong>
+                            ${badgeDictamen}
+                        </div>
+                        <p style="margin: 0 0 10px 0; color: var(--text-secondary); line-height: 1.4;">${dictamenTexto}</p>
+                        
+                        <div style="margin-top: 12px; display: flex; align-items: center; gap: 12px; border-top: 1px solid #f1f5f9; padding-top: 10px;">
+                            <div style="width: 32px; height: 32px; background: rgba(5, 150, 105, 0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--color-ops); font-size: 13px; border: 1px dashed rgba(5,150,105,0.3);">
+                                <i class="fa-solid fa-stamp"></i>
+                            </div>
+                            <div>
+                                <span style="font-size: 9px; color: var(--text-secondary); display: block; text-transform: uppercase; font-weight: 600;">Médico Veterinario Inspector</span>
+                                <strong style="font-size: 11.5px; color: var(--text-primary);">${dictamenResponsable}</strong>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -5982,11 +6142,23 @@ function consultarTrazabilidad(loteCodigo) {
                         <span class="trace-time">${cabezasPesadas > 0 ? `${cabezasPesadas} cabezas pesadas` : 'Pendiente'}</span>
                     </div>
                     <div style="font-size: 12px; color: var(--text-primary);">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-weight: 500;">
-                            <div>Cabezas Declaradas: ${totalCabezas}</div>
-                            <div>Cabezas Faenadas/Pesadas: ${cabezasPesadas}</div>
-                            <div>Peso Total Canales: ${totalPeso.toFixed(2)} kg</div>
-                            <div>Peso Promedio Canales: ${promedioPeso.toFixed(2)} kg</div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                            <div style="background: #f8fafc; border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
+                                <span style="font-size: 9px; color: var(--text-secondary); display: block; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">Ingresadas</span>
+                                <strong style="font-size: 14px; color: var(--text-primary); font-family: monospace;">${totalCabezas} cabezas</strong>
+                            </div>
+                            <div style="background: #f8fafc; border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
+                                <span style="font-size: 9px; color: var(--text-secondary); display: block; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">Faenadas</span>
+                                <strong style="font-size: 14px; color: var(--color-ops); font-family: monospace;">${cabezasPesadas} cabezas</strong>
+                            </div>
+                            <div style="background: #f8fafc; border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
+                                <span style="font-size: 9px; color: var(--text-secondary); display: block; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">Peso Total Caliente</span>
+                                <strong style="font-size: 14px; color: var(--text-primary); font-family: monospace;">${totalPeso.toFixed(1)} kg</strong>
+                            </div>
+                            <div style="background: #f8fafc; border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
+                                <span style="font-size: 9px; color: var(--text-secondary); display: block; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">Rendimiento Prom.</span>
+                                <strong style="font-size: 14px; color: var(--color-client); font-family: monospace;">${promedioPeso.toFixed(1)} kg</strong>
+                            </div>
                         </div>
                         ${pesajesDetalleHtml}
                     </div>
@@ -6002,10 +6174,10 @@ function consultarTrazabilidad(loteCodigo) {
                         <span class="trace-time">${cabezasPesadas > 0 ? 'Monitoreo Activo' : 'Pendiente'}</span>
                     </div>
                     <div style="font-size: 12px; color: var(--text-primary);">
-                        <p style="margin: 0 0 6px 0;"><strong>Cámara Asignada:</strong> ${camaraAsignada}</p>
-                        <p style="margin: 0 0 6px 0;"><strong>Temperatura Media Cámara:</strong> ${tempCámara}</p>
-                        <p style="margin: 0 0 8px 0;"><strong>Estado Alerta PCC N°1:</strong> ${desvCámara}</p>
-                        <h5 style="font-size: 11px; font-weight: 700; margin: 10px 0 4px 0; color: #b91c1c; text-transform: uppercase;">Aseguramiento de Calidad - No Conformidades</h5>
+                        ${termometroHtml}
+                        <h5 style="font-size: 10.5px; font-weight: 700; margin: 16px 0 6px 0; color: #b91c1c; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-shield-virus"></i> Aseguramiento de Calidad - No Conformidades
+                        </h5>
                         ${pncHtml}
                     </div>
                 </div>
