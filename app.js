@@ -3664,12 +3664,16 @@ function renderPesajes() {
     const defaultMsg = document.getElementById('pesajes-default-message');
     const tablaPesajes = document.getElementById('table-pesajes-ganado');
     const tableBody = document.getElementById('table-pesajes-body');
+    const tablaContainer = document.getElementById('table-pesajes-ganado-container');
+    const headerPlaceholder = document.getElementById('pesaje-header-placeholder');
 
     if (!loteId) {
         if (resumenCard) resumenCard.style.display = 'none';
         if (capturaCard) capturaCard.style.display = 'none';
-        if (defaultMsg) defaultMsg.style.display = 'block';
+        if (defaultMsg) defaultMsg.style.display = 'flex';
         if (tablaPesajes) tablaPesajes.style.display = 'none';
+        if (tablaContainer) tablaContainer.style.display = 'none';
+        if (headerPlaceholder) headerPlaceholder.style.display = 'block';
         return;
     }
 
@@ -3679,15 +3683,19 @@ function renderPesajes() {
         document.getElementById('custom-select-pesajes-lote-text').innerText = 'Selecciona un lote...';
         if (resumenCard) resumenCard.style.display = 'none';
         if (capturaCard) capturaCard.style.display = 'none';
-        if (defaultMsg) defaultMsg.style.display = 'block';
+        if (defaultMsg) defaultMsg.style.display = 'flex';
         if (tablaPesajes) tablaPesajes.style.display = 'none';
+        if (tablaContainer) tablaContainer.style.display = 'none';
+        if (headerPlaceholder) headerPlaceholder.style.display = 'block';
         return;
     }
 
     if (resumenCard) resumenCard.style.display = 'block';
-    if (capturaCard) capturaCard.style.display = 'block';
+    if (capturaCard) capturaCard.style.display = 'flex';
     if (defaultMsg) defaultMsg.style.display = 'none';
     if (tablaPesajes) tablaPesajes.style.display = 'table';
+    if (tablaContainer) tablaContainer.style.display = 'flex';
+    if (headerPlaceholder) headerPlaceholder.style.display = 'none';
 
     const pesajesLote = pesajes.filter(p => p.recepcion_id === loteId);
 
@@ -3710,12 +3718,27 @@ function renderPesajes() {
         progressBar.style.width = `${avancePorcentaje}%`;
     }
 
+    // Calcular estadísticas adicionales en tiempo real para la sesión
+    const pesos = pesajesLote.map(p => parseFloat(p.peso_pie_kg || 0));
+    const pesoMin = pesos.length > 0 ? Math.min(...pesos) : 0;
+    const pesoMax = pesos.length > 0 ? Math.max(...pesos) : 0;
+    const restantes = Math.max(0, totalCabezas - cabezasPesadas);
+
+    const elMin = document.getElementById('pesaje-session-min');
+    if (elMin) elMin.innerText = `${pesoMin.toFixed(2)} kg`;
+
+    const elMax = document.getElementById('pesaje-session-max');
+    if (elMax) elMax.innerText = `${pesoMax.toFixed(2)} kg`;
+
+    const elRestantes = document.getElementById('pesaje-session-restantes');
+    if (elRestantes) elRestantes.innerText = `${restantes} cabezas`;
+
     if (tableBody) {
         tableBody.innerHTML = '';
         if (pesajesLote.length === 0) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="5" style="text-align: center; padding: 24px; color: var(--text-secondary);">
+                    <td colspan="5" style="text-align: center; padding: 36px; color: var(--text-secondary);">
                         <i class="fa-solid fa-weight-scale" style="font-size: 24px; color: var(--border-color); margin-bottom: 8px; display: block;"></i>
                         No se han registrado pesadas para este lote todavía.
                     </td>
@@ -3732,7 +3755,7 @@ function renderPesajes() {
                     <td><strong>${p.correlativo_orejera}</strong></td>
                     <td style="font-weight: 700; color: var(--text-primary);">${parseFloat(p.peso_pie_kg).toFixed(2)} kg</td>
                     <td>${fechaFormat}</td>
-                    <td>
+                    <td style="text-align: right; padding-right: 24px;">
                         <button onclick="editPesaje('${p.id}')" style="background: none; border: none; color: var(--color-admin); cursor: pointer; font-size: 15px; margin-right: 12px;" title="Editar">
                             <i class="fa-solid fa-pen-to-square"></i>
                         </button>
@@ -3745,6 +3768,45 @@ function renderPesajes() {
             });
         }
     }
+}
+
+function autogenerarOrejera() {
+    const loteId = document.getElementById('pesajes-lote-id').value;
+    if (!loteId) {
+        showToast('Seleccione un lote primero.', 'warning');
+        return;
+    }
+    const lote = recepciones.find(r => r.id === loteId);
+    if (!lote) return;
+
+    const pesajesLote = pesajes.filter(p => p.recepcion_id === loteId);
+    const inputOrejera = document.getElementById('pesaje-orejera');
+
+    if (pesajesLote.length > 0) {
+        // Ordenamos por fecha para obtener la última orejera registrada
+        const pesajesOrdenados = [...pesajesLote].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+        const ultimaOrejera = pesajesOrdenados[pesajesOrdenados.length - 1].correlativo_orejera;
+        
+        // Expresión regular para buscar números al final de la orejera
+        const match = ultimaOrejera.match(/^(.*?)(\d+)$/);
+        if (match) {
+            const prefix = match[1];
+            const numberStr = match[2];
+            const nextNumber = parseInt(numberStr) + 1;
+            // Mantener el mismo ancho de ceros a la izquierda
+            const paddedNumber = String(nextNumber).padStart(numberStr.length, '0');
+            inputOrejera.value = prefix + paddedNumber;
+            showToast(`Siguiente orejera sugerida: ${prefix + paddedNumber}`, 'info');
+        } else {
+            // Si no termina en número, simplemente agregamos un sufijo secuencial
+            inputOrejera.value = ultimaOrejera + '-1';
+        }
+    } else {
+        // Si no hay pesajes aún, sugerimos un formato inicial
+        inputOrejera.value = "OR-1001";
+        showToast('Formato inicial sugerido: OR-1001', 'info');
+    }
+    inputOrejera.focus();
 }
 
 // ==========================================

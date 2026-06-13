@@ -353,15 +353,13 @@
 
             <!-- SECCIÓN 2B: PESAJE EN MANGA -->
             <section id="tab-pesajes" class="content-section">
-                <div class="dashboard-grid" style="grid-template-columns: 360px 1fr; gap: 24px;">
-                    <!-- Columna Izquierda: Captura de Peso en Manga -->
-                    <div style="display: flex; flex-direction: column; gap: 20px;">
-                        
-                        <!-- Tarjeta 1: Selección de Lote Activo -->
-                        <div class="card" style="padding: 20px;">
-                            <h4 class="card-title" style="font-size: 14px; margin-bottom: 12px;">
-                                <i class="fa-solid fa-layer-group" style="color: var(--color-ops);"></i>
-                                Seleccionar Lote Activo
+                <!-- CABECERA DE CONTROL DE LOTE -->
+                <div class="card control-lote-header" style="padding: 24px; margin-bottom: 24px; border-radius: 16px;">
+                    <div style="display: grid; grid-template-columns: 320px 1fr; gap: 32px; align-items: center;">
+                        <!-- Selector de lote -->
+                        <div>
+                            <h4 class="card-title" style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 8px;">
+                                <i class="fa-solid fa-layer-group" style="color: var(--color-ops);"></i> Seleccionar Lote Activo
                             </h4>
                             <div class="form-group" style="margin-bottom: 0;">
                                 <div class="custom-select-container" id="custom-select-pesajes-lote-container">
@@ -377,110 +375,183 @@
                             </div>
                         </div>
 
-                        <!-- Tarjeta 2: Resumen del Lote e Indicador de Progreso -->
-                        <div class="card" id="pesaje-resumen-lote" style="padding: 20px; display: none;">
-                            <h4 class="card-title" style="font-size: 14px; margin-bottom: 16px;">
-                                <i class="fa-solid fa-file-invoice" style="color: var(--color-admin);"></i>
-                                Datos del Lote
-                            </h4>
-                            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
-                                <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
-                                    <span>Ganadero:</span>
-                                    <span id="pesaje-lbl-ganadero" style="font-weight: 600; color: var(--text-primary);">--</span>
+                        <!-- Panel de Datos del Lote (cuando está seleccionado) -->
+                        <div id="pesaje-resumen-lote" style="display: none;">
+                            <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px;">
+                                <!-- KPIs del Lote -->
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                                    <!-- Ganadero -->
+                                    <div class="kpi-mini-card">
+                                        <span class="kpi-label">Ganadero</span>
+                                        <span id="pesaje-lbl-ganadero" class="kpi-value">--</span>
+                                    </div>
+                                    <!-- Especie -->
+                                    <div class="kpi-mini-card">
+                                        <span class="kpi-label">Especie</span>
+                                        <span id="pesaje-lbl-especie" class="kpi-value">--</span>
+                                    </div>
+                                    <!-- Total -->
+                                    <div class="kpi-mini-card">
+                                        <span class="kpi-label">Total Animales</span>
+                                        <span id="pesaje-lbl-total" class="kpi-value">0</span>
+                                    </div>
+                                    <!-- Pesadas -->
+                                    <div class="kpi-mini-card highlight">
+                                        <span class="kpi-label">Pesados</span>
+                                        <span id="pesaje-lbl-pesadas" class="kpi-value" style="color: var(--color-ops);">0</span>
+                                    </div>
                                 </div>
-                                <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
-                                    <span>Especie:</span>
-                                    <span id="pesaje-lbl-especie" style="font-weight: 600; color: var(--text-primary);">--</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
-                                    <span>Total Animales:</span>
-                                    <span id="pesaje-lbl-total" style="font-weight: 600; color: var(--text-primary);">0 cabezas</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
-                                    <span>Cabezas Pesadas:</span>
-                                    <span id="pesaje-lbl-pesadas" style="font-weight: 600; color: var(--color-ops);">0 cabezas</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
-                                    <span>Peso Promedio:</span>
-                                    <span id="pesaje-lbl-promedio" style="font-weight: 600; color: var(--text-primary);">0.00 kg</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
-                                    <span>Peso Total Lote:</span>
-                                    <span id="pesaje-lbl-total-peso" style="font-weight: 600; color: var(--color-admin);">0.00 kg</span>
-                                </div>
-                            </div>
-                            
-                            <!-- Progreso de Pesaje -->
-                            <div style="margin-top: 10px;">
-                                <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">
-                                    <span>Avance de Pesaje</span>
-                                    <span id="pesaje-lbl-progreso-porcentaje">0%</span>
-                                </div>
-                                <div class="progress-bar-container">
-                                    <div id="pesaje-progress-bar" class="progress-bar-fill" style="width: 0%;"></div>
+
+                                <!-- Progreso y Promedios -->
+                                <div style="display: flex; flex-direction: column; justify-content: space-between; border-left: 1px solid var(--border-color); padding-left: 24px;">
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px;">
+                                        <div>
+                                            <span class="kpi-label">Peso Promedio</span>
+                                            <span id="pesaje-lbl-promedio" class="kpi-value-large">0.00 kg</span>
+                                        </div>
+                                        <div>
+                                            <span class="kpi-label">Peso Total Lote</span>
+                                            <span id="pesaje-lbl-total-peso" class="kpi-value-large" style="color: var(--color-admin);">0.00 kg</span>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px;">
+                                            <span>PROGRESO DE PESAJE</span>
+                                            <span id="pesaje-lbl-progreso-porcentaje">0%</span>
+                                        </div>
+                                        <div class="progress-bar-container" style="height: 8px; background: #e2e8f0; border-radius: 99px; overflow: hidden;">
+                                            <div id="pesaje-progress-bar" class="progress-bar-fill" style="width: 0%;"></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Tarjeta 3: Captura de Peso -->
-                        <div class="card" id="pesaje-captura-card" style="padding: 20px; display: none;">
-                            <h4 class="card-title" style="font-size: 14px; margin-bottom: 12px;">
+                        <!-- Mensaje Informativo (cuando no hay lote seleccionado) -->
+                        <div id="pesaje-header-placeholder" style="display: block; color: var(--text-secondary); font-size: 13px;">
+                            <i class="fa-solid fa-circle-info" style="color: var(--color-admin); margin-right: 6px;"></i>
+                            Seleccione un lote activo de la lista para inicializar la estación de pesaje y cargar sus datos.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTENEDOR PRINCIPAL: ESTACIÓN Y REGISTROS -->
+                <div class="dashboard-grid" style="grid-template-columns: 380px 1fr; gap: 24px;">
+                    <!-- Columna Izquierda: Consola de Captura de Peso -->
+                    <div id="pesaje-captura-card" class="card console-card" style="padding: 24px; display: none; flex-direction: column; gap: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h4 class="card-title" style="font-size: 15px; margin-bottom: 0;">
                                 <i class="fa-solid fa-weight-scale" style="color: var(--color-client);"></i>
-                                Balanza de Planta
+                                Estación de Pesaje
                             </h4>
-                            
-                            <!-- Display Digital de la Balanza -->
-                            <div class="balanza-display-wrapper" style="margin-bottom: 16px;">
-                                <div class="balanza-display">
-                                    <span id="balanza-peso-digital">0.00</span>
-                                    <span class="balanza-unidad">kg</span>
-                                </div>
-                                <button type="button" class="btn-secondary" onclick="simularPesoBalanza()" style="width: 100%; margin-top: 8px; font-size: 12px; padding: 6px; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                                    <i class="fa-solid fa-plug"></i> Simular Peso Balanza
-                                </button>
-                            </div>
-
-                            <form id="form-pesaje" onsubmit="savePesaje(event)">
-                                <div class="form-group" style="margin-bottom: 12px;">
-                                    <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Peso Capturado (Kg)</label>
-                                    <input type="number" id="pesaje-peso-input" class="form-control" placeholder="0.00" min="5" max="3000" step="0.01" style="padding: 8px 12px; font-size: 14px; height: 38px; font-weight: 700;" required>
-                                </div>
-                                <div class="form-group" style="margin-bottom: 18px;">
-                                    <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Código de Orejera</label>
-                                    <input type="text" id="pesaje-orejera" class="form-control" placeholder="Ej. OR-1025" style="padding: 8px 12px; font-size: 13px; height: 36px; text-transform: uppercase;" required>
-                                </div>
-                                <button type="submit" id="btn-submit-pesaje" class="btn-primary" style="margin-top: 0; padding: 10px; font-size: 13px; background: linear-gradient(135deg, var(--color-client), #c2410c); box-shadow: 0 4px 10px rgba(234, 88, 12, 0.15); width: 100%;">
-                                    <i class="fa-solid fa-plus"></i> <span id="text-submit-pesaje">Registrar Pesada</span>
-                                </button>
-                                <button type="button" id="btn-cancelar-pesaje" class="btn-secondary" onclick="cancelarEdicionPesaje()" style="display: none; width: 100%; margin-top: 8px; font-size: 13px; padding: 8px;">
-                                    Cancelar Edición
-                                </button>
-                            </form>
+                            <span class="badge-status-online" id="balanza-status"><i class="fa-solid fa-circle"></i> CONECTADA</span>
                         </div>
 
+                        <!-- Balanza Display Virtual Premium -->
+                        <div class="modern-balanza-wrapper">
+                            <div class="modern-balanza-screen">
+                                <div class="screen-label">PESO NETO</div>
+                                <div class="screen-main-display">
+                                    <span id="balanza-peso-digital" class="glow-digits">0.00</span>
+                                    <span class="screen-unit">KG</span>
+                                </div>
+                                <div class="screen-footer">
+                                    <span id="balanza-indicator-state">ESTABLE</span>
+                                    <span class="zero-indicator">▶0◀</span>
+                                </div>
+                            </div>
+                            
+                            <button type="button" class="btn-simulate-balanza" onclick="simularPesoBalanza()">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Simular Captura de Balanza
+                            </button>
+                        </div>
+
+                        <!-- Formulario de Registro -->
+                        <form id="form-pesaje" onsubmit="savePesaje(event)" style="display: flex; flex-direction: column; gap: 16px;">
+                            <!-- Input de Peso -->
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" style="font-weight: 600; font-size: 11px; text-transform: uppercase;">
+                                    Confirmar Peso Capturado (Kg)
+                                </label>
+                                <div style="position: relative;">
+                                    <i class="fa-solid fa-weight-hanging" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
+                                    <input type="number" id="pesaje-peso-input" class="form-control" placeholder="0.00" min="5" max="3000" step="0.01" style="padding-left: 40px; font-size: 16px; font-weight: 700; height: 44px;" required>
+                                </div>
+                            </div>
+
+                            <!-- Código de Orejera con lector simulado o input de texto premium -->
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" style="font-weight: 600; font-size: 11px; text-transform: uppercase;">
+                                    Código de Orejera (RFID / Metal)
+                                </label>
+                                <div style="position: relative;">
+                                    <i class="fa-solid fa-tag" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
+                                    <input type="text" id="pesaje-orejera" class="form-control" placeholder="Ej. OR-1025" style="padding-left: 40px; padding-right: 70px; font-size: 14px; font-weight: 600; height: 44px; text-transform: uppercase;" required>
+                                    <button type="button" class="btn-quick-tag" onclick="autogenerarOrejera()" title="Generar correlativo sugerido" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: #e2e8f0; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; color: var(--text-primary); font-weight: 700; transition: var(--transition-fast);">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i> Auto
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button type="submit" id="btn-submit-pesaje" class="btn-register-weight">
+                                <i class="fa-solid fa-plus"></i> <span id="text-submit-pesaje">Registrar Pesada</span>
+                            </button>
+                            
+                            <button type="button" id="btn-cancelar-pesaje" class="btn-cancel-weight" onclick="cancelarEdicionPesaje()" style="display: none;">
+                                Cancelar Edición
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Mensaje default cuando no hay lote seleccionado -->
+                    <div id="pesajes-default-message" class="card" style="padding: 60px; text-align: center; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 480px; width: 100%;">
+                        <div class="pulse-icon-container">
+                            <i class="fa-solid fa-weight-scale" style="font-size: 56px; color: var(--color-client);"></i>
+                        </div>
+                        <h3 style="font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px;">Estación de Pesaje Inactiva</h3>
+                        <p style="font-size: 14px; max-width: 400px; line-height: 1.6; margin-bottom: 24px;">Seleccione un lote en el panel superior para activar la consola de pesaje digital y visualizar los registros individuales.</p>
                     </div>
 
                     <!-- Columna Derecha: Tabla de Animales Pesados -->
-                    <div class="table-container" style="margin-bottom: 0; display: flex; flex-direction: column;">
-                        <div class="table-header-row" style="padding: 16px 24px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
-                            <h3 class="card-title" style="margin-bottom: 0; font-size: 14px;">
-                                <i class="fa-solid fa-list-ol" style="color: var(--color-ops);"></i>
-                                Registro de Pesaje Individual en Pie
-                            </h3>
-                        </div>
-                        <div class="table-responsive-wrapper" style="flex: 1; min-height: 400px;" id="pesajes-tabla-vacia-msg">
-                            <div style="padding: 40px; text-align: center; color: var(--text-secondary);" id="pesajes-default-message">
-                                <i class="fa-solid fa-weight-scale" style="font-size: 48px; color: var(--border-color); margin-bottom: 16px; display: block;"></i>
-                                Seleccione un lote a la izquierda para comenzar el pesaje.
+                    <div id="table-pesajes-ganado-container" class="table-container" style="margin-bottom: 0; display: none; flex-direction: column; overflow: hidden; border-radius: 16px;">
+                        <div class="table-header-row" style="padding: 20px 24px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; background: #ffffff;">
+                            <div>
+                                <h3 class="card-title" style="margin-bottom: 4px; font-size: 15px; font-weight: 700;">
+                                    <i class="fa-solid fa-list-ol" style="color: var(--color-ops); margin-right: 8px;"></i>
+                                    Historial de Pesaje Individual en Pie
+                                </h3>
+                                <p style="font-size: 12px; color: var(--text-secondary); margin: 0;">Secuencia de animales pesados en esta sesión.</p>
                             </div>
-                            <table style="display: none;" id="table-pesajes-ganado">
+                            
+                            <!-- Session Stats summary -->
+                            <div class="session-stats-header" id="session-stats-header">
+                                <div class="session-stat-item">
+                                    <span class="stat-lbl">Mínimo</span>
+                                    <span class="stat-val" id="pesaje-session-min" style="color: #0284c7;">0.00 kg</span>
+                                </div>
+                                <div style="width: 1px; height: 24px; background: var(--border-color);"></div>
+                                <div class="session-stat-item">
+                                    <span class="stat-lbl">Máximo</span>
+                                    <span class="stat-val" id="pesaje-session-max" style="color: #e11d48;">0.00 kg</span>
+                                </div>
+                                <div style="width: 1px; height: 24px; background: var(--border-color);"></div>
+                                <div class="session-stat-item">
+                                    <span class="stat-lbl">Restantes</span>
+                                    <span class="stat-val" id="pesaje-session-restantes" style="color: var(--text-secondary);">0 cabezas</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive-wrapper" style="flex: 1; min-height: 400px; background: #ffffff;">
+                            <table class="modern-table" id="table-pesajes-ganado" style="display: none;">
                                 <thead>
                                     <tr>
-                                        <th>N° Animal</th>
+                                        <th style="width: 100px;">N° Animal</th>
                                         <th>Orejera</th>
-                                        <th>Peso en Pie (Kg)</th>
-                                        <th>Fecha y Hora de Pesaje</th>
-                                        <th>Acción</th>
+                                        <th>Peso en Pie</th>
+                                        <th>Fecha y Hora</th>
+                                        <th style="width: 120px; text-align: right; padding-right: 24px;">Acción</th>
                                     </tr>
                                 </thead>
                                 <tbody id="table-pesajes-body">
