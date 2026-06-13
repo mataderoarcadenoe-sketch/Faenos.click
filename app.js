@@ -5611,9 +5611,6 @@ async function deleteVisita(id) {
     }
 }
 
-    }
-}
-
 
 // ==========================================
 // MÓDULO DE CONSULTA DE TRAZABILIDAD (ART. 3.2)
