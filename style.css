@@ -227,6 +227,29 @@ body {
 
 .sidebar nav {
     width: 100%;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+    margin-bottom: 12px;
+}
+
+/* Scrollbar premium y discreto para el menú de navegación interna */
+.sidebar nav::-webkit-scrollbar {
+    width: 5px;
+}
+
+.sidebar nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar nav::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.2); /* Slate 500 semi-transparente */
+    border-radius: 10px;
+}
+
+.sidebar nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.4);
 }
 
 .nav-menu {
