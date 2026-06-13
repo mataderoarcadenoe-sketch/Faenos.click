@@ -1896,10 +1896,10 @@
     <!-- MODAL REGISTRO/EDICIÓN CÁMARA FRÍA -->
     <div class="form-modal-overlay" id="modal-camara">
         <div class="form-modal-card" style="max-width: 450px;">
-            <div class="form-modal-header">
-                <h3 id="modal-camara-title">Nueva Cámara Frigorífica</h3>
-                <button class="btn-close-modal" onclick="closeModal('camara')"><i class="fa-solid fa-xmark"></i></button>
-            </div>
+            <button class="btn-modal-close" onclick="closeModal('camara')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h2 class="card-title" id="modal-camara-title">Nueva Cámara Frigorífica</h2>
             <form id="form-camara" onsubmit="saveCamara(event)">
                 <div class="form-group">
                     <label class="form-label">Nombre de la Cámara</label>
@@ -1939,10 +1939,10 @@
     <!-- MODAL REGISTRO TEMPERATURA MANUAL -->
     <div class="form-modal-overlay" id="modal-lectura-temp">
         <div class="form-modal-card" style="max-width: 400px;">
-            <div class="form-modal-header">
-                <h3>Registrar Lectura Manual</h3>
-                <button class="btn-close-modal" onclick="closeModal('lectura-temp')"><i class="fa-solid fa-xmark"></i></button>
-            </div>
+            <button class="btn-modal-close" onclick="closeModal('lectura-temp')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h2 class="card-title" id="modal-lectura-temp-title">Registrar Lectura Manual</h2>
             <form id="form-lectura-temp" onsubmit="saveLecturaTemp(event)">
                 <div class="form-group">
                     <label class="form-label">Cámara Frigorífica</label>
@@ -1971,10 +1971,10 @@
     <!-- MODAL REGISTRO/EDICIÓN DE NO CONFORMIDAD -->
     <div class="form-modal-overlay" id="modal-pnc">
         <div class="form-modal-card" style="max-width: 500px;">
-            <div class="form-modal-header">
-                <h3 id="modal-pnc-title">Registrar Producto No Conforme</h3>
-                <button class="btn-close-modal" onclick="closeModal('pnc')"><i class="fa-solid fa-xmark"></i></button>
-            </div>
+            <button class="btn-modal-close" onclick="closeModal('pnc')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h2 class="card-title" id="modal-pnc-title">Registrar Producto No Conforme</h2>
             <form id="form-pnc" onsubmit="savePnc(event)">
                 <div class="form-group">
                     <label class="form-label">Lote Afectado</label>
@@ -2033,10 +2033,10 @@
     <!-- MODAL REGISTRO/EDICIÓN DE DESPACHO Y TRANSPORTE -->
     <div class="form-modal-overlay" id="modal-despacho">
         <div class="form-modal-card" style="max-width: 650px;">
-            <div class="form-modal-header">
-                <h3 id="modal-despacho-title">Registrar Salida / Despacho de Lote</h3>
-                <button class="btn-close-modal" onclick="closeModal('despacho')"><i class="fa-solid fa-xmark"></i></button>
-            </div>
+            <button class="btn-modal-close" onclick="closeModal('despacho')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h2 class="card-title" id="modal-despacho-title">Registrar Salida / Despacho de Lote</h2>
             <form id="form-despacho" onsubmit="saveDespacho(event)">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
                     <div>
@@ -2198,10 +2198,10 @@
     <!-- MODAL REGISTRO CONTROL DE CLORO -->
     <div class="form-modal-overlay" id="modal-cloro">
         <div class="form-modal-card" style="max-width: 450px;">
-            <div class="form-modal-header">
-                <h3 id="modal-cloro-title">Registrar Medición de Cloro Residual</h3>
-                <button class="btn-close-modal" onclick="closeModal('cloro')"><i class="fa-solid fa-xmark"></i></button>
-            </div>
+            <button class="btn-modal-close" onclick="closeModal('cloro')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h2 class="card-title" id="modal-cloro-title">Registrar Medición de Cloro Residual</h2>
             <form id="form-cloro" onsubmit="saveCloro(event)">
                 <div class="form-group">
                     <label class="form-label">Punto de Muestreo de Agua</label>
@@ -2239,10 +2239,10 @@
     <!-- MODAL REGISTRO HIGIENE POES -->
     <div class="form-modal-overlay" id="modal-higiene">
         <div class="form-modal-card" style="max-width: 480px;">
-            <div class="form-modal-header">
-                <h3 id="modal-higiene-title">Registrar Verificación de Higiene POES</h3>
-                <button class="btn-close-modal" onclick="closeModal('higiene')"><i class="fa-solid fa-xmark"></i></button>
-            </div>
+            <button class="btn-modal-close" onclick="closeModal('higiene')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h2 class="card-title" id="modal-higiene-title">Registrar Verificación de Higiene POES</h2>
             <form id="form-higiene" onsubmit="saveHigiene(event)">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
@@ -2327,10 +2327,10 @@
     <!-- MODAL REGISTRO CONTROL DE VISITAS -->
     <div class="form-modal-overlay" id="modal-visita">
         <div class="form-modal-card" style="max-width: 500px;">
-            <div class="form-modal-header">
-                <h3 id="modal-visita-title">Registrar Ingreso de Visita</h3>
-                <button class="btn-close-modal" onclick="closeModal('visita')"><i class="fa-solid fa-xmark"></i></button>
-            </div>
+            <button class="btn-modal-close" onclick="closeModal('visita')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h2 class="card-title" id="modal-visita-title">Registrar Ingreso de Visita</h2>
             <form id="form-visita" onsubmit="saveVisita(event)">
                 <div class="form-group">
                     <label class="form-label">Nombres y Apellidos del Visitante</label>
@@ -2394,10 +2394,10 @@
     <!-- MODAL REGISTRO CAPACITACION -->
     <div class="form-modal-overlay" id="modal-capacitacion">
         <div class="form-modal-card" style="max-width: 520px;">
-            <div class="form-modal-header">
-                <h3 id="modal-capacitacion-title">Registrar Capacitación de Higiene</h3>
-                <button class="btn-close-modal" onclick="closeModal('capacitacion')"><i class="fa-solid fa-xmark"></i></button>
-            </div>
+            <button class="btn-modal-close" onclick="closeModal('capacitacion')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h2 class="card-title" id="modal-capacitacion-title">Registrar Capacitación de Higiene</h2>
             <form id="form-capacitacion" onsubmit="saveCapacitacion(event)">
                 <div class="form-group">
                     <label class="form-label">Tema / Contenido de Capacitación</label>
