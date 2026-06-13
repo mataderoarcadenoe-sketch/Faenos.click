@@ -6025,4 +6025,4 @@ function consultarTrazabilidad(loteCodigo) {
         </div>
     `;
 }
-
+// Fin de app.js
