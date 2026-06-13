@@ -770,7 +770,11 @@ app.get('/api/data', async (req, res) => {
         });
     } catch (e) {
         console.error('Error al recuperar datos:', e);
-        res.status(500).json({ error: 'Error al recuperar datos' });
+        res.status(500).json({ 
+            error: 'Error al recuperar datos',
+            message: e.message,
+            stack: e.stack
+        });
     }
 });
 
