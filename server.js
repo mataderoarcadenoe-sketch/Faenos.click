@@ -724,7 +724,7 @@ app.get('/api/data', async (req, res) => {
         
         const registrosHigiene = await pool.query('SELECT id, fecha, tipo_item as "tipoItem", nombre_item as "nombreItem", frecuencia, limpieza_estado as "limpiezaEstado", desinfectante, concentracion_ppm as "concentracionPpm", observaciones, responsable FROM registro_higiene_poes ORDER BY fecha DESC');
         
-        const visitas = await pool.query('SELECT id, fecha, visitante_nombre as "visitanteNombre", visitante_dni as "visitanteDni", institucion, hora_ingreso as "horaIngreso", hora_caliente as "horaSalida", sintomas_salud as "sintomasSalid", epp_entregado as "eppEntregado", responsable FROM registro_visitas ORDER BY fecha DESC, hora_ingreso DESC');
+        const visitas = await pool.query('SELECT id, fecha, visitante_nombre as "visitanteNombre", visitante_dni as "visitanteDni", institucion, hora_ingreso as "horaIngreso", hora_caliente as "horaSalida", sintomas_salud as "sintomasSalud", epp_entregado as "eppEntregado", responsable FROM registro_visitas ORDER BY fecha DESC, hora_ingreso DESC');
         
         const capacitaciones = await pool.query('SELECT id, fecha, tema, ponente, CAST(duracion_horas AS double precision) as "duracionHoras", asistentes_ids as "asistentesIds", observaciones FROM registro_capacitaciones ORDER BY fecha DESC');
 
@@ -770,11 +770,7 @@ app.get('/api/data', async (req, res) => {
         });
     } catch (e) {
         console.error('Error al recuperar datos:', e);
-        res.status(500).json({ 
-            error: 'Error al recuperar datos',
-            message: e.message,
-            stack: e.stack
-        });
+        res.status(500).json({ error: 'Error al recuperar datos' });
     }
 });
 
