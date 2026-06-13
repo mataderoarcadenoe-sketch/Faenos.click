@@ -328,6 +328,64 @@ async function initDb() {
             )
         `);
 
+        // Nuevas alteraciones para Trazabilidad
+        await client.query(`ALTER TABLE despacho_producto ADD COLUMN IF NOT EXISTS fecha_produccion DATE`);
+        await client.query(`ALTER TABLE despacho_producto ADD COLUMN IF NOT EXISTS fecha_vencimiento DATE`);
+        await client.query(`ALTER TABLE transporte_despacho ADD COLUMN IF NOT EXISTS fumigacion BOOLEAN DEFAULT TRUE`);
+        await client.query(`ALTER TABLE transporte_despacho ADD COLUMN IF NOT EXISTS apilamiento_adecuado BOOLEAN DEFAULT TRUE`);
+
+        // Migración de Códigos de Especie semilla
+        await client.query(`
+            UPDATE especies SET codigo = 'GV' WHERE id = 'e-1' AND codigo = 'VA';
+            UPDATE especies SET codigo = 'GP' WHERE id = 'e-2' AND codigo = 'PO';
+            UPDATE especies SET codigo = 'GO' WHERE id = 'e-3' AND codigo = 'OV';
+            UPDATE especies SET codigo = 'GC' WHERE id = 'e-4' AND codigo = 'CA';
+        `);
+
+        // Actualización de códigos de lote de recepciones existentes (y del campo especie)
+        await client.query(`
+            UPDATE recepciones SET especie = 'GV', lote_codigo = REPLACE(lote_codigo, 'VA', 'GV') WHERE especie = 'VA';
+            UPDATE recepciones SET especie = 'GP', lote_codigo = REPLACE(lote_codigo, 'PO', 'GP') WHERE especie = 'PO';
+            UPDATE recepciones SET especie = 'GO', lote_codigo = REPLACE(lote_codigo, 'OV', 'GO') WHERE especie = 'OV';
+            UPDATE recepciones SET especie = 'GC', lote_codigo = REPLACE(lote_codigo, 'CA', 'GC') WHERE especie = 'CA';
+        `);
+
+        // Actualización de códigos de lote en deudas
+        await client.query(`
+            UPDATE deudas SET lote_codigo = REPLACE(lote_codigo, 'VA', 'GV') WHERE lote_codigo LIKE '%VA%';
+            UPDATE deudas SET lote_codigo = REPLACE(lote_codigo, 'PO', 'GP') WHERE lote_codigo LIKE '%PO%';
+            UPDATE deudas SET lote_codigo = REPLACE(lote_codigo, 'OV', 'GO') WHERE lote_codigo LIKE '%OV%';
+            UPDATE deudas SET lote_codigo = REPLACE(lote_codigo, 'CA', 'GC') WHERE lote_codigo LIKE '%CA%';
+        `);
+
+        // Actualización de códigos de lote en despachos
+        await client.query(`
+            UPDATE despacho_producto SET lote_codigo = REPLACE(lote_codigo, 'VA', 'GV') WHERE lote_codigo LIKE '%VA%';
+            UPDATE despacho_producto SET lote_codigo = REPLACE(lote_codigo, 'PO', 'GP') WHERE lote_codigo LIKE '%PO%';
+            UPDATE despacho_producto SET lote_codigo = REPLACE(lote_codigo, 'OV', 'GO') WHERE lote_codigo LIKE '%OV%';
+            UPDATE despacho_producto SET lote_codigo = REPLACE(lote_codigo, 'CA', 'GC') WHERE lote_codigo LIKE '%CA%';
+        `);
+
+        // Completar la Fecha de Producción y Vencimiento para despachos históricos
+        await client.query(`
+            UPDATE despacho_producto dp
+            SET fecha_produccion = COALESCE((SELECT fecha::date FROM recepciones r WHERE r.lote_codigo = dp.lote_codigo), dp.fecha::date)
+            WHERE dp.fecha_produccion IS NULL
+        `);
+        await client.query(`
+            UPDATE despacho_producto dp
+            SET fecha_vencimiento = (dp.fecha_produccion + INTERVAL '7 days')::date
+            WHERE dp.fecha_vencimiento IS NULL
+        `);
+
+        // Actualización de códigos de lote en productos no conformes
+        await client.query(`
+            UPDATE productos_no_conformes SET lote_codigo = REPLACE(lote_codigo, 'VA', 'GV') WHERE lote_codigo LIKE '%VA%';
+            UPDATE productos_no_conformes SET lote_codigo = REPLACE(lote_codigo, 'PO', 'GP') WHERE lote_codigo LIKE '%PO%';
+            UPDATE productos_no_conformes SET lote_codigo = REPLACE(lote_codigo, 'OV', 'GO') WHERE lote_codigo LIKE '%OV%';
+            UPDATE productos_no_conformes SET lote_codigo = REPLACE(lote_codigo, 'CA', 'GC') WHERE lote_codigo LIKE '%CA%';
+        `);
+
 
         // POBLAR DATOS DE PRUEBA SI LAS TABLAS ESTÁN VACÍAS
         
@@ -640,17 +698,17 @@ app.get('/api/data', async (req, res) => {
             });
         }
 
-        const pesajes = await pool.query('SELECT id, recepcion_id as "recepcionId", correlativo_orejera as "correlativoOrejera", CAST(peso_pie_kg AS double precision) as "pesoPieKg", creado_el as "creadoEl" FROM pesajes_animales ORDER BY creado_el DESC');
+        const pesajes = await pool.query('SELECT id, recepcion_id, correlativo_orejera, CAST(peso_pie_kg AS double precision) as peso_pie_kg, creado_el as fecha FROM pesajes_animales ORDER BY creado_el DESC');
 
         const camaras = await pool.query('SELECT id, nombre, CAST(temperatura_min AS double precision) as "temperaturaMin", CAST(temperatura_max AS double precision) as "temperaturaMax", estado FROM camaras_frigorificas ORDER BY nombre');
         const temperaturas = await pool.query('SELECT id, camara_id as "camaraId", CAST(temperatura AS double precision) as temperatura, fecha, desviacion FROM temperatura_monitoreo ORDER BY fecha DESC LIMIT 50');
         const productosNoConformes = await pool.query('SELECT id, origen, detalles, lote_codigo as "loteCodigo", accion_correctiva as "accionCorrectiva", fecha, responsable, estado FROM productos_no_conformes ORDER BY fecha DESC');
 
         // Nuevos Datasets de la Fase 15
-        const despachosRaw = await pool.query('SELECT id, fecha, lote_codigo as "loteCodigo", cliente, guia_remision as "guiaRemision", cantidad_carcasas as "cantidadCarcasas", CAST(peso_total AS double precision) as "pesoTotal", CAST(temperatura_carne AS double precision) as "temperaturaCarne", observaciones, responsable FROM despacho_producto ORDER BY fecha DESC');
+        const despachosRaw = await pool.query('SELECT id, fecha, lote_codigo as "loteCodigo", cliente, guia_remision as "guiaRemision", cantidad_carcasas as "cantidadCarcasas", CAST(peso_total AS double precision) as "pesoTotal", CAST(temperatura_carne AS double precision) as "temperaturaCarne", observaciones, responsable, fecha_produccion as "fechaProduccion", fecha_vencimiento as "fechaVencimiento" FROM despacho_producto ORDER BY fecha DESC');
         const despachos = [];
         for (const d of despachosRaw.rows) {
-            const t = await pool.query('SELECT id, placa_vehiculo as "placaVehiculo", conductor, licencia, higiene_furgon as "higieneFurgon", CAST(temperatura_furgon AS double precision) as "temperaturaFurgon", hermeticidad, observaciones FROM transporte_despacho WHERE despacho_id = $1', [d.id]);
+            const t = await pool.query('SELECT id, placa_vehiculo as "placaVehiculo", conductor, licencia, higiene_furgon as "higieneFurgon", CAST(temperatura_furgon AS double precision) as "temperaturaFurgon", hermeticidad, observaciones, fumigacion, apilamiento_adecuado as "apilamientoAdecuado" FROM transporte_despacho WHERE despacho_id = $1', [d.id]);
             despachos.push({
                 ...d,
                 transporte: t.rows[0] || null
@@ -1024,6 +1082,21 @@ app.post('/api/recepciones', async (req, res) => {
     }
 });
 
+app.put('/api/recepciones/:id', async (req, res) => {
+    const { id } = req.params;
+    const { estado } = req.body;
+    try {
+        await pool.query(
+            'UPDATE recepciones SET estado = $1 WHERE id = $2',
+            [estado, id]
+        );
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // --- PROCESAR COBRO DE UN LOTE ---
 app.post('/api/cobros', async (req, res) => {
     const { recepcionId, metodoId, total, obs, esCredito, nuevaDeuda, nuevoMov } = req.body;
@@ -1330,14 +1403,14 @@ app.post('/api/despachos', async (req, res) => {
         await client.query('BEGIN');
 
         await client.query(
-            'INSERT INTO despacho_producto (id, fecha, lote_codigo, cliente, guia_remision, cantidad_carcasas, peso_total, temperatura_carne, observaciones, responsable) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
-            [nuevoDespacho.id, nuevoDespacho.fecha, nuevoDespacho.loteCodigo, nuevoDespacho.cliente, nuevoDespacho.guiaRemision, nuevoDespacho.cantidadCarcasas, nuevoDespacho.pesoTotal, nuevoDespacho.temperaturaCarne, nuevoDespacho.observaciones, nuevoDespacho.responsable]
+            'INSERT INTO despacho_producto (id, fecha, lote_codigo, cliente, guia_remision, cantidad_carcasas, peso_total, temperatura_carne, observaciones, responsable, fecha_produccion, fecha_vencimiento) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
+            [nuevoDespacho.id, nuevoDespacho.fecha, nuevoDespacho.loteCodigo, nuevoDespacho.cliente, nuevoDespacho.guiaRemision, nuevoDespacho.cantidadCarcasas, nuevoDespacho.pesoTotal, nuevoDespacho.temperaturaCarne, nuevoDespacho.observaciones, nuevoDespacho.responsable, nuevoDespacho.fechaProduccion, nuevoDespacho.fechaVencimiento]
         );
 
         if (nuevoTransporte) {
             await client.query(
-                'INSERT INTO transporte_despacho (id, despacho_id, placa_vehiculo, conductor, licencia, higiene_furgon, temperatura_furgon, hermeticidad, observaciones) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
-                [nuevoTransporte.id, nuevoDespacho.id, nuevoTransporte.placaVehiculo, nuevoTransporte.conductor, nuevoTransporte.licencia, nuevoTransporte.higieneFurgon, nuevoTransporte.temperaturaFurgon, nuevoTransporte.hermeticidad, nuevoTransporte.observaciones]
+                'INSERT INTO transporte_despacho (id, despacho_id, placa_vehiculo, conductor, licencia, higiene_furgon, temperatura_furgon, hermeticidad, observaciones, fumigacion, apilamiento_adecuado) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+                [nuevoTransporte.id, nuevoDespacho.id, nuevoTransporte.placaVehiculo, nuevoTransporte.conductor, nuevoTransporte.licencia, nuevoTransporte.higieneFurgon, nuevoTransporte.temperaturaFurgon, nuevoTransporte.hermeticidad, nuevoTransporte.observaciones, nuevoTransporte.fumigacion, nuevoTransporte.apilamientoAdecuado]
             );
         }
 
@@ -1360,8 +1433,8 @@ app.put('/api/despachos/:id', async (req, res) => {
         await client.query('BEGIN');
 
         await client.query(
-            'UPDATE despacho_producto SET fecha = $1, lote_codigo = $2, cliente = $3, guia_remision = $4, cantidad_carcasas = $5, peso_total = $6, temperatura_carne = $7, observaciones = $8, responsable = $9 WHERE id = $10',
-            [nuevoDespacho.fecha, nuevoDespacho.loteCodigo, nuevoDespacho.cliente, nuevoDespacho.guiaRemision, nuevoDespacho.cantidadCarcasas, nuevoDespacho.pesoTotal, nuevoDespacho.temperaturaCarne, nuevoDespacho.observaciones, nuevoDespacho.responsable, id]
+            'UPDATE despacho_producto SET fecha = $1, lote_codigo = $2, cliente = $3, guia_remision = $4, cantidad_carcasas = $5, peso_total = $6, temperatura_carne = $7, observaciones = $8, responsable = $9, fecha_produccion = $10, fecha_vencimiento = $11 WHERE id = $12',
+            [nuevoDespacho.fecha, nuevoDespacho.loteCodigo, nuevoDespacho.cliente, nuevoDespacho.guiaRemision, nuevoDespacho.cantidadCarcasas, nuevoDespacho.pesoTotal, nuevoDespacho.temperaturaCarne, nuevoDespacho.observaciones, nuevoDespacho.responsable, nuevoDespacho.fechaProduccion, nuevoDespacho.fechaVencimiento, id]
         );
 
         if (nuevoTransporte) {
@@ -1369,13 +1442,13 @@ app.put('/api/despachos/:id', async (req, res) => {
             const rTrans = await client.query('SELECT id FROM transporte_despacho WHERE despacho_id = $1', [id]);
             if (rTrans.rows.length > 0) {
                 await client.query(
-                    'UPDATE transporte_despacho SET placa_vehiculo = $1, conductor = $2, licencia = $3, higiene_furgon = $4, temperatura_furgon = $5, hermeticidad = $6, observaciones = $7 WHERE despacho_id = $8',
-                    [nuevoTransporte.placaVehiculo, nuevoTransporte.conductor, nuevoTransporte.licencia, nuevoTransporte.higieneFurgon, nuevoTransporte.temperaturaFurgon, nuevoTransporte.hermeticidad, nuevoTransporte.observaciones, id]
+                    'UPDATE transporte_despacho SET placa_vehiculo = $1, conductor = $2, licencia = $3, higiene_furgon = $4, temperatura_furgon = $5, hermeticidad = $6, observaciones = $7, fumigacion = $8, apilamiento_adecuado = $9 WHERE despacho_id = $10',
+                    [nuevoTransporte.placaVehiculo, nuevoTransporte.conductor, nuevoTransporte.licencia, nuevoTransporte.higieneFurgon, nuevoTransporte.temperaturaFurgon, nuevoTransporte.hermeticidad, nuevoTransporte.observaciones, nuevoTransporte.fumigacion, nuevoTransporte.apilamientoAdecuado, id]
                 );
             } else {
                 await client.query(
-                    'INSERT INTO transporte_despacho (id, despacho_id, placa_vehiculo, conductor, licencia, higiene_furgon, temperatura_furgon, hermeticidad, observaciones) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
-                    [nuevoTransporte.id || 'trans-' + Date.now(), id, nuevoTransporte.placaVehiculo, nuevoTransporte.conductor, nuevoTransporte.licencia, nuevoTransporte.higieneFurgon, nuevoTransporte.temperaturaFurgon, nuevoTransporte.hermeticidad, nuevoTransporte.observaciones]
+                    'INSERT INTO transporte_despacho (id, despacho_id, placa_vehiculo, conductor, licencia, higiene_furgon, temperatura_furgon, hermeticidad, observaciones, fumigacion, apilamiento_adecuado) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+                    [nuevoTransporte.id || 'trans-' + Date.now(), id, nuevoTransporte.placaVehiculo, nuevoTransporte.conductor, nuevoTransporte.licencia, nuevoTransporte.higieneFurgon, nuevoTransporte.temperaturaFurgon, nuevoTransporte.hermeticidad, nuevoTransporte.observaciones, nuevoTransporte.fumigacion, nuevoTransporte.apilamientoAdecuado]
                 );
             }
         }

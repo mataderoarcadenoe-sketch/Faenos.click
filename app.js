@@ -412,6 +412,9 @@ function switchTab(tabName) {
         } else {
             document.getElementById('header-action-visita').style.display = 'flex';
         }
+    } else if (tabName === 'trazabilidad') {
+        titleText = 'Consulta Rastreabilidad por Lote';
+        iconClass = 'fa-route';
     }
     
     // Actualizar título e icono en el header superior
@@ -427,6 +430,10 @@ function switchTab(tabName) {
         if (!subTabActiva) {
             switchCajaSubTab('turno');
         }
+    }
+
+    if (tabName === 'trazabilidad') {
+        poblarSelectorTrazabilidadLote();
     }
 
     // Inicializar subpestaña de calidad por defecto al entrar
@@ -775,6 +782,20 @@ async function saveIngreso(event) {
     }
 }
 
+// Dictaminar Lote
+async function dictaminarLote(id) {
+    const confirmado = await customConfirm('¿Está seguro de dictaminar este lote como "Inspeccionado"? Esto liberará el lote para el pesaje en manga.');
+    if (confirmado) {
+        try {
+            await apiPut('/api/recepciones/' + id, { estado: 'Inspeccionado' });
+            await loadServerData();
+            showToast('Lote dictaminado e inspeccionado con éxito.', 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    }
+}
+
 // Eliminar Ganadero
 async function deleteGanadero(id) {
     const confirmado = await customConfirm('¿Está seguro de eliminar este ganadero? La acción es permanente.');
@@ -919,6 +940,20 @@ function renderAll() {
             `;
         }
 
+        let estadoBadge = '';
+        let accionCell = '';
+        if (r.estado === 'Pendiente Inspección') {
+            estadoBadge = `<span class="badge badge-pending">${r.estado}</span>`;
+            accionCell = `
+                <button onclick="dictaminarLote('${r.id}')" class="btn-primary" style="width: auto; padding: 4px 8px; font-size: 11px; margin-top: 0; background: linear-gradient(135deg, var(--color-admin), #ea580c); box-shadow: none;">
+                    <i class="fa-solid fa-file-medical"></i> Dictaminar
+                </button>
+            `;
+        } else {
+            estadoBadge = `<span class="badge badge-success">${r.estado}</span>`;
+            accionCell = `<span class="badge badge-success" style="background: rgba(5, 150, 105, 0.08); color: var(--color-ops); border: 1px solid rgba(5, 150, 105, 0.15);"><i class="fa-solid fa-check"></i> Listo</span>`;
+        }
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><span class="lote-tag" style="border-color: var(--color-client); color: #ea580c; background: rgba(234, 88, 12, 0.05);">${r.lote_codigo}</span></td>
@@ -929,7 +964,8 @@ function renderAll() {
             <td><span class="badge" style="background: #f1f5f9; color: var(--text-secondary); border: 1px solid #e2e8f0; font-family: monospace; font-size: 11px;">${r.registro_establo || 'N/A'}</span></td>
             <td style="font-size: 12px; color: var(--text-secondary);">${fechaLegible}</td>
             <td>${cobroCell}</td>
-            <td><span class="badge badge-pending">${r.estado}</span></td>
+            <td>${estadoBadge}</td>
+            <td>${accionCell}</td>
         `;
         tbodyRecepciones.appendChild(tr);
     });
@@ -3272,6 +3308,10 @@ async function registrarAbonoDeuda(event) {
     if (deudaEspecificaId) {
         const deuda = deudasClonadas.find(d => d.id === deudaEspecificaId);
         if (deuda) {
+            if (montoAbono > deuda.saldo) {
+                showToast(`El monto de abono (S/. ${montoAbono.toFixed(2)}) supera el saldo pendiente de este lote (S/. ${deuda.saldo.toFixed(2)}).`, 'error');
+                return;
+            }
             const montoAmortizar = Math.min(deuda.saldo, restante);
             deuda.monto_abonado += montoAmortizar;
             deuda.saldo = deuda.monto_total - deuda.monto_abonado;
@@ -3513,7 +3553,7 @@ async function savePesaje(event) {
 
     // Si es un nuevo pesaje, verificar si se excede la cantidad declarada
     if (editingPesajeId === null) {
-        const pesajesLote = pesajes.filter(p => p.recepcionId === loteId);
+        const pesajesLote = pesajes.filter(p => p.recepcion_id === loteId);
         if (pesajesLote.length >= parseInt(lote.cantidad)) {
             const confirmado = await customConfirm(`El lote ya tiene registradas todas las cabezas declaradas (${lote.cantidad}). ¿Desea registrar un animal adicional?`);
             if (!confirmado) return;
@@ -3551,9 +3591,9 @@ function editPesaje(id) {
     editingPesajeId = id;
     
     // Rellenar formulario
-    document.getElementById('pesaje-peso-input').value = p.pesoPieKg;
-    document.getElementById('balanza-peso-digital').innerText = parseFloat(p.pesoPieKg).toFixed(2);
-    document.getElementById('pesaje-orejera').value = p.correlativoOrejera;
+    document.getElementById('pesaje-peso-input').value = p.peso_pie_kg;
+    document.getElementById('balanza-peso-digital').innerText = parseFloat(p.peso_pie_kg).toFixed(2);
+    document.getElementById('pesaje-orejera').value = p.correlativo_orejera;
 
     // Cambiar botones
     document.getElementById('text-submit-pesaje').innerText = 'Guardar Cambios';
@@ -3578,7 +3618,7 @@ async function deletePesaje(id) {
     const p = pesajes.find(item => item.id === id);
     if (!p) return;
 
-    const confirmado = await customConfirm(`¿Está seguro de eliminar el pesaje del animal con orejera "${p.correlativoOrejera}"? Esta acción no se puede deshacer.`);
+    const confirmado = await customConfirm(`¿Está seguro de eliminar el pesaje del animal con orejera "${p.correlativo_orejera}"? Esta acción no se puede deshacer.`);
     if (confirmado) {
         try {
             await apiDelete(`/api/pesajes/${id}`);
@@ -3649,11 +3689,11 @@ function renderPesajes() {
     if (defaultMsg) defaultMsg.style.display = 'none';
     if (tablaPesajes) tablaPesajes.style.display = 'table';
 
-    const pesajesLote = pesajes.filter(p => p.recepcionId === loteId);
+    const pesajesLote = pesajes.filter(p => p.recepcion_id === loteId);
 
     const totalCabezas = parseInt(lote.cantidad) || 0;
     const cabezasPesadas = pesajesLote.length;
-    const totalPeso = pesajesLote.reduce((acc, p) => acc + parseFloat(p.pesoPieKg || 0), 0);
+    const totalPeso = pesajesLote.reduce((acc, p) => acc + parseFloat(p.peso_pie_kg || 0), 0);
     const promedioPeso = cabezasPesadas > 0 ? (totalPeso / cabezasPesadas) : 0;
     const avancePorcentaje = totalCabezas > 0 ? Math.min(Math.round((cabezasPesadas / totalCabezas) * 100), 100) : 0;
 
@@ -3682,15 +3722,15 @@ function renderPesajes() {
                 </tr>
             `;
         } else {
-            const pesajesOrdenados = [...pesajesLote].sort((a, b) => new Date(a.creadoEl) - new Date(b.creadoEl));
+            const pesajesOrdenados = [...pesajesLote].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
             
             pesajesOrdenados.forEach((p, index) => {
                 const tr = document.createElement('tr');
-                const fechaFormat = p.creadoEl ? new Date(p.creadoEl).toLocaleString('es-PE', { hour12: false }) : '--';
+                const fechaFormat = p.fecha ? new Date(p.fecha).toLocaleString('es-PE', { hour12: false }) : '--';
                 tr.innerHTML = `
                     <td><span class="lote-tag" style="background: #f1f5f9; color: #475569;">#${index + 1}</span></td>
-                    <td><strong>${p.correlativoOrejera}</strong></td>
-                    <td style="font-weight: 700; color: var(--text-primary);">${parseFloat(p.pesoPieKg).toFixed(2)} kg</td>
+                    <td><strong>${p.correlativo_orejera}</strong></td>
+                    <td style="font-weight: 700; color: var(--text-primary);">${parseFloat(p.peso_pie_kg).toFixed(2)} kg</td>
                     <td>${fechaFormat}</td>
                     <td>
                         <button onclick="editPesaje('${p.id}')" style="background: none; border: none; color: var(--color-admin); cursor: pointer; font-size: 15px; margin-right: 12px;" title="Editar">
@@ -4389,8 +4429,36 @@ function renderDespachos() {
     if (tbodyDespachos) {
         tbodyDespachos.innerHTML = '';
         if (despachos.length === 0) {
-            tbodyDespachos.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 16px;">No se registran despachos realizados.</td></tr>`;
+            tbodyDespachos.innerHTML = `<tr><td colspan="13" style="text-align: center; color: var(--text-secondary); padding: 16px;">No se registran despachos realizados.</td></tr>`;
         } else {
+            // Calcular el Saldo rotativo por lote en orden cronológico
+            const despachosSorted = [...despachos].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+            const acumuladoPorLote = {}; // loteCodigo -> totalDespachadoAcumulado
+            const saldoPorDespachoId = {};
+            
+            despachosSorted.forEach(dep => {
+                const lote = dep.loteCodigo;
+                const cant = parseInt(dep.cantidadCarcasas) || 0;
+                acumuladoPorLote[lote] = (acumuladoPorLote[lote] || 0) + cant;
+                
+                const rec = recepciones.find(r => r.lote_codigo === lote);
+                const ent = rec ? parseInt(rec.cantidad) || 0 : 0;
+                saldoPorDespachoId[dep.id] = ent - acumuladoPorLote[lote];
+            });
+
+            // Helper para formatear fecha YYYY-MM-DD a DD/MM/YYYY evitando desfases de huso horario
+            function formatFechaSimple(fechaStr) {
+                if (!fechaStr) return '--';
+                if (fechaStr.includes('T')) {
+                    fechaStr = fechaStr.split('T')[0];
+                }
+                const parts = fechaStr.split('-');
+                if (parts.length === 3) {
+                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                return fechaStr;
+            }
+
             despachos.forEach(d => {
                 const isTempCritical = parseFloat(d.temperaturaCarne) > 7.0;
                 const tempBadge = isTempCritical 
@@ -4400,6 +4468,14 @@ function renderDespachos() {
                 const fechaFormat = new Date(d.fecha).toLocaleString('es-PE', { 
                     day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false 
                 });
+
+                const rec = recepciones.find(r => r.lote_codigo === d.loteCodigo);
+                const entrada = rec ? parseInt(rec.cantidad) || 0 : 0;
+                const salida = parseInt(d.cantidadCarcasas) || 0;
+                const saldo = saldoPorDespachoId[d.id] !== undefined ? saldoPorDespachoId[d.id] : entrada;
+
+                const fProd = formatFechaSimple(d.fechaProduccion);
+                const fVenc = formatFechaSimple(d.fechaVencimiento);
                 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -4407,7 +4483,11 @@ function renderDespachos() {
                     <td><strong>${d.loteCodigo}</strong></td>
                     <td>${d.cliente}</td>
                     <td><span class="lote-tag">${d.guiaRemision}</span></td>
-                    <td><strong>${d.cantidadCarcasas}</strong></td>
+                    <td>${fProd}</td>
+                    <td>${fVenc}</td>
+                    <td><strong>${entrada}</strong></td>
+                    <td><strong>${salida}</strong></td>
+                    <td><strong style="color: ${saldo <= 0 ? '#ef4444' : 'var(--color-ops)'}">${saldo}</strong></td>
                     <td>${parseFloat(d.pesoTotal).toFixed(2)} kg</td>
                     <td>${tempBadge}</td>
                     <td>${d.responsable}</td>
@@ -4431,7 +4511,7 @@ function renderDespachos() {
         tbodyTransportes.innerHTML = '';
         const despachosConTransporte = despachos.filter(d => d.transporte);
         if (despachosConTransporte.length === 0) {
-            tbodyTransportes.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 16px;">No se registran transportes de despachos correspondientes.</td></tr>`;
+            tbodyTransportes.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 16px;">No se registran transportes de despachos correspondientes.</td></tr>`;
         } else {
             despachosConTransporte.forEach(d => {
                 const t = d.transporte;
@@ -4446,6 +4526,14 @@ function renderDespachos() {
                 const tempBadge = parseFloat(t.temperaturaFurgon) > 7.0 
                     ? `<span class="badge-alerta-pcc"><i class="fa-solid fa-temperature-arrow-up"></i> ${parseFloat(t.temperaturaFurgon).toFixed(1)} °C</span>` 
                     : `<span class="badge-conforme">${parseFloat(t.temperaturaFurgon).toFixed(1)} °C</span>`;
+
+                const fumBadge = t.fumigacion 
+                    ? `<span class="badge-conforme">Sí (Conforme)</span>` 
+                    : `<span class="badge-alerta-pcc">No Fumigado</span>`;
+                
+                const apilBadge = t.apilamientoAdecuado 
+                    ? `<span class="badge-conforme">Sí (Conforme)</span>` 
+                    : `<span class="badge-alerta-pcc">Inadecuado</span>`;
                 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -4455,6 +4543,8 @@ function renderDespachos() {
                     <td>${hygieneBadge}</td>
                     <td>${tempBadge}</td>
                     <td>${hermBadge}</td>
+                    <td>${fumBadge}</td>
+                    <td>${apilBadge}</td>
                     <td><small style="color: var(--text-secondary);">${t.observaciones || '--'}</small></td>
                 `;
                 tbodyTransportes.appendChild(tr);
@@ -4701,7 +4791,7 @@ function calcularStockDisponible(loteCodigo) {
     
     // Si hay pesajes individuales registrados, el total de carcasas es ese conteo.
     // De lo contrario es la cantidad declarada en la recepción inicial
-    const pesajesLote = pesajes.filter(p => p.recepcionId === recepcion.id).length;
+    const pesajesLote = pesajes.filter(p => p.recepcion_id === recepcion.id).length;
     const totalCarcasas = pesajesLote > 0 ? pesajesLote : recepcion.cantidad;
     
     // Calcular lo ya despachado de este lote (excluyendo el despacho actual si está en edición)
@@ -4747,6 +4837,18 @@ function selectDespachoLoteOption(loteCodigo, texto, stock, event) {
             }
         });
         
+        // Autocompletar fechas de producción y vencimiento
+        const recepcion = recepciones.find(r => r.lote_codigo === loteCodigo);
+        if (recepcion) {
+            const fProd = new Date(recepcion.fecha).toISOString().split('T')[0];
+            document.getElementById('despacho-fecha-produccion').value = fProd;
+            
+            const dVenc = new Date(recepcion.fecha);
+            dVenc.setDate(dVenc.getDate() + 7);
+            const fVenc = dVenc.toISOString().split('T')[0];
+            document.getElementById('despacho-fecha-vencimiento').value = fVenc;
+        }
+        
         actualizarCantidadMaximaCarcasas();
         
         // Disparar evento change manualmente para validación nativa
@@ -4783,6 +4885,40 @@ function selectDespachoHermeticidadOption(val, text, event) {
         container.classList.remove('active');
         
         document.querySelectorAll('#custom-select-despacho-hermeticidad-options .custom-select-option').forEach(el => {
+            if (el.getAttribute('data-value') === val) el.classList.add('selected');
+            else el.classList.remove('selected');
+        });
+    }
+}
+
+function selectDespachoFumigacionOption(val, text, event) {
+    if (event) event.stopPropagation();
+    const input = document.getElementById('despacho-fumigacion');
+    const trigger = document.getElementById('custom-select-despacho-fumigacion-text');
+    const container = document.getElementById('custom-select-despacho-fumigacion-container');
+    if (input && trigger && container) {
+        input.value = val;
+        trigger.innerText = text;
+        container.classList.remove('active');
+        
+        document.querySelectorAll('#custom-select-despacho-fumigacion-options .custom-select-option').forEach(el => {
+            if (el.getAttribute('data-value') === val) el.classList.add('selected');
+            else el.classList.remove('selected');
+        });
+    }
+}
+
+function selectDespachoApilamientoOption(val, text, event) {
+    if (event) event.stopPropagation();
+    const input = document.getElementById('despacho-apilamiento');
+    const trigger = document.getElementById('custom-select-despacho-apilamiento-text');
+    const container = document.getElementById('custom-select-despacho-apilamiento-container');
+    if (input && trigger && container) {
+        input.value = val;
+        trigger.innerText = text;
+        container.classList.remove('active');
+        
+        document.querySelectorAll('#custom-select-despacho-apilamiento-options .custom-select-option').forEach(el => {
             if (el.getAttribute('data-value') === val) el.classList.add('selected');
             else el.classList.remove('selected');
         });
@@ -4874,6 +5010,11 @@ function iniciarNuevoDespacho() {
     
     selectDespachoHigieneOption('Conforme', 'Conforme');
     selectDespachoHermeticidadOption('Sí', 'Sí');
+    selectDespachoFumigacionOption('Sí', 'Sí (Conforme)');
+    selectDespachoApilamientoOption('Sí', 'Sí (Conforme)');
+    
+    document.getElementById('despacho-fecha-produccion').value = '';
+    document.getElementById('despacho-fecha-vencimiento').value = '';
     
     // Fecha y hora actual local
     const ahora = new Date();
@@ -5005,12 +5146,17 @@ async function saveDespacho(e) {
     const responsable = document.getElementById('despacho-responsable').value;
     const fechaInput = document.getElementById('despacho-fecha').value;
     
+    const fechaProduccion = document.getElementById('despacho-fecha-produccion').value;
+    const fechaVencimiento = document.getElementById('despacho-fecha-vencimiento').value;
+    
     const placaVehiculo = document.getElementById('despacho-placa').value;
     const conductor = document.getElementById('despacho-conductor').value;
     const licencia = document.getElementById('despacho-licencia').value;
     const temperaturaFurgon = parseFloat(document.getElementById('despacho-temp-furgon').value);
     const higieneFurgon = document.getElementById('despacho-higiene').value;
     const hermeticidad = document.getElementById('despacho-hermeticidad').value === 'Sí';
+    const fumigacion = document.getElementById('despacho-fumigacion').value === 'Sí';
+    const apilamientoAdecuado = document.getElementById('despacho-apilamiento').value === 'Sí';
 
     if (!loteCodigo) {
         showToast('Por favor, selecciona un lote de origen.', 'error');
@@ -5039,7 +5185,9 @@ async function saveDespacho(e) {
             pesoTotal,
             temperaturaCarne,
             observaciones,
-            responsable
+            responsable,
+            fechaProduccion,
+            fechaVencimiento
         },
         nuevoTransporte: {
             id: 'trans-' + Date.now(),
@@ -5049,7 +5197,9 @@ async function saveDespacho(e) {
             higieneFurgon,
             temperaturaFurgon,
             hermeticidad,
-            observaciones: `Registro de transporte asociado a la guía ${guiaRemision}`
+            observaciones: `Registro de transporte asociado a la guía ${guiaRemision}`,
+            fumigacion,
+            apilamientoAdecuado
         }
     };
 
@@ -5266,6 +5416,11 @@ function editDespacho(id) {
     const fechaISO = d.fecha ? new Date(d.fecha).toISOString().slice(0, 16) : '';
     document.getElementById('despacho-fecha').value = fechaISO;
 
+    const fProd = d.fechaProduccion ? new Date(d.fechaProduccion).toISOString().slice(0, 10) : '';
+    document.getElementById('despacho-fecha-produccion').value = fProd;
+    const fVenc = d.fechaVencimiento ? new Date(d.fechaVencimiento).toISOString().slice(0, 10) : '';
+    document.getElementById('despacho-fecha-vencimiento').value = fVenc;
+
     if (d.transporte) {
         document.getElementById('despacho-placa').value = d.transporte.placaVehiculo;
         document.getElementById('despacho-conductor').value = d.transporte.conductor;
@@ -5274,6 +5429,8 @@ function editDespacho(id) {
         
         selectDespachoHigieneOption(d.transporte.higieneFurgon, d.transporte.higieneFurgon);
         selectDespachoHermeticidadOption(d.transporte.hermeticidad ? 'Sí' : 'No', d.transporte.hermeticidad ? 'Sí' : 'No');
+        selectDespachoFumigacionOption(d.transporte.fumigacion ? 'Sí' : 'No', d.transporte.fumigacion ? 'Sí (Conforme)' : 'No');
+        selectDespachoApilamientoOption(d.transporte.apilamientoAdecuado ? 'Sí' : 'No', d.transporte.apilamientoAdecuado ? 'Sí (Conforme)' : 'No');
     } else {
         document.getElementById('despacho-placa').value = '';
         document.getElementById('despacho-conductor').value = '';
@@ -5281,6 +5438,8 @@ function editDespacho(id) {
         document.getElementById('despacho-temp-furgon').value = '';
         selectDespachoHigieneOption('Conforme', 'Conforme');
         selectDespachoHermeticidadOption('Sí', 'Sí');
+        selectDespachoFumigacionOption('Sí', 'Sí (Conforme)');
+        selectDespachoApilamientoOption('Sí', 'Sí (Conforme)');
     }
 
     poblarLotesDespachoDropdown(d.loteCodigo);
@@ -5452,20 +5611,421 @@ async function deleteVisita(id) {
     }
 }
 
-async function deleteCapacitacion(id) {
-    const c = capacitaciones.find(item => item.id === id);
-    if (!c) return;
+    }
+}
 
-    const confirmado = await customConfirm(`¿Está seguro de eliminar la capacitación sobre "${c.tema}" del expositor "${c.ponente}"?`);
-    if (confirmado) {
-        try {
-            await apiDelete(`/api/capacitaciones/${id}`);
-            await loadServerData();
-            showToast('Capacitación eliminada correctamente.', 'success');
-        } catch (err) {
-            showToast(err.message, 'error');
-            console.error(err);
+
+// ==========================================
+// MÓDULO DE CONSULTA DE TRAZABILIDAD (ART. 3.2)
+// ==========================================
+
+function poblarSelectorTrazabilidadLote() {
+    const customOptions = document.getElementById('custom-select-trazabilidad-lote-options');
+    if (!customOptions) return;
+    
+    customOptions.innerHTML = '';
+    
+    // Todos los lotes registrados en recepciones
+    if (recepciones.length === 0) {
+        customOptions.innerHTML = '<div style="padding: 10px; text-align: center; color: var(--text-secondary); font-size: 13px;">No hay lotes registrados</div>';
+        return;
+    }
+    
+    const lotesOrdenados = [...recepciones].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    
+    lotesOrdenados.forEach(l => {
+        const divOpt = document.createElement('div');
+        divOpt.className = 'custom-select-option';
+        divOpt.innerText = `${l.lote_codigo} - ${l.ganadero_nombre}`;
+        divOpt.setAttribute('data-value', l.lote_codigo);
+        
+        const selectedVal = document.getElementById('trazabilidad-lote-id').value;
+        if (selectedVal === l.lote_codigo) {
+            divOpt.classList.add('selected');
+        }
+        
+        divOpt.onclick = (event) => selectTrazabilidadLoteOption(l.lote_codigo, `${l.lote_codigo} - ${l.ganadero_nombre}`, event);
+        customOptions.appendChild(divOpt);
+    });
+}
+
+function selectTrazabilidadLoteOption(loteCodigo, labelText, event) {
+    if (event) event.stopPropagation();
+    
+    document.getElementById('trazabilidad-lote-id').value = loteCodigo;
+    document.getElementById('custom-select-trazabilidad-lote-text').innerText = labelText;
+    
+    const container = document.getElementById('custom-select-trazabilidad-lote-container');
+    if (container) container.classList.remove('active');
+    
+    // Rellenar options
+    document.querySelectorAll('#custom-select-trazabilidad-lote-options .custom-select-option').forEach(el => {
+        if (el.getAttribute('data-value') === loteCodigo) {
+            el.classList.add('selected');
+        } else {
+            el.classList.remove('selected');
+        }
+    });
+    
+    consultarTrazabilidad(loteCodigo);
+}
+
+function buscarTrazabilidadBoton() {
+    const loteCodigo = document.getElementById('trazabilidad-lote-id').value;
+    if (!loteCodigo) {
+        showToast('Seleccione un código de lote para rastrear.', 'warning');
+        return;
+    }
+    consultarTrazabilidad(loteCodigo);
+}
+
+function consultarTrazabilidad(loteCodigo) {
+    const container = document.getElementById('trazabilidad-resultado');
+    if (!container) return;
+    
+    const recepcion = recepciones.find(r => r.lote_codigo === loteCodigo);
+    if (!recepcion) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px; background: rgba(239, 68, 68, 0.05); border: 1px dashed #ef4444; border-radius: 8px;">
+                <i class="fa-solid fa-triangle-exclamation" style="font-size: 36px; color: #ef4444; margin-bottom: 12px; display: block;"></i>
+                <h3 style="font-size: 15px; font-weight: 600; color: #b91c1c; margin-bottom: 4px;">Lote No Encontrado</h3>
+                <p style="font-size: 13px; color: #7f1d1d; max-width: 400px; margin: 0 auto;">El código de lote "${loteCodigo}" no existe o no ha sido ingresado en el sistema.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Paso 1: Ingreso
+    const fechaIngreso = new Date(recepcion.fecha).toLocaleString('es-PE', { hour12: false });
+    const especieObj = especies.find(e => e.codigo === recepcion.especie);
+    const especieNombre = especieObj ? `${especieObj.icono} ${especieObj.nombre}` : recepcion.especie;
+    const ganadero = ganaderos.find(g => g.id === recepcion.ganadero_id);
+    const ganaderoRuc = ganadero ? ganadero.ruc : 'N/A';
+    const ganaderoCodigo = ganadero ? ganadero.codigo : '--';
+    
+    // Paso 2: Inspección
+    const esInspeccionado = recepcion.estado === 'Inspeccionado';
+    const dictamenIcon = esInspeccionado ? 'fa-circle-check' : 'fa-circle-question';
+    const dictamenColor = esInspeccionado ? 'var(--color-ops)' : 'var(--color-client)';
+    const dictamenTexto = esInspeccionado 
+        ? `Lote Apto para Faenado. Inspección ante-mortem concluida con éxito.` 
+        : `Lote en espera de inspección sanitaria. Dictamen médico pendiente.`;
+    const dictamenResponsable = esInspeccionado ? 'Dr. Alfonso Cárdenas (Médico Veterinario)' : 'Pendiente Asignación';
+    
+    // Paso 3: Pesajes y Manga
+    const pesajesLote = pesajes.filter(p => p.recepcion_id === recepcion.id);
+    const totalCabezas = parseInt(recepcion.cantidad) || 0;
+    const cabezasPesadas = pesajesLote.length;
+    const totalPeso = pesajesLote.reduce((acc, p) => acc + parseFloat(p.peso_pie_kg || 0), 0);
+    const promedioPeso = cabezasPesadas > 0 ? (totalPeso / cabezasPesadas) : 0;
+    
+    let pesajesDetalleHtml = '';
+    if (cabezasPesadas > 0) {
+        const trs = pesajesLote.map((p, idx) => `
+            <tr>
+                <td>#${idx + 1}</td>
+                <td><strong>${p.correlativo_orejera}</strong></td>
+                <td>${parseFloat(p.peso_pie_kg).toFixed(2)} kg</td>
+                <td>${p.fecha ? new Date(p.fecha).toLocaleString('es-PE', { hour12: false }) : '--'}</td>
+            </tr>
+        `).join('');
+        pesajesDetalleHtml = `
+            <div style="margin-top: 10px; max-height: 150px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px;">
+                <table style="width: 100%; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f8fafc; border-bottom: 1px solid var(--border-color);">
+                            <th style="padding: 4px 8px;">N°</th>
+                            <th style="padding: 4px 8px;">Orejera</th>
+                            <th style="padding: 4px 8px;">Peso</th>
+                            <th style="padding: 4px 8px;">Fecha/Hora</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${trs}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } else {
+        pesajesDetalleHtml = `<p style="font-size: 11px; color: var(--text-secondary); font-style: italic; margin-top: 6px;">No se registran pesajes individuales en manga de faena aún.</p>`;
+    }
+    
+    // Paso 4: Cámara Frigorífica (HACCP)
+    // Buscamos si la cámara de la especie tiene lecturas
+    let camaraAsignada = '--';
+    let tempCámara = '--';
+    let desvCámara = 'No se registran alertas';
+    
+    // Buscar cámara según la especie
+    const camara = camaras.find(c => c.nombre.toLowerCase().includes(recepcion.especie.toLowerCase()) || (recepcion.especie === 'GV' && c.nombre.toLowerCase().includes('vacuno')) || (recepcion.especie === 'GP' && c.nombre.toLowerCase().includes('porcino')));
+    if (camara) {
+        camaraAsignada = camara.nombre;
+        const tempsCamara = temperaturas.filter(t => t.camaraId === camara.id);
+        if (tempsCamara.length > 0) {
+            const tempPromedio = tempsCamara.reduce((sum, t) => sum + parseFloat(t.temperatura), 0) / tempsCamara.length;
+            tempCámara = `${tempPromedio.toFixed(1)} °C`;
+            const huboDesv = tempsCamara.some(t => t.desviacion === true);
+            desvCámara = huboDesv 
+                ? `<span style="color: #ef4444; font-weight: 600;"><i class="fa-solid fa-triangle-exclamation"></i> Desviación HACCP Registrada</span>` 
+                : `<span style="color: var(--color-ops); font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Monitoreo Térmico Conforme</span>`;
         }
     }
+    
+    // Buscar no conformidades asociadas a este lote
+    const pncs = productosNoConformes.filter(p => p.loteCodigo === loteCodigo);
+    let pncHtml = '';
+    if (pncs.length > 0) {
+        pncHtml = pncs.map(p => `
+            <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.15); padding: 8px; border-radius: 6px; margin-top: 6px; font-size: 11px;">
+                <span style="color: #b91c1c; font-weight: 600;">No Conformidad: ${p.id}</span> (Estado: ${p.estado})<br>
+                <strong>Detalles:</strong> ${p.detalles}<br>
+                <strong>Acción Correctiva:</strong> ${p.accionCorrectiva || 'No especificada'}
+            </div>
+        `).join('');
+    } else {
+        pncHtml = `<span style="color: var(--color-ops); font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Ninguna no conformidad reportada.</span>`;
+    }
+    
+    // Paso 5: Despacho y Transporte (Hacia Adelante)
+    const desp = despachos.find(d => d.loteCodigo === loteCodigo);
+    let despachoHtml = '';
+    if (desp) {
+        const t = desp.transporte;
+        const fProd = desp.fechaProduccion ? new Date(desp.fechaProduccion).toLocaleDateString('es-PE') : '--';
+        const fVenc = desp.fechaVencimiento ? new Date(desp.fechaVencimiento).toLocaleDateString('es-PE') : '--';
+        
+        let transporteChecklist = '';
+        if (t) {
+            const hFurgon = t.higieneFurgon === 'Conforme' ? '<span style="color: var(--color-ops);">✓ Conforme</span>' : '<span style="color: #ef4444;">✗ No Conforme</span>';
+            const herm = t.hermeticidad ? '<span style="color: var(--color-ops);">✓ Sí</span>' : '<span style="color: #ef4444;">✗ No</span>';
+            const fum = t.fumigacion ? '<span style="color: var(--color-ops);">✓ Sí</span>' : '<span style="color: #ef4444;">✗ No</span>';
+            const apil = t.apilamientoAdecuado ? '<span style="color: var(--color-ops);">✓ Sí</span>' : '<span style="color: #ef4444;">✗ No</span>';
+            
+            transporteChecklist = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px;">
+                    <div><strong>Higiene/Limpieza:</strong> ${hFurgon}</div>
+                    <div><strong>Hermeticidad furgón:</strong> ${herm}</div>
+                    <div><strong>Cert. Fumigación:</strong> ${fum}</div>
+                    <div><strong>Apilamiento/Colgado:</strong> ${apil}</div>
+                    <div><strong>Temperatura Furgón:</strong> ${t.temperaturaFurgon.toFixed(1)} °C</div>
+                    <div><strong>Placa Vehículo:</strong> ${t.placaVehiculo}</div>
+                    <div style="grid-column: 1 / span 2;"><strong>Conductor:</strong> ${t.conductor} (Lic. ${t.licencia})</div>
+                </div>
+            `;
+        } else {
+            transporteChecklist = `<p style="font-size: 11px; color: var(--text-secondary); font-style: italic; margin-top: 6px;">No se ha registrado control de transporte para este despacho.</p>`;
+        }
+        
+        despachoHtml = `
+            <div style="font-size: 12px; color: var(--text-primary);">
+                <p style="margin: 0 0 6px 0;"><strong>Destino / Cliente:</strong> ${desp.cliente}</p>
+                <p style="margin: 0 0 6px 0;"><strong>Guía de Remisión:</strong> ${desp.guiaRemision}</p>
+                <p style="margin: 0 0 6px 0;"><strong>Cantidad carcasas despachadas:</strong> ${desp.cantidadCarcasas} unidades</p>
+                <p style="margin: 0 0 6px 0;"><strong>Peso Total Despachado:</strong> ${parseFloat(desp.pesoTotal).toFixed(2)} kg</p>
+                <p style="margin: 0 0 6px 0;"><strong>Temp. Carne al cargar:</strong> ${parseFloat(desp.temperaturaCarne).toFixed(1)} °C</p>
+                <p style="margin: 0 0 6px 0;"><strong>Fecha de Prod.:</strong> ${fProd} | <strong>Fecha de Venc.:</strong> ${fVenc}</p>
+                <h5 style="font-size: 11px; font-weight: 700; margin: 10px 0 4px 0; color: var(--color-client); text-transform: uppercase;">Checklist de Vehículo de Transporte (CPT-003)</h5>
+                ${transporteChecklist}
+                <p style="font-size: 11px; color: var(--text-secondary); margin-top: 8px;"><strong>Responsable de despacho (Firma):</strong> ${desp.responsable}</p>
+            </div>
+        `;
+    } else {
+        despachoHtml = `
+            <div style="background: rgba(234, 88, 12, 0.03); border: 1px dashed rgba(234, 88, 12, 0.15); padding: 12px; border-radius: 6px; font-size: 12px; color: var(--color-client);">
+                <i class="fa-solid fa-info-circle"></i> Lote no despachado. El producto se encuentra actualmente almacenado en las cámaras de refrigeración.
+            </div>
+        `;
+    }
+    
+    // Renderizado del Timeline Premium
+    container.innerHTML = `
+        <style>
+            .trace-timeline {
+                position: relative;
+                padding-left: 32px;
+                margin-top: 16px;
+            }
+            .trace-timeline::before {
+                content: '';
+                position: absolute;
+                left: 11px;
+                top: 8px;
+                bottom: 8px;
+                width: 2px;
+                background: var(--border-color);
+            }
+            .trace-step {
+                position: relative;
+                margin-bottom: 30px;
+            }
+            .trace-step:last-child {
+                margin-bottom: 0;
+            }
+            .trace-node {
+                position: absolute;
+                left: -32px;
+                top: 2px;
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                background: white;
+                border: 2px solid var(--border-color);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 11px;
+                color: var(--text-secondary);
+                transition: all 0.3s ease;
+                z-index: 2;
+            }
+            .trace-step.completed .trace-node {
+                border-color: var(--color-ops);
+                background: var(--color-ops);
+                color: white;
+            }
+            .trace-step.active-step .trace-node {
+                border-color: var(--color-client);
+                background: var(--color-client);
+                color: white;
+                box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.15);
+            }
+            .trace-content {
+                background: white;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                padding: 16px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            }
+            .trace-title {
+                font-size: 14px;
+                font-weight: 700;
+                color: var(--text-primary);
+                margin: 0 0 6px 0;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .trace-time {
+                font-size: 11px;
+                color: var(--text-secondary);
+                font-weight: 500;
+            }
+        </style>
+        
+        <div style="background: white; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--color-client); letter-spacing: 0.05em;">Lote Rastreado</span>
+                <h3 style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin: 2px 0 0 0; font-family: 'Outfit', sans-serif;">${loteCodigo}</h3>
+            </div>
+            <div style="display: flex; gap: 24px;">
+                <div>
+                    <span style="font-size: 11px; color: var(--text-secondary); display: block;">Ganadero</span>
+                    <strong style="font-size: 14px; color: var(--text-primary);">${recepcion.ganadero_nombre}</strong>
+                </div>
+                <div>
+                    <span style="font-size: 11px; color: var(--text-secondary); display: block;">Especie</span>
+                    <strong style="font-size: 14px; color: var(--text-primary);">${especieNombre}</strong>
+                </div>
+                <div>
+                    <span style="font-size: 11px; color: var(--text-secondary); display: block;">Cabezas</span>
+                    <strong style="font-size: 14px; color: var(--text-primary);">${totalCabezas} uds.</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="trace-timeline">
+            <!-- PASO 1: RECEPCION -->
+            <div class="trace-step completed">
+                <div class="trace-node"><i class="fa-solid fa-truck"></i></div>
+                <div class="trace-content">
+                    <div class="trace-title">
+                        <span>1. Recepción e Ingreso del Ganado (Hacia Atrás)</span>
+                        <span class="trace-time">${fechaIngreso}</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-primary); display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <div><strong>Ganadero:</strong> ${recepcion.ganadero_nombre}</div>
+                        <div><strong>RUC Proveedor:</strong> ${ganaderoRuc}</div>
+                        <div><strong>Código Proveedor:</strong> ${ganaderoCodigo}</div>
+                        <div><strong>Especie:</strong> ${especieNombre}</div>
+                        <div><strong>Cantidad ingresada:</strong> ${totalCabezas} cabezas</div>
+                        <div><strong>Guía de Tránsito SENASA:</strong> ${recepcion.guia_transito}</div>
+                        <div style="grid-column: 1 / span 2;"><strong>Establo de Origen:</strong> ${recepcion.registro_establo || 'No registrado'}</div>
+                        <div style="grid-column: 1 / span 2; margin-top: 4px; padding-top: 4px; border-top: 1px solid #f1f5f9; color: var(--text-secondary);">
+                            <strong>Observaciones:</strong> ${recepcion.observaciones}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASO 2: INSPECCION -->
+            <div class="trace-step ${esInspeccionado ? 'completed' : 'active-step'}">
+                <div class="trace-node"><i class="fa-solid fa-user-doctor"></i></div>
+                <div class="trace-content">
+                    <div class="trace-title">
+                        <span>2. Inspección Veterinaria Ante-Mortem (IS-001)</span>
+                        <span class="trace-time">${esInspeccionado ? 'Completado' : 'Pendiente'}</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-primary);">
+                        <p style="margin: 0 0 6px 0; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid ${dictamenIcon}" style="color: ${dictamenColor}; font-size: 14px;"></i>
+                            <strong>Dictamen Médico:</strong> ${recepcion.estado}
+                        </p>
+                        <p style="margin: 0 0 6px 0;">${dictamenTexto}</p>
+                        <p style="margin: 0; font-size: 11px; color: var(--text-secondary);"><strong>Médico Veterinario Responsable:</strong> ${dictamenResponsable}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASO 3: FAENADO Y PESOS -->
+            <div class="trace-step ${cabezasPesadas > 0 ? 'completed' : (esInspeccionado ? 'active-step' : '')}">
+                <div class="trace-node"><i class="fa-solid fa-weight-scale"></i></div>
+                <div class="trace-content">
+                    <div class="trace-title">
+                        <span>3. Pesaje en Manga y Rendimiento de Carcasa (CPT-001)</span>
+                        <span class="trace-time">${cabezasPesadas > 0 ? `${cabezasPesadas} cabezas pesadas` : 'Pendiente'}</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-primary);">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-weight: 500;">
+                            <div>Cabezas Declaradas: ${totalCabezas}</div>
+                            <div>Cabezas Faenadas/Pesadas: ${cabezasPesadas}</div>
+                            <div>Peso Total Canales: ${totalPeso.toFixed(2)} kg</div>
+                            <div>Peso Promedio Canales: ${promedioPeso.toFixed(2)} kg</div>
+                        </div>
+                        ${pesajesDetalleHtml}
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASO 4: CAMARAS -->
+            <div class="trace-step ${cabezasPesadas > 0 ? 'completed' : ''}">
+                <div class="trace-node"><i class="fa-solid fa-snowflake"></i></div>
+                <div class="trace-content">
+                    <div class="trace-title">
+                        <span>4. Conservación y Maduración en Cámaras Frías (PCC N°1)</span>
+                        <span class="trace-time">${cabezasPesadas > 0 ? 'Monitoreo Activo' : 'Pendiente'}</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-primary);">
+                        <p style="margin: 0 0 6px 0;"><strong>Cámara Asignada:</strong> ${camaraAsignada}</p>
+                        <p style="margin: 0 0 6px 0;"><strong>Temperatura Media Cámara:</strong> ${tempCámara}</p>
+                        <p style="margin: 0 0 8px 0;"><strong>Estado Alerta PCC N°1:</strong> ${desvCámara}</p>
+                        <h5 style="font-size: 11px; font-weight: 700; margin: 10px 0 4px 0; color: #b91c1c; text-transform: uppercase;">Aseguramiento de Calidad - No Conformidades</h5>
+                        ${pncHtml}
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASO 5: DESPACHO -->
+            <div class="trace-step ${desp ? 'completed' : (cabezasPesadas > 0 ? 'active-step' : '')}">
+                <div class="trace-node"><i class="fa-solid fa-dolly"></i></div>
+                <div class="trace-content">
+                    <div class="trace-title">
+                        <span>5. Despacho y Transporte del Lote (Hacia Adelante)</span>
+                        <span class="trace-time">${desp ? 'Despachado' : 'Almacenado'}</span>
+                    </div>
+                    ${despachoHtml}
+                </div>
+            </div>
+        </div>
+    `;
 }
 

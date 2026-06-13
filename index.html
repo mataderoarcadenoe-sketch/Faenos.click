@@ -54,6 +54,12 @@
                             <span>Pesaje en Manga</span>
                         </a>
                     </li>
+                    <li>
+                        <a class="nav-item" onclick="switchTab('trazabilidad')">
+                            <i class="fa-solid fa-route"></i>
+                            <span>Trazabilidad Lote</span>
+                        </a>
+                    </li>
                     <li class="has-submenu">
                         <a class="nav-item" onclick="switchTab('caja')">
                             <i class="fa-solid fa-cash-register"></i>
@@ -333,6 +339,7 @@
                                     <th>Fecha y Hora</th>
                                     <th>Cobro</th>
                                     <th>Estado</th>
+                                    <th>Acción</th>
                                 </tr>
                             </thead>
                             <tbody id="table-recepciones-body">
@@ -480,6 +487,51 @@
                                     <!-- Filas cargadas dinámicamente -->
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 2B-2: CONSULTA DE TRAZABILIDAD (REGISTRO OFICIAL) -->
+            <section id="tab-trazabilidad" class="content-section">
+                <div class="table-container" style="border-radius: 12px; padding: 24px; border-top: 4px solid var(--color-admin);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+                        <div>
+                            <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">
+                                <i class="fa-solid fa-route" style="color: var(--color-admin); margin-right: 8px;"></i>
+                                Consulta de Trazabilidad por Lote
+                            </h2>
+                            <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">Sistema de Rastreabilidad Integral "From Farm to Fork" (Art. 3.2)</p>
+                        </div>
+                    </div>
+
+                    <!-- Buscador de Lote -->
+                    <div style="display: flex; gap: 16px; align-items: center; background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 24px; max-width: 600px;">
+                        <div class="form-group" style="margin: 0; flex: 1;">
+                            <label class="form-label" style="margin-bottom: 6px; font-weight: 600;">Código del Lote Oficial</label>
+                            <div class="custom-select-container" id="custom-select-trazabilidad-lote-container">
+                                <input type="hidden" id="trazabilidad-lote-id" onchange="consultarTrazabilidad(this.value)" required>
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect('trazabilidad-lote', event)">
+                                    <span id="custom-select-trazabilidad-lote-text">Selecciona o escribe un lote...</span>
+                                    <i class="fa-solid fa-chevron-down arrow"></i>
+                                </div>
+                                <div class="custom-select-options" id="custom-select-trazabilidad-lote-options">
+                                    <!-- Poblado dinámicamente -->
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="buscarTrazabilidadBoton()" class="btn-primary" style="margin-top: 20px; height: 38px; width: auto; display: flex; align-items: center; gap: 6px; padding: 0 16px; background: linear-gradient(135deg, var(--color-admin), #ea580c);">
+                            <i class="fa-solid fa-magnifying-glass"></i> Rastrear
+                        </button>
+                    </div>
+
+                    <!-- Contenedor del Timeline de Trazabilidad -->
+                    <div id="trazabilidad-resultado">
+                        <!-- Mensaje de bienvenida inicial -->
+                        <div style="text-align: center; padding: 60px 20px; background: rgba(255, 255, 255, 0.5); border: 1px dashed var(--border-color); border-radius: 8px;">
+                            <i class="fa-solid fa-route" style="font-size: 48px; color: var(--border-color); margin-bottom: 16px; display: block;"></i>
+                            <h3 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Buscador de Rastreabilidad Activo</h3>
+                            <p style="font-size: 13px; color: var(--text-secondary); max-width: 400px; margin: 0 auto;">Por favor, seleccione un código de lote de ganado en el buscador superior para reconstruir y visualizar la cadena completa de trazabilidad de la planta.</p>
                         </div>
                     </div>
                 </div>
@@ -1068,7 +1120,11 @@
                                                 <th>Lote Origen</th>
                                                 <th>Cliente / Destino</th>
                                                 <th>N° Guía Remisión</th>
-                                                <th>Carcasas</th>
+                                                <th>Fecha de Prod.</th>
+                                                <th>Fecha de Venc.</th>
+                                                <th>Entrada</th>
+                                                <th>Salida</th>
+                                                <th>Saldo</th>
                                                 <th>Peso Total (kg)</th>
                                                 <th>Temp. Carne</th>
                                                 <th>Responsable</th>
@@ -1102,6 +1158,8 @@
                                                 <th>Higiene Furgón</th>
                                                 <th>Temp. Furgón</th>
                                                 <th>Hermeticidad</th>
+                                                <th>Fumigación</th>
+                                                <th>Apilamiento</th>
                                                 <th>Observaciones</th>
                                             </tr>
                                         </thead>
@@ -1980,6 +2038,16 @@
                             <label class="form-label">Temp. Carne (°C)</label>
                             <input type="number" id="despacho-temp-carne" class="form-control" placeholder="Ej. 4.2" step="0.1" required>
                         </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="form-group">
+                                <label class="form-label">Fecha de Prod.</label>
+                                <input type="date" id="despacho-fecha-produccion" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Fecha de Venc.</label>
+                                <input type="date" id="despacho-fecha-vencimiento" class="form-control" required>
+                            </div>
+                        </div>
                     </div>
 
                     <div>
@@ -2028,6 +2096,36 @@
                                 <div class="custom-select-options" id="custom-select-despacho-hermeticidad-options">
                                     <div class="custom-select-option selected" data-value="Sí" onclick="selectDespachoHermeticidadOption('Sí', 'Sí', event)">Sí</div>
                                     <div class="custom-select-option" data-value="No" onclick="selectDespachoHermeticidadOption('No', 'No', event)">No</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                            <div class="form-group">
+                                <label class="form-label">Fumigación</label>
+                                <div class="custom-select-container" id="custom-select-despacho-fumigacion-container">
+                                    <input type="hidden" id="despacho-fumigacion" value="Sí" required>
+                                    <div class="custom-select-trigger" onclick="toggleCustomSelect('despacho-fumigacion', event)">
+                                        <span id="custom-select-despacho-fumigacion-text">Sí</span>
+                                        <i class="fa-solid fa-chevron-down arrow"></i>
+                                    </div>
+                                    <div class="custom-select-options" id="custom-select-despacho-fumigacion-options">
+                                        <div class="custom-select-option selected" data-value="Sí" onclick="selectDespachoFumigacionOption('Sí', 'Sí', event)">Sí (Conforme)</div>
+                                        <div class="custom-select-option" data-value="No" onclick="selectDespachoFumigacionOption('No', 'No', event)">No</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Apilado/Colgado</label>
+                                <div class="custom-select-container" id="custom-select-despacho-apilamiento-container">
+                                    <input type="hidden" id="despacho-apilamiento" value="Sí" required>
+                                    <div class="custom-select-trigger" onclick="toggleCustomSelect('despacho-apilamiento', event)">
+                                        <span id="custom-select-despacho-apilamiento-text">Sí</span>
+                                        <i class="fa-solid fa-chevron-down arrow"></i>
+                                    </div>
+                                    <div class="custom-select-options" id="custom-select-despacho-apilamiento-options">
+                                        <div class="custom-select-option selected" data-value="Sí" onclick="selectDespachoApilamientoOption('Sí', 'Sí', event)">Sí (Conforme)</div>
+                                        <div class="custom-select-option" data-value="No" onclick="selectDespachoApilamientoOption('No', 'No', event)">No</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
