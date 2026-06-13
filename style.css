@@ -15,6 +15,15 @@
     
     --shadow-main: 0 10px 25px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
     --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Variables de Sidebar Rediseñado */
+    --sidebar-bg: #ffffff;
+    --sidebar-border: rgba(226, 232, 240, 0.8);
+    --sidebar-shadow-collapsed: 0 10px 30px rgba(234, 88, 12, 0.03), 0 1px 8px rgba(0, 0, 0, 0.01);
+    --sidebar-shadow-expanded: 0 20px 40px rgba(15, 23, 42, 0.04), 0 1px 10px rgba(0, 0, 0, 0.02);
+    --sidebar-grad-orange: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    --sidebar-item-active-bg: rgba(234, 88, 12, 0.06);
+    --sidebar-hover-bg: rgba(234, 88, 12, 0.03);
 }
 
 * {
@@ -115,19 +124,21 @@ body {
     pointer-events: auto;
 }
 
+
+
 /* Barra Lateral (Sidebar) - Tarjeta Blanca Flotante y Colapsable Horizontal */
 .sidebar {
     width: 76px; /* Ancho colapsado por defecto */
-    background: #ffffff; /* Fondo blanco */
+    background: var(--sidebar-bg); /* Fondo blanco */
     margin: 16px 0 16px 16px;
     height: calc(100vh - 32px); /* Altura completa flotante */
-    border-radius: 16px;
+    border-radius: 18px;
     display: flex;
     flex-direction: column;
     padding: 16px 10px;
     z-index: 100;
-    box-shadow: 0 10px 30px rgba(234, 88, 12, 0.04), 0 1px 8px rgba(0, 0, 0, 0.02);
-    border: 1px solid var(--border-color);
+    box-shadow: var(--sidebar-shadow-collapsed);
+    border: 1px solid var(--sidebar-border);
     transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1), padding 0.35s ease, box-shadow 0.35s ease;
     overflow: hidden;
     align-items: center; /* Centrar elementos en estado contraído */
@@ -136,8 +147,8 @@ body {
 /* Cuando el sidebar está expandido */
 .sidebar.expanded {
     width: 260px; /* Ancho expandido */
-    padding: 16px;
-    box-shadow: 0 15px 35px rgba(234, 88, 12, 0.1), 0 2px 10px rgba(0, 0, 0, 0.04);
+    padding: 18px 16px;
+    box-shadow: var(--sidebar-shadow-expanded);
     align-items: stretch; /* Alinear de forma normal */
 }
 
@@ -145,21 +156,21 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 24px;
+    margin-bottom: 28px;
     width: 100%;
     transition: justify-content 0.35s ease;
 }
 
 .sidebar.expanded .brand-section {
     justify-content: flex-start;
-    padding-left: 4px;
+    padding-left: 6px;
 }
 
 .brand-icon {
     width: 40px;
     height: 40px;
-    background: linear-gradient(135deg, #ea580c, #ff782b); /* Naranja de marca */
-    border-radius: 10px;
+    background: var(--sidebar-grad-orange); /* Naranja de marca */
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -167,8 +178,13 @@ body {
     font-weight: 800;
     font-size: 20px;
     color: white;
-    box-shadow: 0 4px 15px rgba(234, 88, 12, 0.25);
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.22);
     flex-shrink: 0;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.brand-section:hover .brand-icon {
+    transform: scale(1.05) rotate(-3deg);
 }
 
 /* Animaciones y Transiciones de Desvanecimiento Suave de los Textos */
@@ -205,7 +221,7 @@ body {
     font-family: 'Outfit', sans-serif;
     font-weight: 700;
     font-size: 22px;
-    letter-spacing: -0.5px;
+    letter-spacing: -0.03em;
     color: #0f172a;
 }
 
@@ -229,12 +245,12 @@ body {
     width: 44px; /* Tamaño fijo cuadrado en contraído */
     padding: 0;
     border-radius: 12px;
-    color: #334155; /* Slate 700 */
+    color: #475569; /* Slate 600 */
     text-decoration: none;
     font-weight: 500;
     font-size: 14px;
     cursor: pointer;
-    transition: background 0.25s ease, color 0.25s ease, padding 0.25s ease, width 0.3s cubic-bezier(0.4, 0, 0.2, 1), justify-content 0.15s ease;
+    transition: background 0.25s ease, color 0.25s ease, padding 0.25s ease, width 0.3s cubic-bezier(0.4, 0, 0.2, 1), justify-content 0.15s ease, transform 0.2s ease;
     border: 1px solid transparent;
     position: relative;
     box-sizing: border-box;
@@ -251,14 +267,20 @@ body {
 
 .nav-item:hover {
     color: #ea580c;
-    background: rgba(234, 88, 12, 0.05); /* Hover naranja translúcido */
+    background: var(--sidebar-hover-bg); /* Hover naranja translúcido */
+    transform: translateX(3px);
+}
+
+/* Evitar traslación de hover en colapsado */
+.sidebar:not(.expanded) .nav-item:hover {
+    transform: none;
 }
 
 .nav-item.active {
     color: #ffffff;
-    background: #ea580c; /* Activo naranja sólido */
+    background: var(--sidebar-grad-orange); /* Activo naranja degradado */
     font-weight: 600;
-    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.2);
+    box-shadow: 0 4px 14px rgba(234, 88, 12, 0.2);
 }
 
 .nav-item.active i {
@@ -274,7 +296,17 @@ body {
     justify-content: center;
     width: 20px;
     height: 20px;
-    transition: color 0.2s ease;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.nav-item:hover i {
+    color: #ea580c;
+    transform: scale(1.05);
+}
+
+.nav-item.active:hover i {
+    color: #ffffff;
+    transform: none;
 }
 
 /* Submenús del Sidebar (Pestañas secundarias) */
@@ -288,7 +320,7 @@ body {
     margin-left: auto;
     font-size: 10px;
     color: inherit;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 0.7;
     display: none !important; /* Ocultar en estado contraído */
 }
@@ -304,34 +336,73 @@ body {
 
 .submenu {
     list-style: none;
-    padding-left: 32px; /* Indentación alineada con el texto principal */
+    border-left: 1.5px solid rgba(226, 232, 240, 0.8); /* Guía vertical delgada */
+    margin-left: 24px;
     margin-top: 6px;
     margin-bottom: 8px;
+    padding-left: 14px;
     display: none !important; /* Colapsado por defecto */
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
     transition: all 0.3s ease;
 }
 
 /* Desplegar submenú solo cuando el menú está expandido y el apartado está activo */
 .sidebar.expanded li.active-li .submenu {
     display: flex !important;
+    animation: slideDownSubmenu 0.25s ease-out;
+}
+
+@keyframes slideDownSubmenu {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .submenu-item {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 12px;
-    font-size: 11px;
+    padding: 8px 12px 8px 16px;
+    font-size: 13px;
     font-weight: 500;
     color: #475569;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     width: 100%;
     box-sizing: border-box;
+}
+
+.submenu-item::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%) scaleY(0);
+    width: 3px;
+    height: 14px;
+    border-radius: 4px;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.submenu-item.active::before {
+    transform: translateY(-50%) scaleY(1);
+}
+
+.submenu-item.caja-nav-item.active::before {
+    background-color: var(--color-ops);
+}
+
+.submenu-item.active:not(.caja-nav-item)::before {
+    background-color: var(--color-client);
 }
 
 .submenu-item i {
@@ -344,7 +415,8 @@ body {
 
 .submenu-item:hover {
     color: #ea580c;
-    background: rgba(234, 88, 12, 0.05);
+    background: var(--sidebar-hover-bg);
+    padding-left: 18px;
 }
 
 .submenu-item:hover i {
@@ -352,13 +424,21 @@ body {
 }
 
 .submenu-item.active {
-    color: #ea580c;
-    font-weight: 700;
-    background: rgba(234, 88, 12, 0.08);
+    font-weight: 600;
 }
 
-.submenu-item.active i {
-    color: #ea580c;
+/* Caja General activa (Verde menta premium) */
+.submenu-item.caja-nav-item.active {
+    color: var(--color-ops) !important;
+    background: rgba(5, 150, 105, 0.08) !important;
+    border: 1px solid rgba(5, 150, 105, 0.15);
+}
+
+/* Resto de pestañas activas (Naranja premium) */
+.submenu-item.active:not(.caja-nav-item) {
+    color: #ea580c !important;
+    background: var(--sidebar-item-active-bg) !important;
+    border: 1px solid rgba(234, 88, 12, 0.1);
 }
 
 /* Pie de Página del Sidebar */
@@ -371,26 +451,60 @@ body {
     justify-content: center; /* Centrar en estado contraído */
     width: 100%;
     transition: justify-content 0.35s ease, padding 0.35s ease;
+    gap: 12px;
 }
 
 .sidebar.expanded .sidebar-footer {
     justify-content: flex-start;
-    padding-left: 4px;
+    padding-left: 6px;
 }
 
 .user-avatar {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: rgba(234, 88, 12, 0.1); /* Naranja suave */
+    background: linear-gradient(135deg, rgba(234, 88, 12, 0.12) 0%, rgba(234, 88, 12, 0.04) 100%);
     border: 2px solid #ea580c;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 600;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
     font-size: 14px;
     color: #ea580c;
     flex-shrink: 0;
+    position: relative;
+    box-shadow: 0 4px 10px rgba(234, 88, 12, 0.08);
+}
+
+/* Indicador de presencia en línea palpitante */
+.user-avatar::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 8px;
+    height: 8px;
+    background-color: #22c55e; /* Verde brillante */
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    animation: pulse-indicator 2s infinite;
+}
+
+@keyframes pulse-indicator {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 5px rgba(34, 197, 94, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    }
 }
 
 .user-info {
@@ -399,6 +513,7 @@ body {
 }
 
 .user-name {
+    font-family: 'Outfit', sans-serif;
     font-size: 14px;
     font-weight: 600;
     color: #0f172a;
@@ -408,6 +523,7 @@ body {
     font-size: 11px;
     color: #64748b;
 }
+
 
 /* Área de Contenido Principal - Tarjeta Blanca Flotante */
 .main-content {
