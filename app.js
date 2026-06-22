@@ -3434,6 +3434,9 @@ function setupSidebarInteractivo() {
 
     // Listener para abrir/cerrar con clic
     sidebar.addEventListener('click', (e) => {
+        // En móviles/tablets (<= 991px) no usamos la lógica de colapsado/expandido de escritorio
+        if (window.innerWidth <= 991) return;
+
         const isExpanded = sidebar.classList.contains('expanded');
         
         // Si está colapsado, expandimos al hacer clic

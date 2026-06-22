@@ -1572,6 +1572,8 @@ tr:hover td {
 @media (max-width: 991px) {
     .dashboard-layout {
         position: relative;
+        height: 100vh;
+        height: 100dvh;
     }
 
     /* Ocultar sidebar y convertir en drawer deslizante */
@@ -1581,6 +1583,7 @@ tr:hover td {
         left: 0;
         bottom: 0;
         height: 100vh !important; /* Asegurar altura completa en móvil */
+        height: 100dvh !important;
         width: 260px !important; /* Forzar ancho completo del drawer */
         margin: 0;
         border-radius: 0;
@@ -1623,9 +1626,11 @@ tr:hover td {
     .main-content {
         margin: 0;
         height: 100vh;
+        height: 100dvh;
         border-radius: 0;
         border: none;
         width: 100%;
+        transition: none !important;
     }
 
     /* Mostrar botones de toggle en móviles/tablets */
