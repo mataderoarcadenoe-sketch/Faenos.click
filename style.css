@@ -32,13 +32,19 @@
     padding: 0;
 }
 
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
 body {
     font-family: 'Inter', sans-serif;
     background-color: var(--bg-main);
     color: var(--text-primary);
-    min-height: 100vh;
     display: flex;
-    overflow-x: hidden;
+    overflow: hidden;
+    overscroll-behavior: none;
 }
 
 /* Scrollbar personalizado */
