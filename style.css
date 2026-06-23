@@ -34,8 +34,12 @@
 
 html, body {
     height: 100%;
+    width: 100%;
     margin: 0;
     padding: 0;
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
+    overscroll-behavior-y: none !important;
 }
 
 body {
@@ -43,8 +47,7 @@ body {
     background-color: var(--bg-main);
     color: var(--text-primary);
     display: flex;
-    overflow: hidden;
-    overscroll-behavior: none;
+    overflow: hidden !important;
 }
 
 /* Scrollbar personalizado */
@@ -68,6 +71,8 @@ body {
     display: flex;
     width: 100vw;
     height: 100vh;
+    overscroll-behavior: none !important;
+    overscroll-behavior-y: none !important;
 }
 
 /* Botones de control del sidebar en móviles (ocultos en escritorio) */
@@ -830,6 +835,7 @@ body {
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
     padding: 24px;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* Activar scroll inercial suave en iOS */
 }
 
 .content-section.active {
@@ -1360,6 +1366,7 @@ tr:hover td {
     position: relative;
     overflow-y: auto;
     max-height: 90vh;
+    -webkit-overflow-scrolling: touch; /* Scroll inercial suave en modales */
 }
 
 .form-modal-overlay.active .form-modal-card {
@@ -1580,6 +1587,8 @@ tr:hover td {
         position: relative;
         height: 100vh;
         height: 100dvh;
+        width: 100% !important;
+        overflow: hidden !important;
     }
 
     /* Ocultar sidebar y convertir en drawer deslizante */
@@ -1710,6 +1719,14 @@ tr:hover td {
         text-overflow: ellipsis;
         display: inline-block;
         vertical-align: middle;
+    }
+
+    /* Evitar zoom automático en campos de entrada de móviles en iOS */
+    .form-control,
+    input,
+    select,
+    textarea {
+        font-size: 16px !important;
     }
 }
 
