@@ -17,7 +17,7 @@ const pool = new Pool({
 
 // Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname, 'client/dist')));
 
 // ==========================================
 // INICIALIZACIÓN DE TABLAS Y DATOS DE PRUEBA
@@ -1645,6 +1645,11 @@ app.delete('/api/capacitaciones/:id', async (req, res) => {
 });
 
 
+
+// Ruta fallback para servir el SPA (React Router) en cualquier ruta no-API
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'client/dist/index.html'));
+});
 
 // Levantar servidor e inicializar base de datos
 app.listen(PORT, async () => {
