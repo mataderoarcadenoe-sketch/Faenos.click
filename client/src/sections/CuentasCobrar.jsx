@@ -260,27 +260,31 @@ function CuentasCobrar({ data, activeModal, setActiveModal, onRefresh, confirm }
                     <tr key={item.ganadero.id}>
                       <td data-label="Ganadero"><strong>{item.ganadero.nombre}</strong></td>
                       <td data-label="WhatsApp / Teléfono">
-                        <i className="fa-brands fa-whatsapp" style={{ color: '#25d366', marginRight: '6px' }}></i>
-                        {item.ganadero.whatsapp}
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                          <i className="fa-brands fa-whatsapp" style={{ color: '#25d366' }}></i>
+                          {item.ganadero.whatsapp}
+                        </span>
                       </td>
                       <td data-label="Créditos Otorgados">S/. {item.creditosOtorgados.toFixed(2)}</td>
                       <td data-label="Total Abonado" style={{ color: 'var(--color-ops)' }}>S/. {item.totalAbonado.toFixed(2)}</td>
                       <td data-label="Saldo Pendiente" style={{ fontWeight: 700, color: '#ef4444' }}>S/. {item.saldoPendiente.toFixed(2)}</td>
-                      <td data-label="Acciones" style={{ gap: '8px' }}>
-                        <button 
-                          onClick={() => setSelectedGanaderoId(item.ganadero.id)}
-                          className="btn-primary"
-                          style={{ width: 'auto', padding: '6px 12px', fontSize: '12px', marginTop: 0, background: '#f8fafc', color: 'var(--text-primary)', border: '1px solid var(--border-color)', boxShadow: 'none' }}
-                        >
-                          <i className="fa-solid fa-eye"></i> Detalle
-                        </button>
-                        <button 
-                          onClick={() => handleIniciarAbonoGeneral(item.ganadero.id)}
-                          className="btn-primary"
-                          style={{ width: 'auto', padding: '6px 12px', fontSize: '12px', marginTop: 0, background: 'linear-gradient(135deg, var(--color-ops), #047857)' }}
-                        >
-                          <i className="fa-solid fa-hand-holding-dollar"></i> Abonar
-                        </button>
+                      <td data-label="Acciones">
+                        <div className="actions-flex-group">
+                          <button 
+                            onClick={() => setSelectedGanaderoId(item.ganadero.id)}
+                            className="btn-primary"
+                            style={{ width: 'auto', padding: '6px 12px', fontSize: '12px', marginTop: 0, background: '#f8fafc', color: 'var(--text-primary)', border: '1px solid var(--border-color)', boxShadow: 'none' }}
+                          >
+                            <i className="fa-solid fa-eye"></i> Detalle
+                          </button>
+                          <button 
+                            onClick={() => handleIniciarAbonoGeneral(item.ganadero.id)}
+                            className="btn-primary"
+                            style={{ width: 'auto', padding: '6px 12px', fontSize: '12px', marginTop: 0, background: 'linear-gradient(135deg, var(--color-ops), #047857)' }}
+                          >
+                            <i className="fa-solid fa-hand-holding-dollar"></i> Abonar
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

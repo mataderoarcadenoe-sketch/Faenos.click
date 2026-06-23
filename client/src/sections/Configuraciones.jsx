@@ -600,20 +600,22 @@ function Configuraciones({ data, activeModal, setActiveModal, onRefresh, activeS
                       )}
                     </td>
                     <td data-label="Acciones">
-                      <button
-                        onClick={() => handleEditEspecie(e)}
-                        style={{ background: 'none', border: 'none', color: 'var(--color-admin)', cursor: 'pointer', fontSize: '15px', marginRight: '12px' }}
-                        title="Editar"
-                      >
-                        <i className="fa-solid fa-pen-to-square"></i>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteEspecie(e.id, e.nombre, e.codigo)}
-                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '15px' }}
-                        title="Eliminar"
-                      >
-                        <i className="fa-solid fa-trash-can"></i>
-                      </button>
+                      <div className="actions-flex-group">
+                        <button
+                          onClick={() => handleEditEspecie(e)}
+                          style={{ background: 'none', border: 'none', color: 'var(--color-admin)', cursor: 'pointer', fontSize: '15px' }}
+                          title="Editar"
+                        >
+                          <i className="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteEspecie(e.id, e.nombre, e.codigo)}
+                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '15px' }}
+                          title="Eliminar"
+                        >
+                          <i className="fa-solid fa-trash-can"></i>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -682,20 +684,22 @@ function Configuraciones({ data, activeModal, setActiveModal, onRefresh, activeS
                       )}
                     </td>
                     <td data-label="Acciones">
-                      <button
-                        onClick={() => handleEditPago(p)}
-                        style={{ background: 'none', border: 'none', color: 'var(--color-admin)', cursor: 'pointer', fontSize: '15px', marginRight: '12px' }}
-                        title="Editar"
-                      >
-                        <i className="fa-solid fa-pen-to-square"></i>
-                      </button>
-                      <button
-                        onClick={() => handleDeletePago(p.id, p.nombre)}
-                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '15px' }}
-                        title="Eliminar"
-                      >
-                        <i className="fa-solid fa-trash-can"></i>
-                      </button>
+                      <div className="actions-flex-group">
+                        <button
+                          onClick={() => handleEditPago(p)}
+                          style={{ background: 'none', border: 'none', color: 'var(--color-admin)', cursor: 'pointer', fontSize: '15px' }}
+                          title="Editar"
+                        >
+                          <i className="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button
+                          onClick={() => handleDeletePago(p.id, p.nombre)}
+                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '15px' }}
+                          title="Eliminar"
+                        >
+                          <i className="fa-solid fa-trash-can"></i>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -760,20 +764,22 @@ function Configuraciones({ data, activeModal, setActiveModal, onRefresh, activeS
                       )}
                     </td>
                     <td data-label="Acciones">
-                      <button
-                        onClick={() => handleEditRol(r)}
-                        style={{ background: 'none', border: 'none', color: 'var(--color-admin)', cursor: 'pointer', fontSize: '15px', marginRight: '12px' }}
-                        title="Editar"
-                      >
-                        <i className="fa-solid fa-pen-to-square"></i>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteRol(r.id, r.nombre)}
-                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '15px' }}
-                        title="Eliminar"
-                      >
-                        <i className="fa-solid fa-trash-can"></i>
-                      </button>
+                      <div className="actions-flex-group">
+                        <button
+                          onClick={() => handleEditRol(r)}
+                          style={{ background: 'none', border: 'none', color: 'var(--color-admin)', cursor: 'pointer', fontSize: '15px' }}
+                          title="Editar"
+                        >
+                          <i className="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteRol(r.id, r.nombre)}
+                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '15px' }}
+                          title="Eliminar"
+                        >
+                          <i className="fa-solid fa-trash-can"></i>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -838,20 +844,22 @@ function Configuraciones({ data, activeModal, setActiveModal, onRefresh, activeS
                       )}
                     </td>
                     <td data-label="Acciones">
-                      <button
-                        onClick={() => handleEditTipoPago(tp)}
-                        style={{ background: 'none', border: 'none', color: 'var(--color-admin)', cursor: 'pointer', fontSize: '15px', marginRight: '12px' }}
-                        title="Editar"
-                      >
-                        <i className="fa-solid fa-pen-to-square"></i>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteTipoPago(tp.id, tp.nombre)}
-                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '15px' }}
-                        title="Eliminar"
-                      >
-                        <i className="fa-solid fa-trash-can"></i>
-                      </button>
+                      <div className="actions-flex-group">
+                        <button
+                          onClick={() => handleEditTipoPago(tp)}
+                          style={{ background: 'none', border: 'none', color: 'var(--color-admin)', cursor: 'pointer', fontSize: '15px' }}
+                          title="Editar"
+                        >
+                          <i className="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTipoPago(tp.id, tp.nombre)}
+                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '15px' }}
+                          title="Eliminar"
+                        >
+                          <i className="fa-solid fa-trash-can"></i>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

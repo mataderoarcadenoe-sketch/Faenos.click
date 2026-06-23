@@ -207,8 +207,10 @@ function Trabajadores({ data, activeModal, setActiveModal, onRefresh, confirm })
                     </span>
                   </td>
                   <td data-label="WhatsApp">
-                    <i className="fa-brands fa-whatsapp" style={{ color: '#25d366', marginRight: '6px' }}></i>
-                    {t.whatsapp}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <i className="fa-brands fa-whatsapp" style={{ color: '#25d366' }}></i>
+                      {t.whatsapp}
+                    </span>
                   </td>
                   <td data-label="Estado">
                     {t.activo ? (
@@ -218,20 +220,22 @@ function Trabajadores({ data, activeModal, setActiveModal, onRefresh, confirm })
                     )}
                   </td>
                   <td data-label="Acción">
-                    <button 
-                      onClick={() => handleEdit(t)} 
-                      style={{ background: 'none', border: 'none', color: 'var(--color-admin)', cursor: 'pointer', fontSize: '15px', marginRight: '12px' }} 
-                      title="Editar"
-                    >
-                      <i className="fa-solid fa-pen-to-square"></i>
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(t.id)} 
-                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '15px' }} 
-                      title="Eliminar"
-                    >
-                      <i className="fa-solid fa-trash-can"></i>
-                    </button>
+                    <div className="actions-flex-group">
+                      <button 
+                        onClick={() => handleEdit(t)} 
+                        style={{ background: 'none', border: 'none', color: 'var(--color-admin)', cursor: 'pointer', fontSize: '15px' }} 
+                        title="Editar"
+                      >
+                        <i className="fa-solid fa-pen-to-square"></i>
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(t.id)} 
+                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '15px' }} 
+                        title="Eliminar"
+                      >
+                        <i className="fa-solid fa-trash-can"></i>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

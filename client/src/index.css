@@ -2716,6 +2716,47 @@ tr:hover td {
     }
 }
 
+/* ==========================================
+   AJUSTES ADICIONALES DE ADAPTACIÓN MÓVIL
+   ========================================== */
+@media (max-width: 767px) {
+    /* Evitar que botones del subtab de configuraciones se compriman */
+    .segmented-control-container button {
+        flex: 0 0 auto !important;
+        min-width: 125px !important;
+    }
+
+    /* Agrupador de botones de acción en tarjetas móviles */
+    .actions-flex-group {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        gap: 12px !important;
+    }
+
+    /* Añadir separación entre label y valor en tarjetas de tabla */
+    .table-responsive-cards td {
+        gap: 16px !important;
+    }
+
+    /* Limitar ancho de valores en tarjetas para evitar desbordamiento horizontal */
+    .table-responsive-cards td > * {
+        max-width: 62% !important;
+        word-break: break-word !important;
+        overflow-wrap: break-word !important;
+        white-space: normal !important;
+        text-align: right !important;
+    }
+
+    /* Permitir que elementos agrupados o botones se ajusten mejor */
+    .table-responsive-cards td > button,
+    .table-responsive-cards td > .btn-primary,
+    .table-responsive-cards td > .actions-flex-group,
+    .table-responsive-cards td > div {
+        max-width: 65% !important;
+    }
+}
+
 
 
 
