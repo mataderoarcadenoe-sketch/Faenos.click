@@ -17,7 +17,13 @@ const pool = new Pool({
 
 // Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'client/dist')));
+app.use(express.static(path.join(__dirname, 'client/dist'), {
+    setHeaders: (res, filepath) => {
+        if (filepath.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        }
+    }
+}));
 
 // ==========================================
 // INICIALIZACIÓN DE TABLAS Y DATOS DE PRUEBA
@@ -1648,6 +1654,7 @@ app.delete('/api/capacitaciones/:id', async (req, res) => {
 
 // Ruta fallback para servir el SPA (React Router) en cualquier ruta no-API
 app.get('*', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.sendFile(path.join(__dirname, 'client/dist/index.html'));
 });
 
