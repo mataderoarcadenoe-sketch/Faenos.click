@@ -1627,6 +1627,8 @@ tr:hover td {
         justify-content: flex-start !important;
         padding: 12px 16px !important;
         height: auto !important;
+        width: 100% !important;
+        margin: 0 !important;
     }
 
     .sidebar .sidebar-footer {
@@ -1636,6 +1638,20 @@ tr:hover td {
 
     .sidebar.mobile-active {
         transform: translateX(0);
+    }
+
+    /* En móviles/tablets, habilitar visibilidad de flechas y despliegue de submenús */
+    .sidebar .submenu-arrow {
+        display: block !important;
+    }
+
+    .sidebar li.active-li .submenu {
+        display: flex !important;
+        animation: slideDownSubmenu 0.25s ease-out;
+    }
+
+    .sidebar li.active-li .submenu-arrow {
+        transform: rotate(180deg);
     }
 
     .main-content {
