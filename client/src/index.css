@@ -2567,5 +2567,139 @@ tr:hover td {
     background: #f8fafc;
 }
 
+/* ==========================================
+   ESTILOS DE UTILIDAD RESPONSIVA (MÓVIL)
+   ========================================== */
+
+/* Layout de Tablas a Tarjetas en Móviles */
+@media (max-width: 767px) {
+    .table-responsive-cards {
+        display: block;
+        width: 100% !important;
+        border: none !important;
+    }
+    
+    .table-responsive-cards thead {
+        display: none !important;
+    }
+    
+    .table-responsive-cards tbody {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 16px !important;
+        width: 100% !important;
+    }
+    
+    .table-responsive-cards tr {
+        display: block !important;
+        background: #ffffff !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 16px !important;
+        padding: 16px 20px !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.01) !important;
+        margin-bottom: 0 !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    }
+    
+    .table-responsive-cards tr:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.02) !important;
+    }
+    
+    .table-responsive-cards td {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 10px 0 !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+        font-size: 13.5px !important;
+        text-align: right !important;
+        min-height: 42px !important;
+    }
+    
+    .table-responsive-cards td:last-child {
+        border-bottom: none !important;
+        padding-bottom: 0 !important;
+        justify-content: flex-end !important;
+        gap: 12px !important;
+        margin-top: 6px !important;
+    }
+    
+    .table-responsive-cards td::before {
+        content: attr(data-label) !important;
+        font-weight: 700 !important;
+        color: var(--text-secondary) !important;
+        font-size: 11px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        text-align: left !important;
+        flex-shrink: 0 !important;
+        margin-right: 16px !important;
+    }
+    
+    /* Para celdas que contienen textos largos o tablas anidadas */
+    .table-responsive-cards td.full-width-td {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        text-align: left !important;
+        height: auto !important;
+        padding: 12px 0 !important;
+    }
+    
+    .table-responsive-cards td.full-width-td::before {
+        margin-bottom: 8px !important;
+        text-align: left !important;
+    }
+    
+    .table-responsive-cards td.full-width-td > * {
+        width: 100% !important;
+    }
+}
+
+/* Modales adaptados para pantallas pequeñas */
+@media (max-width: 767px) {
+    .form-modal-overlay {
+        padding: 12px !important;
+        align-items: flex-end !important; /* Aparecen de abajo */
+    }
+    
+    .form-modal-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        border-radius: 20px 20px 0 0 !important; /* Esquinas arriba */
+        max-height: 90vh !important;
+        max-height: 90dvh !important;
+        display: flex !important;
+        flex-direction: column !important;
+        padding: 24px 20px !important;
+        animation: slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    
+    .form-modal-card form {
+        overflow-y: auto !important;
+        flex: 1 !important;
+        padding-right: 4px !important;
+    }
+    
+    @keyframes slide-up {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+    }
+    
+    .btn-modal-close {
+        top: 20px !important;
+        right: 20px !important;
+        background: #f1f5f9 !important;
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+}
+
+
 
 

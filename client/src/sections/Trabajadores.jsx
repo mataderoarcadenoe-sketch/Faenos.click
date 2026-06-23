@@ -187,7 +187,7 @@ function Trabajadores({ data, activeModal, setActiveModal, onRefresh, confirm })
         </div>
         
         <div className="table-responsive-wrapper">
-          <table>
+          <table className="table-responsive-cards">
             <thead>
               <tr>
                 <th>Nombres y Apellidos</th>
@@ -200,24 +200,24 @@ function Trabajadores({ data, activeModal, setActiveModal, onRefresh, confirm })
             <tbody>
               {filteredTrabajadores.map(t => (
                 <tr key={t.id}>
-                  <td><strong>{t.nombre}</strong></td>
-                  <td>
+                  <td data-label="Nombres y Apellidos"><strong>{t.nombre}</strong></td>
+                  <td data-label="Cargo / Rol">
                     <span className="badge" style={{ background: 'rgba(79, 70, 229, 0.08)', color: 'var(--color-admin)', border: '1px solid rgba(79, 70, 229, 0.15)', fontWeight: '600' }}>
                       {t.rol}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="WhatsApp">
                     <i className="fa-brands fa-whatsapp" style={{ color: '#25d366', marginRight: '6px' }}></i>
                     {t.whatsapp}
                   </td>
-                  <td>
+                  <td data-label="Estado">
                     {t.activo ? (
                       <span className="badge badge-success">Activo</span>
                     ) : (
                       <span className="badge" style={{ background: 'rgba(100, 116, 139, 0.08)', color: '#64748b', border: '1px solid rgba(100, 116, 139, 0.15)' }}>Inactivo</span>
                     )}
                   </td>
-                  <td>
+                  <td data-label="Acción">
                     <button 
                       onClick={() => handleEdit(t)} 
                       style={{ background: 'none', border: 'none', color: 'var(--color-admin)', cursor: 'pointer', fontSize: '15px', marginRight: '12px' }} 

@@ -173,7 +173,7 @@ function Ganaderos({ data, activeModal, setActiveModal, onRefresh }) {
         </div>
         
         <div className="table-responsive-wrapper">
-          <table>
+          <table className="table-responsive-cards">
             <thead>
               <tr>
                 <th>Código</th>
@@ -186,14 +186,14 @@ function Ganaderos({ data, activeModal, setActiveModal, onRefresh }) {
             <tbody>
               {filteredGanaderos.map(g => (
                 <tr key={g.id}>
-                  <td><span className="lote-tag">{g.codigo}</span></td>
-                  <td><strong>{g.nombre}</strong></td>
-                  <td>{g.ruc}</td>
-                  <td>
+                  <td data-label="Código"><span className="lote-tag">{g.codigo}</span></td>
+                  <td data-label="Razón Social"><strong>{g.nombre}</strong></td>
+                  <td data-label="RUC / Identidad">{g.ruc}</td>
+                  <td data-label="WhatsApp">
                     <i className="fa-brands fa-whatsapp" style={{ color: '#25d366', marginRight: '6px' }}></i>
                     {g.whatsapp}
                   </td>
-                  <td>
+                  <td data-label="Acción">
                     <button 
                       onClick={() => handleEdit(g)} 
                       style={{ background: 'none', border: 'none', color: 'var(--color-admin)', cursor: 'pointer', fontSize: '15px', marginRight: '12px' }} 
