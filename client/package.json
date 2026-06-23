@@ -3,9 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node -e \"global.CustomEvent = class CustomEvent extends Event { constructor(type, params = {}) { super(type, params); this.detail = params.detail; } }; import('vite').then(m => m.build())\"",
     "lint": "eslint .",
     "preview": "vite preview"
   },
