@@ -25,6 +25,15 @@ function App() {
   // Modales
   const [activeModal, setActiveModal] = useState(null);
 
+  // Confirmaciones personalizadas
+  const [confirmDialog, setConfirmDialog] = useState(null);
+  
+  const confirm = (message) => {
+    return new Promise((resolve) => {
+      setConfirmDialog({ message, onResolve: resolve });
+    });
+  };
+
   // Estado de los datos de la app
   const [data, setData] = useState({
     ganaderos: [],
@@ -155,7 +164,8 @@ function App() {
       data,
       activeModal,
       setActiveModal,
-      onRefresh: loadData
+      onRefresh: loadData,
+      confirm
     };
 
     switch (activeTab) {
@@ -213,6 +223,39 @@ function App() {
           {renderTabContent()}
         </Suspense>
       </main>
+
+      {/* Modal de Confirmación Personalizado */}
+      {confirmDialog && (
+        <div id="confirm-modal" className="confirm-modal-overlay active">
+          <div className="confirm-modal-card">
+            <div className="confirm-modal-icon">
+              <i className="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 className="confirm-modal-title">¿Confirmar Acción?</h3>
+            <p className="confirm-modal-message">{confirmDialog.message}</p>
+            <div className="confirm-modal-actions">
+              <button 
+                className="btn-confirm-secondary" 
+                onClick={() => {
+                  confirmDialog.onResolve(false);
+                  setConfirmDialog(null);
+                }}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="btn-confirm-danger" 
+                onClick={() => {
+                  confirmDialog.onResolve(true);
+                  setConfirmDialog(null);
+                }}
+              >
+                Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
